@@ -827,28 +827,29 @@ void ChallengeLoadScreen::activatePieces( Int frame, const GeneralPersona *gener
 		case FRAME_PORTRAITS_START:
 			// GeneralsX @bugfix fbraz3 27/04/2026 Added NULL checks for portrait movies
 			// Issue: Portraits not displaying in Challenge screen; added logging
+			fprintf(stderr, "[CHALLENGE] FRAME_PORTRAITS_START frame=%d\n", frame);
 			if (m_portraitMovieLeft && generalPlayer->getPortraitMovieLeftName().isNotEmpty())
 			{
-				DEBUG_LOG(("ChallengeLoadScreen: Playing portrait movie LEFT: %s\n", generalPlayer->getPortraitMovieLeftName().str()));
+				fprintf(stderr, "[CHALLENGE] Playing portrait movie LEFT: %s\n", generalPlayer->getPortraitMovieLeftName().str());
 				m_wndVideoManager->playMovie( m_portraitMovieLeft, generalPlayer->getPortraitMovieLeftName(), WINDOW_PLAY_MOVIE_SHOW_LAST_FRAME);
 				m_portraitMovieLeft->winHide(FALSE);
 			}
 			else
 			{
-				DEBUG_LOG(("ChallengeLoadScreen: WARNING - Portrait movie LEFT not available (left=%p, name=%s)\n", 
-					m_portraitMovieLeft, generalPlayer->getPortraitMovieLeftName().str()));
+				fprintf(stderr, "[CHALLENGE] WARNING - Portrait movie LEFT not available (left=%p, name=%s)\n", 
+					m_portraitMovieLeft, generalPlayer->getPortraitMovieLeftName().str());
 			}
 
 			if (m_portraitMovieRight && generalOpponent->getPortraitMovieRightName().isNotEmpty())
 			{
-				DEBUG_LOG(("ChallengeLoadScreen: Playing portrait movie RIGHT: %s\n", generalOpponent->getPortraitMovieRightName().str()));
+				fprintf(stderr, "[CHALLENGE] Playing portrait movie RIGHT: %s\n", generalOpponent->getPortraitMovieRightName().str());
 				m_wndVideoManager->playMovie( m_portraitMovieRight, generalOpponent->getPortraitMovieRightName(), WINDOW_PLAY_MOVIE_SHOW_LAST_FRAME);
 				m_portraitMovieRight->winHide(FALSE);
 			}
 			else
 			{
-				DEBUG_LOG(("ChallengeLoadScreen: WARNING - Portrait movie RIGHT not available (right=%p, name=%s)\n", 
-					m_portraitMovieRight, generalOpponent->getPortraitMovieRightName().str()));
+				fprintf(stderr, "[CHALLENGE] WARNING - Portrait movie RIGHT not available (right=%p, name=%s)\n", 
+					m_portraitMovieRight, generalOpponent->getPortraitMovieRightName().str());
 			}
 
 			TheAudio->addAudioEvent( &eventLeftGeneral );
@@ -879,7 +880,7 @@ void ChallengeLoadScreen::activatePieces( Int frame, const GeneralPersona *gener
 			// it's time to start the overlay movie
 //					m_overlayVsBackdrop->winSetEnabledImage( 0, TheMappedImageCollection->findImageByFilename("))
 			// GeneralsX @bugfix fbraz3 27/04/2026 Added NULL checks for VS overlay movie
-			DEBUG_LOG(("ChallengeLoadScreen: FRAME_VS_ANIM_START - Playing VS overlay (vs=%p)\n", m_overlayVs));
+			fprintf(stderr, "[CHALLENGE] FRAME_VS_ANIM_START frame=%d - Playing VS overlay (vs=%p)\n", frame, m_overlayVs);
 			m_overlayVsBackdrop->winHide(FALSE);
 			m_overlayVs->winHide(FALSE);
 			if (m_overlayVs)
@@ -888,7 +889,7 @@ void ChallengeLoadScreen::activatePieces( Int frame, const GeneralPersona *gener
 			}
 			else
 			{
-				DEBUG_LOG(("ChallengeLoadScreen: ERROR - m_overlayVs window is NULL\n"));
+				fprintf(stderr, "[CHALLENGE] ERROR - m_overlayVs window is NULL\n");
 			}
 
 			// "Verses"
@@ -957,14 +958,14 @@ void ChallengeLoadScreen::activatePiecesMinSpec(const GeneralPersona *generalPla
 	m_overlayVsBackdrop->winHide(FALSE);
 	m_overlayVs->winHide(FALSE);
 	// GeneralsX @bugfix fbraz3 27/04/2026 Added NULL check for playMovie in min-spec path
-	DEBUG_LOG(("ChallengeLoadScreen::activatePiecesMinSpec: Playing VS overlay (vs=%p)\n", m_overlayVs));
+	fprintf(stderr, "[CHALLENGE] activatePiecesMinSpec: Playing VS overlay (vs=%p)\n", m_overlayVs);
 	if (m_overlayVs)
 	{
 		m_wndVideoManager->playMovie( m_overlayVs, "VSSmall", WINDOW_PLAY_MOVIE_SHOW_LAST_FRAME);
 	}
 	else
 	{
-		DEBUG_LOG(("ChallengeLoadScreen::activatePiecesMinSpec: ERROR - m_overlayVs window is NULL\n"));
+		fprintf(stderr, "[CHALLENGE] activatePiecesMinSpec: ERROR - m_overlayVs window is NULL\n");
 	}
 }
 
@@ -1026,11 +1027,11 @@ void ChallengeLoadScreen::init( GameInfo *game )
 
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:PortraitMovieLeft");
 	m_portraitMovieLeft = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
-	DEBUG_LOG(("ChallengeLoadScreen::init: m_portraitMovieLeft = %p\n", m_portraitMovieLeft));
+	fprintf(stderr, "[CHALLENGE::init] m_portraitMovieLeft = %p (namekey=%u)\n", m_portraitMovieLeft, namekey);
 	
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:PortraitMovieRight");
 	m_portraitMovieRight = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
-	DEBUG_LOG(("ChallengeLoadScreen::init: m_portraitMovieRight = %p\n", m_portraitMovieRight));
+	fprintf(stderr, "[CHALLENGE::init] m_portraitMovieRight = %p (namekey=%u)\n", m_portraitMovieRight, namekey);
 
 //	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:ReticleCrosshairs");
 //	m_overlayReticleCrosshairs = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
@@ -1049,7 +1050,7 @@ void ChallengeLoadScreen::init( GameInfo *game )
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:OverlayVs");
 	m_overlayVs = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
 	// GeneralsX @bugfix fbraz3 27/04/2026 Added logging for VS overlay initialization
-	DEBUG_LOG(("ChallengeLoadScreen::init: m_overlayVsBackdrop = %p, m_overlayVs = %p\n", m_overlayVsBackdrop, m_overlayVs));
+	fprintf(stderr, "[CHALLENGE::init] m_overlayVsBackdrop = %p, m_overlayVs = %p\n", m_overlayVsBackdrop, m_overlayVs);
 
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:BioNameLeft");
 	m_bioNameLeft = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
