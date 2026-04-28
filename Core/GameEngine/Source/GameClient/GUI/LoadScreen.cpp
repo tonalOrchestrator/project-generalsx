@@ -865,7 +865,6 @@ void ChallengeLoadScreen::activatePieces( Int frame, const GeneralPersona *gener
 			else
 			{
 				fprintf(stderr, "[CHALLENGE] WARNING - Portrait movie RIGHT not available (right=%p, name=%s)\n", 
-					m_portraitMovieRight, generalOpponent->getPortraitMovieRightName().str( (right=%p, name=%s)\n", 
 					m_portraitMovieRight, generalOpponent->getPortraitMovieRightName().str());
 			}
 
@@ -988,7 +987,6 @@ void ChallengeLoadScreen::activatePiecesMinSpec(const GeneralPersona *generalPla
 	}
 	else
 	{
-		fprintf(stderr, "[CHALLENGE] activatePiecesMinSpec: ERROR - m_overlayVs window is NULL\n"
 		fprintf(stderr, "[CHALLENGE] activatePiecesMinSpec: ERROR - m_overlayVs window is NULL\n");
 	}
 }
@@ -1050,11 +1048,11 @@ void ChallengeLoadScreen::init( GameInfo *game )
 	m_portraitRight = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
 
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:PortraitMovieLeft");
+	m_portraitMovieLeft = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
 	fprintf(stderr, "[CHALLENGE::init] m_portraitMovieLeft = %p (namekey=%u)\n", m_portraitMovieLeft, namekey);
 	
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:PortraitMovieRight");
 	m_portraitMovieRight = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
-	fprintf(stderr, "[CHALLENGE::init] m_portraitMovieRight = %p (namekey=%u)\n", m_portraitMovieRight, namekey
 	fprintf(stderr, "[CHALLENGE::init] m_portraitMovieRight = %p (namekey=%u)\n", m_portraitMovieRight, namekey);
 
 //	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:ReticleCrosshairs");
@@ -1073,7 +1071,6 @@ void ChallengeLoadScreen::init( GameInfo *game )
 	m_overlayVsBackdrop = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:OverlayVs");
 	m_overlayVs = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
-	fprintf(stderr, "[CHALLENGE::init] m_overlayVsBackdrop = %p, m_overlayVs = %p\n", m_overlayVsBackdrop, m_overlayVs
 	fprintf(stderr, "[CHALLENGE::init] m_overlayVsBackdrop = %p, m_overlayVs = %p\n", m_overlayVsBackdrop, m_overlayVs);
 
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:BioNameLeft");
