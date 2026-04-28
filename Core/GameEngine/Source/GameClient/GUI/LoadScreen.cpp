@@ -831,7 +831,15 @@ void ChallengeLoadScreen::activatePieces( Int frame, const GeneralPersona *gener
 			if (m_portraitMovieLeft && generalPlayer->getPortraitMovieLeftName().isNotEmpty())
 			{
 				fprintf(stderr, "[CHALLENGE] Playing portrait movie LEFT: %s\n", generalPlayer->getPortraitMovieLeftName().str());
-				m_wndVideoManager->playMovie( m_portraitMovieLeft, generalPlayer->getPortraitMovieLeftName(), WINDOW_PLAY_MOVIE_SHOW_LAST_FRAME);
+				fprintf(stderr, "[CHALLENGE] m_wndVideoManager = %p\n", m_wndVideoManager);
+				if (m_wndVideoManager)
+				{
+					m_wndVideoManager->playMovie( m_portraitMovieLeft, generalPlayer->getPortraitMovieLeftName(), WINDOW_PLAY_MOVIE_SHOW_LAST_FRAME);
+				}
+				else
+				{
+					fprintf(stderr, "[CHALLENGE] ERROR - m_wndVideoManager is NULL!\n");
+				}
 				m_portraitMovieLeft->winHide(FALSE);
 			}
 			else
@@ -843,7 +851,15 @@ void ChallengeLoadScreen::activatePieces( Int frame, const GeneralPersona *gener
 			if (m_portraitMovieRight && generalOpponent->getPortraitMovieRightName().isNotEmpty())
 			{
 				fprintf(stderr, "[CHALLENGE] Playing portrait movie RIGHT: %s\n", generalOpponent->getPortraitMovieRightName().str());
-				m_wndVideoManager->playMovie( m_portraitMovieRight, generalOpponent->getPortraitMovieRightName(), WINDOW_PLAY_MOVIE_SHOW_LAST_FRAME);
+				fprintf(stderr, "[CHALLENGE] m_wndVideoManager = %p\n", m_wndVideoManager);
+				if (m_wndVideoManager)
+				{
+					m_wndVideoManager->playMovie( m_portraitMovieRight, generalOpponent->getPortraitMovieRightName(), WINDOW_PLAY_MOVIE_SHOW_LAST_FRAME);
+				}
+				else
+				{
+					fprintf(stderr, "[CHALLENGE] ERROR - m_wndVideoManager is NULL!\n");
+				}
 				m_portraitMovieRight->winHide(FALSE);
 			}
 			else
@@ -881,15 +897,22 @@ void ChallengeLoadScreen::activatePieces( Int frame, const GeneralPersona *gener
 			// it's time to start the overlay movie
 //					m_overlayVsBackdrop->winSetEnabledImage( 0, TheMappedImageCollection->findImageByFilename("))
 			fprintf(stderr, "[CHALLENGE] FRAME_VS_ANIM_START frame=%d - Playing VS overlay (vs=%p)\n", frame, m_overlayVs);
+			fprintf(stderr, "[CHALLENGE] m_wndVideoManager = %p\n", m_wndVideoManager);
 			m_overlayVsBackdrop->winHide(FALSE);
 			m_overlayVs->winHide(FALSE);
 			if (m_overlayVs)
 			{
-				m_wndVideoManager->playMovie( m_overlayVs, "VSSmall", WINDOW_PLAY_MOVIE_SHOW_LAST_FRAME);
+				if (m_wndVideoManager)
+				{
+					m_wndVideoManager->playMovie( m_overlayVs, "VSSmall", WINDOW_PLAY_MOVIE_SHOW_LAST_FRAME);
+				}
+				else
+				{
+					fprintf(stderr, "[CHALLENGE] ERROR - m_wndVideoManager is NULL!\n");
+				}
 			}
 			else
 			{
-				fprintf(stderr, "[CHALLENGE] ERROR - m_overlayVs window is NULL\n"
 				fprintf(stderr, "[CHALLENGE] ERROR - m_overlayVs window is NULL\n");
 			}
 
