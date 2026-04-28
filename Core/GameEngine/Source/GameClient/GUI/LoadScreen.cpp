@@ -849,6 +849,7 @@ void ChallengeLoadScreen::activatePieces( Int frame, const GeneralPersona *gener
 			else
 			{
 				fprintf(stderr, "[CHALLENGE] WARNING - Portrait movie RIGHT not available (right=%p, name=%s)\n", 
+					m_portraitMovieRight, generalOpponent->getPortraitMovieRightName().str( (right=%p, name=%s)\n", 
 					m_portraitMovieRight, generalOpponent->getPortraitMovieRightName().str());
 			}
 
@@ -879,7 +880,6 @@ void ChallengeLoadScreen::activatePieces( Int frame, const GeneralPersona *gener
 		case FRAME_VS_ANIM_START:
 			// it's time to start the overlay movie
 //					m_overlayVsBackdrop->winSetEnabledImage( 0, TheMappedImageCollection->findImageByFilename("))
-			// GeneralsX @bugfix fbraz3 27/04/2026 Added NULL checks for VS overlay movie
 			fprintf(stderr, "[CHALLENGE] FRAME_VS_ANIM_START frame=%d - Playing VS overlay (vs=%p)\n", frame, m_overlayVs);
 			m_overlayVsBackdrop->winHide(FALSE);
 			m_overlayVs->winHide(FALSE);
@@ -889,6 +889,7 @@ void ChallengeLoadScreen::activatePieces( Int frame, const GeneralPersona *gener
 			}
 			else
 			{
+				fprintf(stderr, "[CHALLENGE] ERROR - m_overlayVs window is NULL\n"
 				fprintf(stderr, "[CHALLENGE] ERROR - m_overlayVs window is NULL\n");
 			}
 
@@ -957,7 +958,6 @@ void ChallengeLoadScreen::activatePiecesMinSpec(const GeneralPersona *generalPla
 	m_overlayReticleCircleAlphaInner->winHide(FALSE);
 	m_overlayVsBackdrop->winHide(FALSE);
 	m_overlayVs->winHide(FALSE);
-	// GeneralsX @bugfix fbraz3 27/04/2026 Added NULL check for playMovie in min-spec path
 	fprintf(stderr, "[CHALLENGE] activatePiecesMinSpec: Playing VS overlay (vs=%p)\n", m_overlayVs);
 	if (m_overlayVs)
 	{
@@ -965,6 +965,7 @@ void ChallengeLoadScreen::activatePiecesMinSpec(const GeneralPersona *generalPla
 	}
 	else
 	{
+		fprintf(stderr, "[CHALLENGE] activatePiecesMinSpec: ERROR - m_overlayVs window is NULL\n"
 		fprintf(stderr, "[CHALLENGE] activatePiecesMinSpec: ERROR - m_overlayVs window is NULL\n");
 	}
 }
@@ -1026,11 +1027,11 @@ void ChallengeLoadScreen::init( GameInfo *game )
 	m_portraitRight = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
 
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:PortraitMovieLeft");
-	m_portraitMovieLeft = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
 	fprintf(stderr, "[CHALLENGE::init] m_portraitMovieLeft = %p (namekey=%u)\n", m_portraitMovieLeft, namekey);
 	
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:PortraitMovieRight");
 	m_portraitMovieRight = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
+	fprintf(stderr, "[CHALLENGE::init] m_portraitMovieRight = %p (namekey=%u)\n", m_portraitMovieRight, namekey
 	fprintf(stderr, "[CHALLENGE::init] m_portraitMovieRight = %p (namekey=%u)\n", m_portraitMovieRight, namekey);
 
 //	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:ReticleCrosshairs");
@@ -1049,7 +1050,7 @@ void ChallengeLoadScreen::init( GameInfo *game )
 	m_overlayVsBackdrop = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:OverlayVs");
 	m_overlayVs = TheWindowManager->winGetWindowFromId( m_loadScreen, namekey );
-	// GeneralsX @bugfix fbraz3 27/04/2026 Added logging for VS overlay initialization
+	fprintf(stderr, "[CHALLENGE::init] m_overlayVsBackdrop = %p, m_overlayVs = %p\n", m_overlayVsBackdrop, m_overlayVs
 	fprintf(stderr, "[CHALLENGE::init] m_overlayVsBackdrop = %p, m_overlayVs = %p\n", m_overlayVsBackdrop, m_overlayVs);
 
 	namekey = TheNameKeyGenerator->nameToKey( "ChallengeLoadScreen.wnd:BioNameLeft");

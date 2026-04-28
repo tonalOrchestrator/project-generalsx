@@ -253,6 +253,10 @@ void WindowVideoManager::update()
 
 void WindowVideoManager::playMovie( GameWindow *win, AsciiString movieName, WindowVideoPlayType playType )
 {
+	// GeneralsX @bugfix fbraz3 27/04/2026 Added logging to diagnose silent failures
+	fprintf(stderr, "[WVM] playMovie() called: movieName=%s, win=%p, playType=%d\n", 
+		movieName.str(), win, playType);
+	
 	// if we already have a movie playing for that window, kill it.
 	stopAndRemoveMovie( win );
 
@@ -260,17 +264,32 @@ void WindowVideoManager::playMovie( GameWindow *win, AsciiString movieName, Wind
 	VideoStreamInterface *videoStream = TheVideoPlayer->open( movieName );
 	if ( videoStream == nullptr )
 	{
+		fprintf(stderr, "[WVM] ERROR: TheVideoPlayer->open('%s') returned nullptr\n", movieName.str());
 		return;
 	}
+	fprintf(stderr, "[WVM] SUCCESS: opened video stream %p (size=%dx%d)\n", 
+		videoStream, videoStream->width(), videoStream->height());
 
 	// Create the new buffer
 	VideoBuffer *videoBuffer = TheDisplay->createVideoBuffer();
-	if (	videoBuffer == nullptr ||
-				!videoBuffer->allocate(	videoStream->width(),
-													videoStream->height())
-		)
+	if (	videoBuffer == nullptr )
 	{
-		// If we failed to create the buffer...
+		fprintf(stderr, "[WVM] ERROR: TheDisplay->createVideoBuffer() returned nullptr\n");
+		if ( videoStream )
+		{
+			videoStream->close();
+			videoStream = nullptr;
+		}
+		return;
+	}
+	fprintf(stderr, "[WVM] Created videoBuffer %p, attempting allocate(%d, %d)\n", 
+		videoBuffer, videoStream->width(), videoStream->height());
+	
+	if ( !videoBuffer->allocate(videoStream->width(), videoStream->height()) )
+	{
+		// If we failed to allocate the buffer...
+		fprintf(stderr, "[WVM] ERROR: videoBuffer->allocate(%d, %d) FAILED\n", 
+			videoStream->width(), videoStream->height());
 		delete videoBuffer;
 		videoBuffer = nullptr;
 
@@ -282,18 +301,22 @@ void WindowVideoManager::playMovie( GameWindow *win, AsciiString movieName, Wind
 
 		return;
 	}
+	fprintf(stderr, "[WVM] SUCCESS: allocated videoBuffer %p\n", videoBuffer);
 
 	// now that we have everything, create the new WindowVideo Structure
 	WindowVideo *winVid = NEW WindowVideo;
+	fprintf(stderr, "[WVM] Created WindowVideo %p\n", winVid);
 
 	// init it.
 	winVid->init( win, movieName,playType,videoBuffer,videoStream);
+	fprintf(stderr, "[WVM] Initialized WindowVideo, adding to playingVideos map\n");
 
 	// add it to our map.
 	m_playingVideos[win] = winVid;
 
 	m_pauseAllMovies = FALSE;
 	m_stopAllMovies = FALSE;
+	fprintf(stderr, "[WVM] SUCCESS: playMovie() completed for '%s'\n", movieName.str());
 }
 
 
