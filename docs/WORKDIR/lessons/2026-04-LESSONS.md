@@ -1,5 +1,36 @@
 # 2026-04 Lessons Learned
 
+## Session 2026-04-28 - SDL native fullscreen on macOS needs post-request state verification and foreground enforcement
+
+- Problem: Even with correct render/backbuffer sizing, macOS could intermittently remain in a pseudo-borderless state (Dock/menu visible) after fullscreen request, with degraded focus/cursor behavior.
+- Root cause:
+	- `SDL_SetWindowFullscreen(true)` is asynchronous relative to compositor/window-manager transitions.
+	- A successful call does not guarantee the window is already flagged as fullscreen in the immediate next code path.
+	- If the window stays foreground-inconsistent during that transition, input behavior can degrade in practice.
+- Fix:
+	- After requesting fullscreen, verify window fullscreen flag and retry a few times when needed.
+	- Raise the window once transition is requested to reinforce foreground focus state.
+	- Apply the same logic in both `GeneralsMD` and `Generals` SDL display paths to keep behavior aligned.
+- Validation:
+	- macOS build and deploy completed successfully with the hardened fullscreen path.
+- Prevention: Treat fullscreen entry as a transition state machine on macOS/SDL; validate resulting state, do not rely on a single call as terminal state.
+
+## Session 2026-04-27 - Custom map pipelines must treat path separators and map-name encoding as cross-platform invariants
+
+- Problem: User custom maps under `~/Library/Application Support/GeneralsX/GeneralsZH/Maps` could fail discovery/metadata flow when code assumed Windows-only separators and mixed path composition styles.
+- Root cause:
+	- Shared map scan/cache paths used `reverseFind('\\')` and Windows-only suffix checks.
+	- `map.str` lookup composition used `mapDir + fname` assumptions that are fragile when `fname` already carries rooted/qualified path semantics.
+	- Special-character map names rely on quoted-printable conversion; locale-sensitive `isalnum` in ASCII encoding can produce inconsistent behavior.
+- Fix:
+	- Added separator-agnostic path handling (`\\` or `/`) in shared map scanning (`MapUtil.cpp`) and in map cache parsing (`INIMapCache.cpp` for both ZH and Generals).
+	- Built map string-file path from the actual map filepath and separator style instead of recomposing from mixed fragments.
+	- Switched ASCII quoted-printable checks to locale-independent ASCII classification (`isAsciiAlphaNumeric`) in both game variants.
+- Validation:
+	- Custom user-path maps load successfully on macOS after patch.
+	- Stress dataset with names containing spaces, quotes, punctuation, and accented Unicode characters completed without crash in successful run.
+- Prevention: Treat map-name handling as a pipeline (filesystem scan -> cache serialization -> cache parse -> localized display load). Any separator/encoding change must be validated end-to-end, not only at one layer.
+
 ## Session 2026-04-27 - SDL fullscreen on macOS must size the initial DXVK backbuffer from the current window, not the target display mode
 
 - Problem: After the ultrawide/pillarbox merge, macOS fullscreen could look like a low-resolution image stretched to fill the screen, with a visible small-window-then-fullscreen transition.
