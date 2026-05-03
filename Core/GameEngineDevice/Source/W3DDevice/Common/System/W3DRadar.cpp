@@ -76,7 +76,7 @@ inline Bool legalRadarPoint( Int px, Int py )
 
 //-------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
-static WW3DFormat findFormat(const WW3DFormat formats[])
+static WW3DFormat findFormat(const WW3DFormat formats[], WW3DFormat fallbackFormat)
 {
 	for( Int i = 0; formats[ i ] != WW3D_FORMAT_UNKNOWN; i++ )
 	{
@@ -89,16 +89,14 @@ static WW3DFormat findFormat(const WW3DFormat formats[])
 		}
 
 	}
-	// GeneralsX @bugfix BenderAI 24/02/2026 W3DRadar: When DXVK/MoltenVK caps query returns no supported
-	// format (e.g. CheckDeviceFormat fails on macOS for R8G8B8/R5G6B5), fall back to X8R8G8B8 which
-	// is guaranteed to be supported on any modern Vulkan-capable GPU. Without this, texture creation
-	// silently produces a null D3D texture and crashes later in buildTerrainTexture.
+	// GeneralsX @bugfix fbraz3 29/04/2026 Use per-texture fallback format to preserve alpha on radar overlays
+	// when caps probing fails on macOS/DXVK. Overlay/shroud must prefer alpha formats to avoid opaque squares.
 #if !defined(_WIN32)
-	fprintf(stderr, "W3DRadar: findFormat: no supported format found in caps query - falling back to WW3D_FORMAT_X8R8G8B8\n");
+	fprintf(stderr, "W3DRadar: findFormat: no supported format found in caps query - falling back to format=%d\n", fallbackFormat);
 	fflush(stderr);
 #endif
 	DEBUG_CRASH(("WW3DRadar: No appropriate texture format") );
-	return WW3D_FORMAT_X8R8G8B8;
+	return fallbackFormat;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -130,13 +128,14 @@ void W3DRadar::initializeTextureFormats()
 	};
 
 	// find a format for the terrain texture
-	m_terrainTextureFormat = findFormat(terrainFormats);
+	m_terrainTextureFormat = findFormat(terrainFormats, WW3D_FORMAT_X8R8G8B8);
 
+	// GeneralsX @bugfix fbraz3 29/04/2026 Force alpha-capable fallback for overlay/shroud to keep transparency.
 	// find a format for the overlay texture
-	m_overlayTextureFormat = findFormat(overlayFormats);
+	m_overlayTextureFormat = findFormat(overlayFormats, WW3D_FORMAT_A8R8G8B8);
 
 	// find a format for the shroud texture
-	m_shroudTextureFormat = findFormat(shroudFormats);
+	m_shroudTextureFormat = findFormat(shroudFormats, WW3D_FORMAT_A8R8G8B8);
 
 }
 
