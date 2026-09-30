@@ -35,6 +35,13 @@ public:
 	// observer camera on the first AI base at game start and hops between AI bases periodically.
 	static void updateWatchCamera();
 
+	// Called every logic frame from GameLogic::update (both modes): camera hop + periodic per-AI summary.
+	static void perFrame();
+
+	// Per-AI decision log ("AI[mm:ss] China#1 train ChinaTankBattleMaster ..."). No-op unless -aiskirmish
+	// and -aiskirmishLog > 0. Safe to call with a null player.
+	static void aiLog(const Player* player, const char* fmt, ...);
+
 private:
 	static AsciiString resolveMapName(const AsciiString& wanted);
 	static void dumpStats(const AsciiString& mapName, Int seed, Bool timedOut, UnsignedInt realTimeMs);

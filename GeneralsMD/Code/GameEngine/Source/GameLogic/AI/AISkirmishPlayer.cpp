@@ -31,6 +31,7 @@
 
 #include "Common/GameMemory.h"
 #include "Common/GlobalData.h"
+#include "Common/AISkirmishSimulation.h"
 #include "Common/Player.h"
 #include "Common/PlayerList.h"
 #include "Common/Team.h"
@@ -329,6 +330,7 @@ Bool AISkirmishPlayer::startTraining( WorkOrder *order, Bool busyOK, AsciiString
 		ProductionUpdateInterface *pu = factory->getProductionUpdateInterface();
 		if (pu && pu->queueCreateUnit( order->m_thing, pu->requestUniqueUnitID() )) {
 			order->m_factoryID = factory->getID();
+			AISkirmishSimulation::aiLog(m_player, "train %s at %s for team %s (%d/%d)", order->m_thing->getName().str(), factory->getTemplate() ? factory->getTemplate()->getName().str() : "?", teamName.str(), order->m_numCompleted + 1, order->m_numRequired);
 			if (TheGlobalData->m_debugAI) {
 				AsciiString teamStr = "Queuing ";
 				teamStr.concat(order->m_thing->getName());
@@ -533,6 +535,7 @@ void AISkirmishPlayer::acquireEnemy()
 	}
 	if (bestEnemy!=nullptr && (bestEnemy!=m_currentEnemy)) {
 		m_currentEnemy = bestEnemy;
+		AISkirmishSimulation::aiLog(m_player, "targeting enemy %s#%d", bestEnemy->getSide().str(), bestEnemy->getMpStartIndex() + 1);
 		AsciiString msg = TheNameKeyGenerator->keyToName(m_player->getPlayerNameKey());
 		msg.concat(" acquiring target enemy player: ");
 		msg.concat(TheNameKeyGenerator->keyToName(m_currentEnemy->getPlayerNameKey()));
@@ -597,6 +600,7 @@ void AISkirmishPlayer::buildAIBaseDefense(Bool flank)
 	*/
 void AISkirmishPlayer::buildAIBaseDefenseStructure(const AsciiString &thingName, Bool flank)
 {
+	AISkirmishSimulation::aiLog(m_player, "base defense %s (%s)", thingName.str(), flank ? "flank/backdoor" : "center");
 	const ThingTemplate *tTemplate = TheThingFactory->findTemplate(thingName);
 	if (tTemplate==nullptr) {
 		DEBUG_CRASH(("Couldn't find base defense structure '%s' for side %s", thingName.str(), m_player->getSide().str()));

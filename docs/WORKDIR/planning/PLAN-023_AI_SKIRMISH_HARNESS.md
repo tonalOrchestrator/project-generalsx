@@ -105,3 +105,24 @@ promoting it to `cmake/` + the preset if it keeps being needed.
    are reliable only once rendering actually happens.
 4. `-seed` is clobbered by `GameData.ini FixedSeed` after command-line parsing (pre-existing; `-aiskirmishSeed`
    added as the reliable path).
+
+## Per-AI decision log (2026-09-30)
+
+`-aiskirmishLog 1` (default in AI-skirmish mode; `0` = off) prints one line per AI decision, tagged `<side>#<slot>`
+because both AIs are named "Hard Army". `-aiskirmishLogFile <path>` also writes it to a file.
+
+```
+AI[00:33] GLAToxinGeneral#2      build Chem_GLAStingerSite with dozer at 1160,2831 ($900)
+AI[00:44] ChinaTankGeneral#1     base defense Tank_ChinaGattlingCannon (center)
+AI[00:56] GLAToxinGeneral#2      upgrade Upgrade_InfantryCaptureBuilding queued at Chem_GLABarracks
+AI[01:00] ChinaTankGeneral#1     -- status: $14650  units built 6 lost 0 killed 0 | buildings built 3 lost 0 destroyed 0
+```
+
+Event kinds and where they hook (all `AISkirmishSimulation::aiLog`, no-op outside this mode):
+`build … (instant|with dozer)` `AIPlayer::buildStructureNow/buildStructureWithDozer` · `completed` `AIPlayer::onStructureProduced` ·
+`train X at F for team T (n/m)` `AIPlayer::startTraining` + `AISkirmishPlayer::startTraining` · `unit ready` `AIPlayer::onUnitProduced` ·
+`upgrade … queued` `AIPlayer::buildUpgrade` · `upgrade complete` `Player::onUpgradeCompleted` (computer players only) ·
+`team … queued/launched` `AIPlayer::buildSpecificAITeam` / `checkReadyTeams` · `base defense` `AISkirmishPlayer::buildAIBaseDefenseStructure` ·
+`targeting enemy` `AISkirmishPlayer::acquireEnemy` · `-- status` once per game minute from `AISkirmishSimulation::perFrame`.
+Team names come straight from `SkirmishScripts.scb` (e.g. "China Replace Dozer. 30"), so this doubles as a trace of which
+script teams the AI is actually picking - the tuning signal for `AIData.ini` / `SkirmishScripts.scb` work.

@@ -1006,6 +1006,8 @@ GlobalData::GlobalData()
 	m_aiSkirmishSeed = -1;
 	m_aiSkirmishCameraSeconds = 45;
 	m_aiSkirmishScreenshotSeconds = 0;
+	m_aiSkirmishLog = 1;
+	m_aiSkirmishLogFile.clear();
 	m_simulateReplayJobs = SIMULATE_REPLAYS_SEQUENTIAL;
 
 	for (i = LEVEL_FIRST; i <= LEVEL_LAST; ++i)

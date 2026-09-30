@@ -3863,7 +3863,7 @@ void GameLogic::update()
 
 	/// @todo remove this hack
 	// GeneralsX @feature Claude 30/09/2026 AI-vs-AI watch mode: keep the observer camera on the action.
-	AISkirmishSimulation::updateWatchCamera();
+	AISkirmishSimulation::perFrame();
 
 	if ( m_startNewGame && !TheDisplay->isMoviePlaying())
 	{

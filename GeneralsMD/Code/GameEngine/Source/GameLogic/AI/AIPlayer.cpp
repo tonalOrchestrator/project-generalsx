@@ -32,6 +32,7 @@
 #include "Common/GameMemory.h"
 #include "Common/GameState.h"
 #include "Common/GlobalData.h"
+#include "Common/AISkirmishSimulation.h"
 #include "Common/PerfTimer.h"
 #include "Common/Player.h"
 #include "Common/SpecialPower.h"
@@ -112,6 +113,8 @@ AIPlayer::~AIPlayer()
 // ------------------------------------------------------------------------------------------------
 void AIPlayer::onStructureProduced( Object *factory, Object *bldg )
 {
+	if (bldg && bldg->getTemplate())
+		AISkirmishSimulation::aiLog(m_player, "completed %s", bldg->getTemplate()->getName().str());
 	m_teamDelay = 0; // Cause the update queues & selection to happen immediately.
 	m_buildDelay = 0; // Cause
 	/* Find the info building this. */
@@ -462,6 +465,7 @@ Object *AIPlayer::buildStructureNow(const ThingTemplate *bldgPlan, BuildListInfo
 	// store the object with the build order
 	if (bldg)
 	{
+		AISkirmishSimulation::aiLog(m_player, "build %s (instant) at %.0f,%.0f", bldgPlan->getName().str(), info->getLocation()->x, info->getLocation()->y);
 		Dict d;
 		d.setAsciiString(TheKey_objectName, info->getBuildingName());
 		d.setAsciiString(TheKey_objectScriptAttachment, info->getScript());
@@ -698,6 +702,8 @@ Object *AIPlayer::buildStructureWithDozer(const ThingTemplate *bldgPlan, BuildLi
 		}
 	}
 	TheTerrainVisual->removeAllBibs();	// isLocationLegalToBuild adds bib feedback, turn it off.  jba.
+	if (bldg)
+		AISkirmishSimulation::aiLog(m_player, "build %s with dozer at %.0f,%.0f ($%d)", bldgPlan->getName().str(), pos.x, pos.y, bldgPlan->calcCostToBuild(m_player));
 	return bldg;
 }
 
@@ -1063,6 +1069,8 @@ void AIPlayer::onUnitProduced( Object *factory, Object *unit )
 #endif
 
 	// factory could be null at the start of the game.
+	if (unit && unit->getTemplate())
+		AISkirmishSimulation::aiLog(m_player, "unit ready %s", unit->getTemplate()->getName().str());
 	if (factory == nullptr) {
 		return;
 	}
@@ -1405,6 +1413,7 @@ Bool AIPlayer::startTraining( WorkOrder *order, Bool busyOK, AsciiString teamNam
 		ProductionUpdateInterface *pu = factory->getProductionUpdateInterface();
 		if (pu && pu->queueCreateUnit( order->m_thing, pu->requestUniqueUnitID() )) {
 			order->m_factoryID = factory->getID();
+			AISkirmishSimulation::aiLog(m_player, "train %s at %s for team %s (%d/%d)", order->m_thing->getName().str(), factory->getTemplate() ? factory->getTemplate()->getName().str() : "?", teamName.str(), order->m_numCompleted + 1, order->m_numRequired);
 			if (TheGlobalData->m_debugAI) {
 				AsciiString teamStr = "Queuing ";
 				teamStr.concat(order->m_thing->getName());
@@ -1841,6 +1850,7 @@ void AIPlayer::buildUpgrade(const AsciiString &upgrade)
 			if (!pu) continue;
 			// Try to queue it.
 			if (pu->queueUpgrade(curUpgrade)) {
+				AISkirmishSimulation::aiLog(m_player, "upgrade %s queued at %s", curUpgrade->getUpgradeName().str(), factory->getTemplate() ? factory->getTemplate()->getName().str() : "?");
 				AsciiString msg = TheNameKeyGenerator->keyToName(m_player->getPlayerNameKey());
 				msg.concat(" queues ");
 				msg.concat(curUpgrade->getUpgradeName());
@@ -2518,6 +2528,7 @@ void AIPlayer::buildSpecificAITeam( TeamPrototype *teamProto, Bool priorityBuild
 		if (orders)
 		{
 			/* We have something to build. */
+			AISkirmishSimulation::aiLog(m_player, "team %s queued%s", teamProto->getName().str(), priorityBuild ? " (priority)" : "");
 			TeamInQueue *team = newInstance(TeamInQueue);
 			if (priorityBuild) {
 				// Put in front of queue.
@@ -2824,6 +2835,7 @@ void AIPlayer::checkReadyTeams()
 					*/
 				}
 				// Start the team up.
+				AISkirmishSimulation::aiLog(m_player, "team %s launched%s", team->m_team ? team->m_team->getName().str() : "?", team->m_reinforcement ? " (reinforcement)" : "");
 				removeFrom_TeamReadyQueue(team);
 				if (team->m_reinforcement) {
 					Object *obj = TheGameLogic->findObjectByID(team->m_reinforcementID);

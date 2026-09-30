@@ -41,6 +41,8 @@
 
 #include <cctype>
 #include <cstdio>
+#include <cstdarg>
+#include "Common/Money.h"
 
 //-------------------------------------------------------------------------------------------------
 static SlotState difficultyCharToSlotState(char c)
@@ -417,4 +419,80 @@ void AISkirmishSimulation::updateWatchCamera()
 	fflush(stdout);
 	s_lastHopFrame = frame;
 	s_armed = FALSE;
+}
+
+//-------------------------------------------------------------------------------------------------
+static FILE* s_aiLogFile = nullptr;
+static Bool s_aiLogFileTried = FALSE;
+
+void AISkirmishSimulation::aiLog(const Player* player, const char* fmt, ...)
+{
+	if (!TheGlobalData || !TheGlobalData->m_aiSkirmish || TheGlobalData->m_aiSkirmishLog <= 0)
+		return;
+
+	const UnsignedInt frame = TheGameLogic ? TheGameLogic->getFrame() : 0;
+	const UnsignedInt sec = frame / LOGICFRAMES_PER_SECOND;
+
+	char who[96] = "-";
+	if (player)
+	{
+		// "China#1": side + 1-based start slot, since both AIs are called "Hard Army".
+		AsciiString side = player->getSide();
+		snprintf(who, sizeof(who), "%s#%d", side.isEmpty() ? "?" : side.str(), const_cast<Player*>(player)->getMpStartIndex() + 1);
+	}
+
+	char msg[512];
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(msg, sizeof(msg), fmt, ap);
+	va_end(ap);
+
+	char line[700];
+	snprintf(line, sizeof(line), "AI[%02u:%02u] %-22s %s", sec / 60, sec % 60, who, msg);
+	puts(line);
+	fflush(stdout);
+
+	if (TheGlobalData->m_aiSkirmishLogFile.isNotEmpty())
+	{
+		if (!s_aiLogFile && !s_aiLogFileTried)
+		{
+			s_aiLogFileTried = TRUE;
+			s_aiLogFile = fopen(TheGlobalData->m_aiSkirmishLogFile.str(), "w");
+		}
+		if (s_aiLogFile)
+		{
+			fputs(line, s_aiLogFile);
+			fputc('\n', s_aiLogFile);
+			fflush(s_aiLogFile);
+		}
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+void AISkirmishSimulation::perFrame()
+{
+	if (!TheGlobalData || !TheGlobalData->m_aiSkirmish)
+		return;
+
+	updateWatchCamera();
+
+	// Once-a-minute economy/army snapshot per AI (level >= 1).
+	if (TheGlobalData->m_aiSkirmishLog > 0 && TheGameLogic && TheGameLogic->isInGame() && ThePlayerList)
+	{
+		const UnsignedInt frame = TheGameLogic->getFrame();
+		if (frame != 0 && frame % (60u * LOGICFRAMES_PER_SECOND) == 0)
+		{
+			for (Int i = 0; i < ThePlayerList->getPlayerCount(); ++i)
+			{
+				Player* p = ThePlayerList->getNthPlayer(i);
+				if (!p || !p->isSkirmishAIPlayer())
+					continue;
+				const ScoreKeeper* sk = const_cast<Player*>(p)->getScoreKeeper();
+				aiLog(p, "-- status: $%u  units built %d lost %d killed %d | buildings built %d lost %d destroyed %d",
+					p->getMoney()->countMoney(),
+					const_cast<ScoreKeeper*>(sk)->getTotalUnitsBuilt(), const_cast<ScoreKeeper*>(sk)->getTotalUnitsLost(), const_cast<ScoreKeeper*>(sk)->getTotalUnitsDestroyed(),
+					const_cast<ScoreKeeper*>(sk)->getTotalBuildingsBuilt(), const_cast<ScoreKeeper*>(sk)->getTotalBuildingsLost(), const_cast<ScoreKeeper*>(sk)->getTotalBuildingsDestroyed());
+			}
+		}
+	}
 }

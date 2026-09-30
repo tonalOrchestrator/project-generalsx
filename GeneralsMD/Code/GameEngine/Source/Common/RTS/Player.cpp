@@ -52,6 +52,7 @@
 #include "Common/DisabledTypes.h"
 #include "Common/GameState.h"
 #include "Common/GlobalData.h"
+#include "Common/AISkirmishSimulation.h"
 #include "Common/MessageStream.h"
 #include "Common/MiscAudio.h"
 #include "Common/PerfTimer.h"
@@ -3117,6 +3118,8 @@ Upgrade *Player::addUpgrade( const UpgradeTemplate *upgradeTemplate, UpgradeStat
 */
 void Player::onUpgradeCompleted( const UpgradeTemplate *upgradeTemplate )
 {
+	if (getPlayerType() == PLAYER_COMPUTER && upgradeTemplate)
+		AISkirmishSimulation::aiLog(this, "upgrade complete %s", upgradeTemplate->getUpgradeName().str());
 	for (PlayerTeamList::iterator it = m_playerTeamPrototypes.begin();
 			 it != m_playerTeamPrototypes.end(); ++it)
 	{

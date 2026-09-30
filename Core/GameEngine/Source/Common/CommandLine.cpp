@@ -960,6 +960,26 @@ Int parseAISkirmishScreenshotSeconds(char *args[], int num)
 	return 1;
 }
 
+Int parseAISkirmishLog(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_aiSkirmishLog = atoi(args[1]);
+		return 2;
+	}
+	return 1;
+}
+
+Int parseAISkirmishLogFile(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_aiSkirmishLogFile = args[1];
+		return 2;
+	}
+	return 1;
+}
+
 Int parseAISkirmishMaxMinutes(char *args[], int num)
 {
 	if (num > 1)
@@ -1261,6 +1281,10 @@ static CommandLineParam paramsForStartup[] =
 	{ "-aiskirmishCameraSeconds", parseAISkirmishCameraSeconds },
 	// Watch mode: save an in-engine PNG screenshot (Screenshots/ in the user data dir) every N game seconds (0 = off).
 	{ "-aiskirmishScreenshotSeconds", parseAISkirmishScreenshotSeconds },
+	// Per-AI decision log: 0 = off, 1 (default) = structures/units/upgrades/teams/targeting + a status line per game minute.
+	{ "-aiskirmishLog", parseAISkirmishLog },
+	// Also write the AI log to this file.
+	{ "-aiskirmishLogFile", parseAISkirmishLogFile },
 };
 
 // These Params are parsed during Engine Init before INI data is loaded

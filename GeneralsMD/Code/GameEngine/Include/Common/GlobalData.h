@@ -370,6 +370,8 @@ public:
 	Int m_aiSkirmishSeed;				///< explicit seed (-1 = use m_fixedSeed if set, else clock)
 	Int m_aiSkirmishCameraSeconds;		///< watch mode: seconds between camera hops across AI bases (0 = only at start)
 	Int m_aiSkirmishScreenshotSeconds;	///< watch mode: take an in-engine PNG screenshot every N game seconds (0 = off)
+	Int m_aiSkirmishLog;				///< per-AI decision log level (0 = off, 1 = builds/units/upgrades/teams + minute status)
+	AsciiString m_aiSkirmishLogFile;	///< also append the AI log to this file
 	Int m_simulateReplayJobs; ///< Maximum number of processes to use for simulation, or SIMULATE_REPLAYS_SEQUENTIAL for sequential simulation
 
 	Int m_maxParticleCount;						///< maximum number of particles that can exist
