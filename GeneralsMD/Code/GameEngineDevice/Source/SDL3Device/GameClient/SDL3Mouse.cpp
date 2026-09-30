@@ -378,6 +378,14 @@ void SDL3Mouse::init(void)
 	// GeneralsX @bugfix felipebraz 21/02/2026 Fix mouse click never registering on UI
 	m_inputMovesAbsolute = TRUE;
 
+	// GeneralsX @bugfix Claude 30/09/2026 Mouse::isCursorInside() defaults to true and is only
+	// cleared by a MOUSE_LEAVE event. On Wayland a freshly created window whose pointer is
+	// elsewhere never gets an ENTER *or* a LEAVE, so the engine thinks the cursor is inside at
+	// (0,0) and screen-edge scrolling drags the camera into the top-left map corner forever.
+	// Seed the state from SDL's actual mouse focus; the ENTER/LEAVE events keep it current.
+	if (m_Window && SDL_GetMouseFocus() != m_Window)
+		onCursorMovedOutside();
+
 	// Show cursor by default
 	SDL_ShowCursor();
 	m_IsVisible = true;

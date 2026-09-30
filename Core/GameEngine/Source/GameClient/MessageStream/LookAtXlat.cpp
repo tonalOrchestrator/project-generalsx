@@ -507,6 +507,10 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage 
 					break;
 				case SCROLL_SCREENEDGE:
 					{
+						// GeneralsX @bugfix Claude 30/09/2026 No screen-edge scrolling while the cursor is not in the window
+						// (Mouse still emits a position message every frame, at (0,0) if it never saw the pointer).
+						if (TheMouse && !TheMouse->isCursorInside())
+							break;
 						UnsignedInt height = TheDisplay->getHeight();
 						UnsignedInt width  = TheDisplay->getWidth();
 						if (m_currentPos.y < edgeScrollSize)
