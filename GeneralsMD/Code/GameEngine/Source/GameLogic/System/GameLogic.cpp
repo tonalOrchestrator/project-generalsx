@@ -92,6 +92,7 @@
 #include "GameClient/ParticleSys.h"
 #include "GameClient/TerrainVisual.h"
 #include "GameClient/View.h"
+#include "Common/AISkirmishSimulation.h"
 #include "GameClient/CampaignManager.h"
 #include "GameClient/GameWindowTransitions.h"
 
@@ -1371,7 +1372,8 @@ void GameLogic::tryStartNewGame( Bool loadingSaveGame )
 	//****************************//
 
 	// Get the m_loadScreen for this kind of game
-	if(!m_loadScreen && !(TheRecorder && TheRecorder->getMode() == RECORDERMODETYPE_SIMULATION_PLAYBACK))
+	// GeneralsX @feature Claude 30/09/2026 No load screen in headless AI skirmish either (no local human slot for it to render).
+	if(!m_loadScreen && !(TheRecorder && TheRecorder->getMode() == RECORDERMODETYPE_SIMULATION_PLAYBACK) && !(TheGlobalData->m_headless && TheGlobalData->m_aiSkirmish))
 	{
 		m_loadScreen = getLoadScreen( loadingSaveGame );
 		if(m_loadScreen)
@@ -3860,6 +3862,9 @@ void GameLogic::update()
 	setFPMode();
 
 	/// @todo remove this hack
+	// GeneralsX @feature Claude 30/09/2026 AI-vs-AI watch mode: keep the observer camera on the action.
+	AISkirmishSimulation::updateWatchCamera();
+
 	if ( m_startNewGame && !TheDisplay->isMoviePlaying())
 	{
 	#ifdef DUMP_PERF_STATS

@@ -31,6 +31,7 @@
 #include "Common/FramePacer.h"
 #include "Common/GameEngine.h"
 #include "Common/ReplaySimulation.h"
+#include "Common/AISkirmishSimulation.h"
 
 
 /**
@@ -48,6 +49,11 @@ Int GameMain()
 	if (!TheGlobalData->m_simulateReplays.empty())
 	{
 		exitcode = ReplaySimulation::simulateReplays(TheGlobalData->m_simulateReplays, TheGlobalData->m_simulateReplayJobs);
+	}
+	else if (TheGlobalData->m_aiSkirmish)
+	{
+		// GeneralsX @feature Claude 30/09/2026 AI-vs-AI skirmish runner
+		exitcode = AISkirmishSimulation::run();
 	}
 	else
 	{

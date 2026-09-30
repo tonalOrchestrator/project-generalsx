@@ -1,0 +1,420 @@
+/*
+**	Command & Conquer Generals Zero Hour(tm)
+**	Copyright 2025 Electronic Arts Inc.
+**
+**	This program is free software: you can redistribute it and/or modify
+**	it under the terms of the GNU General Public License as published by
+**	the Free Software Foundation, either version 3 of the License, or
+**	(at your option) any later version.
+**
+**	This program is distributed in the hope that it will be useful,
+**	but WITHOUT ANY WARRANTY; without even the implied warranty of
+**	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**	GNU General Public License for more details.
+**
+**	You should have received a copy of the GNU General Public License
+**	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// GeneralsX @feature Claude 30/09/2026 AI-vs-AI skirmish runner (see header).
+
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
+
+#include "Common/AISkirmishSimulation.h"
+
+#include "Common/GameEngine.h"
+#include "Common/GlobalData.h"
+#include "Common/MessageStream.h"
+#include "Common/Player.h"
+#include "Common/PlayerList.h"
+#include "Common/PlayerTemplate.h"
+#include "Common/RandomValue.h"
+#include "Common/ScoreKeeper.h"
+#include "GameClient/GameClient.h"
+#include "GameClient/MapUtil.h"
+#include "GameLogic/GameLogic.h"
+#include "GameLogic/TerrainLogic.h"
+#include "GameClient/View.h"
+#include "GameClient/Display.h"
+#include "GameLogic/VictoryConditions.h"
+#include "GameNetwork/GameInfo.h"
+
+#include <cctype>
+#include <cstdio>
+
+//-------------------------------------------------------------------------------------------------
+static SlotState difficultyCharToSlotState(char c)
+{
+	switch (toupper((unsigned char)c))
+	{
+		case 'E': return SLOT_EASY_AI;
+		case 'M':
+		case 'N': return SLOT_MED_AI;
+		default:  return SLOT_BRUTAL_AI;	// 'H' / 'B' / anything else = Hard (Brutal)
+	}
+}
+
+static const char* difficultyName(GameDifficulty d)
+{
+	switch (d)
+	{
+		case DIFFICULTY_EASY:   return "easy";
+		case DIFFICULTY_NORMAL: return "normal";
+		case DIFFICULTY_HARD:   return "hard";
+		default:                return "unknown";
+	}
+}
+
+static AsciiString jsonEscape(const AsciiString& in)
+{
+	AsciiString out;
+	for (const char* p = in.str(); *p; ++p)
+	{
+		if (*p == '"' || *p == '\\') { out.concat('\\'); out.concat(*p); }
+		else if (*p == '\n') out.concat("\\n");
+		else out.concat(*p);
+	}
+	return out;
+}
+
+//-------------------------------------------------------------------------------------------------
+AsciiString AISkirmishSimulation::resolveMapName(const AsciiString& wanted)
+{
+	if (!TheMapCache)
+		return AsciiString::TheEmptyString;
+
+	// Exact key first (e.g. "Maps\NorthAmerica\NorthAmerica.map").
+	if (TheMapCache->findMap(wanted))
+		return wanted;
+
+	// Otherwise case-insensitive substring match on key or display name, multiplayer maps only.
+	AsciiString needle = wanted;
+	needle.toLower();
+	AsciiString best;
+	for (MapCache::const_iterator it = TheMapCache->begin(); it != TheMapCache->end(); ++it)
+	{
+		if (!it->second.m_isMultiplayer)
+			continue;
+		AsciiString key = it->first;
+		key.toLower();
+		AsciiString disp;
+		disp.translate(it->second.m_displayName);
+		disp.toLower();
+		if (disp == needle)
+			return it->first;	// exact display-name match wins outright
+		if (best.isEmpty() && (strstr(key.str(), needle.str()) || strstr(disp.str(), needle.str())))
+			best = it->first;
+	}
+	return best;
+}
+
+//-------------------------------------------------------------------------------------------------
+int AISkirmishSimulation::run()
+{
+	const Bool headless = TheGlobalData->m_headless;
+
+	AsciiString mapName = resolveMapName(TheGlobalData->m_aiSkirmishMap);
+	if (mapName.isEmpty())
+	{
+		printf("AISkirmish: map \"%s\" not found. Multiplayer maps in cache:\n", TheGlobalData->m_aiSkirmishMap.str());
+		if (TheMapCache)
+		{
+			for (MapCache::const_iterator it = TheMapCache->begin(); it != TheMapCache->end(); ++it)
+			{
+				if (it->second.m_isMultiplayer)
+				{
+					AsciiString disp;
+					disp.translate(it->second.m_displayName);
+					printf("  %dp  %-32s  %s\n", it->second.m_numPlayers, disp.str(), it->first.str());
+				}
+			}
+		}
+		fflush(stdout);
+		return 1;
+	}
+	const MapMetaData* md = TheMapCache->findMap(mapName);
+
+	// --- build TheSkirmishGameInfo the way the skirmish lobby does, minus the human slot ---
+	if (!TheSkirmishGameInfo)
+		TheSkirmishGameInfo = NEW SkirmishGameInfo;
+	else if (TheSkirmishGameInfo->isInGame())
+		TheSkirmishGameInfo->endGame();
+
+	TheSkirmishGameInfo->init();
+	TheSkirmishGameInfo->clearSlotList();
+	TheSkirmishGameInfo->reset();
+	TheSkirmishGameInfo->setLocalIP(TheSkirmishGameInfo->getSlot(0)->getIP());
+	TheSkirmishGameInfo->enterGame();
+
+	AsciiString slotSpec = TheGlobalData->m_aiSkirmishSlots;
+	if (slotSpec.isEmpty())
+		slotSpec = "H,H";
+
+	Int slotNum = 0;
+	AsciiString token;
+	AsciiString slotSpecScan = slotSpec;	// nextToken consumes
+	while (slotSpecScan.nextToken(&token, ",") && slotNum < MAX_SLOTS)
+	{
+		// token = "<E|M|H>[:<PlayerTemplateName>]"  e.g. "H" or "H:FactionAmericaAirForce"
+		GameSlot s;
+		s.setState(difficultyCharToSlotState(token.getCharAt(0)));
+		s.setColor(-1);
+		s.setStartPos(-1);
+		s.setTeamNumber(-1);
+		Int tmpl = PLAYERTEMPLATE_RANDOM;
+		const char* colon = strchr(token.str(), ':');
+		if (colon && *(colon + 1))
+		{
+			AsciiString factionName(colon + 1);
+			tmpl = ThePlayerTemplateStore->getTemplateNumByName(factionName);
+			if (tmpl < 0)
+			{
+				printf("AISkirmish: unknown faction template \"%s\" in slot %d, using random\n", factionName.str(), slotNum);
+				tmpl = PLAYERTEMPLATE_RANDOM;
+			}
+		}
+		s.setPlayerTemplate(tmpl);
+		TheSkirmishGameInfo->setSlot(slotNum, s);
+		++slotNum;
+	}
+	if (slotNum < 2)
+	{
+		printf("AISkirmish: need at least 2 AI slots (got %d) - use -aiskirmishSlots H,H\n", slotNum);
+		return 1;
+	}
+
+	Int seed = (Int)GetTickCount();
+	if (TheGlobalData->m_aiSkirmishSeed >= 0)
+		seed = TheGlobalData->m_aiSkirmishSeed;
+	else if (TheGlobalData->m_fixedSeed >= 0)
+		seed = TheGlobalData->m_fixedSeed;
+	TheSkirmishGameInfo->setSeed(seed);
+	TheSkirmishGameInfo->setMap(mapName);
+	TheSkirmishGameInfo->setMapCRC(md ? md->m_CRC : 0);
+	TheSkirmishGameInfo->setMapSize(md ? md->m_filesize : 0);
+
+	TheWritableGlobalData->m_mapName = mapName;
+	TheSkirmishGameInfo->startGame(0);
+	InitRandom(seed);
+
+	printf("AISkirmish: map=\"%s\" seed=%d slots=%s headless=%d\n", mapName.str(), seed, slotSpec.str(), headless ? 1 : 0);
+	fflush(stdout);
+
+	if (headless)
+	{
+		// Same injection the headless replay player uses: straight onto the command list,
+		// because the headless loop below never runs TheMessageStream->propagateMessages().
+		GameMessage* msg = newInstance(GameMessage)(GameMessage::MSG_NEW_GAME);
+		msg->appendIntegerArgument(GAME_SKIRMISH);
+		msg->appendIntegerArgument(DIFFICULTY_NORMAL);	// unused for skirmish (per-slot difficulty rules)
+		msg->appendIntegerArgument(0);					// rank points
+		msg->appendIntegerArgument(0);					// no fps cap
+		TheCommandList->appendMessage(msg);
+	}
+	else
+	{
+		// Windowed: mirror the "-file <map>" start path in GameEngine::init - keep the 3D shell
+		// map from starting its own GAME_SHELL (onNewGame refuses while any game is in progress)
+		// and go through TheMessageStream so the first engine frame propagates it normally.
+		TheWritableGlobalData->m_shellMapOn = FALSE;
+		GameMessage* msg = TheMessageStream->appendMessage(GameMessage::MSG_NEW_GAME);
+		msg->appendIntegerArgument(GAME_SKIRMISH);
+		msg->appendIntegerArgument(DIFFICULTY_NORMAL);
+		msg->appendIntegerArgument(0);
+		msg->appendIntegerArgument(30);					// normal game speed so it is watchable
+	}
+
+	const UnsignedInt startMs = GetTickCount();
+	Bool timedOut = FALSE;
+
+	if (!headless)
+	{
+		// Watch mode: let the normal engine loop render it. Returns when the user quits.
+		TheGameEngine->execute();
+	}
+	else
+	{
+		const UnsignedInt maxFrames = (UnsignedInt)TheGlobalData->m_aiSkirmishMaxMinutes * 60u * LOGICFRAMES_PER_SECOND;
+		const UnsignedInt progressInterval = 5u * 60u * LOGICFRAMES_PER_SECOND;
+		Bool started = FALSE;
+		for (;;)
+		{
+			TheGameClient->updateHeadless();
+			TheGameLogic->UPDATE();
+
+			if (TheGameLogic->isInGame())
+			{
+				started = TRUE;
+				const UnsignedInt frame = TheGameLogic->getFrame();
+				if (TheVictoryConditions && TheVictoryConditions->getEndFrame() != 0)
+					break;
+				if (frame != 0 && frame % progressInterval == 0)
+				{
+					const UnsignedInt gameSec = frame / LOGICFRAMES_PER_SECOND;
+					const UnsignedInt realSec = (GetTickCount() - startMs) / 1000;
+					printf("AISkirmish: game %02u:%02u  real %02u:%02u\n", gameSec / 60, gameSec % 60, realSec / 60, realSec % 60);
+					fflush(stdout);
+				}
+				if (maxFrames != 0 && frame >= maxFrames)
+				{
+					timedOut = TRUE;
+					break;
+				}
+			}
+			else if (started)
+			{
+				break;	// game cleared itself
+			}
+		}
+	}
+
+	dumpStats(mapName, seed, timedOut, GetTickCount() - startMs);
+	return 0;
+}
+
+//-------------------------------------------------------------------------------------------------
+void AISkirmishSimulation::dumpStats(const AsciiString& mapName, Int seed, Bool timedOut, UnsignedInt realTimeMs)
+{
+	if (!ThePlayerList || !TheGameLogic)
+		return;
+
+	const UnsignedInt frame = TheGameLogic->getFrame();
+	const UnsignedInt endFrame = TheVictoryConditions ? TheVictoryConditions->getEndFrame() : 0;
+	const PlayerTemplate* civTemplate = ThePlayerTemplateStore->findPlayerTemplate(NAMEKEY("FactionCivilian"));
+
+	AsciiString json;
+	AsciiString tmp;
+	tmp.format("{\"map\":\"%s\",\"seed\":%d,\"frames\":%u,\"endFrame\":%u,\"gameSeconds\":%u,\"realSeconds\":%u,\"timedOut\":%s,\"players\":[",
+		jsonEscape(mapName).str(), seed, frame, endFrame, frame / LOGICFRAMES_PER_SECOND, realTimeMs / 1000, timedOut ? "true" : "false");
+	json.concat(tmp);
+
+	Bool first = TRUE;
+	for (Int i = 0; i < ThePlayerList->getPlayerCount(); ++i)
+	{
+		Player* p = ThePlayerList->getNthPlayer(i);
+		if (!p || p == ThePlayerList->getNeutralPlayer() || !p->getPlayerTemplate())
+			continue;
+		if (p->getPlayerTemplate() == civTemplate || p->isPlayerObserver())
+			continue;
+
+		ScoreKeeper* sk = p->getScoreKeeper();
+		AsciiString disp;
+		disp.translate(p->getPlayerDisplayName());
+
+		tmp.format("%s{\"name\":\"%s\",\"template\":\"%s\",\"side\":\"%s\",\"type\":\"%s\",\"difficulty\":\"%s\","
+			"\"alive\":%s,\"victory\":%s,\"defeated\":%s,"
+			"\"moneyEarned\":%d,\"moneySpent\":%d,"
+			"\"unitsBuilt\":%d,\"unitsLost\":%d,\"unitsDestroyed\":%d,"
+			"\"buildingsBuilt\":%d,\"buildingsLost\":%d,\"buildingsDestroyed\":%d,"
+			"\"techCaptured\":%d,\"factionBuildingsCaptured\":%d}",
+			first ? "" : ",",
+			jsonEscape(disp).str(),
+			jsonEscape(p->getPlayerTemplate()->getName()).str(),
+			jsonEscape(p->getSide()).str(),
+			p->getPlayerType() == PLAYER_COMPUTER ? "ai" : "human",
+			difficultyName(p->getPlayerDifficulty()),
+			p->isPlayerActive() ? "true" : "false",
+			(TheVictoryConditions && TheVictoryConditions->hasAchievedVictory(p)) ? "true" : "false",
+			(TheVictoryConditions && TheVictoryConditions->hasBeenDefeated(p)) ? "true" : "false",
+			sk->getTotalMoneyEarned(), sk->getTotalMoneySpent(),
+			sk->getTotalUnitsBuilt(), sk->getTotalUnitsLost(), sk->getTotalUnitsDestroyed(),
+			sk->getTotalBuildingsBuilt(), sk->getTotalBuildingsLost(), sk->getTotalBuildingsDestroyed(),
+			sk->getTotalTechBuildingsCaptured(), sk->getTotalFactionBuildingsCaptured());
+		json.concat(tmp);
+		first = FALSE;
+	}
+	json.concat("]}");
+
+	printf("AISKIRMISH_RESULT %s\n", json.str());
+	fflush(stdout);
+
+	if (TheGlobalData->m_aiSkirmishStatsFile.isNotEmpty())
+	{
+		FILE* f = fopen(TheGlobalData->m_aiSkirmishStatsFile.str(), "w");
+		if (f)
+		{
+			fprintf(f, "%s\n", json.str());
+			fclose(f);
+		}
+		else
+		{
+			printf("AISkirmish: could not write stats file %s\n", TheGlobalData->m_aiSkirmishStatsFile.str());
+		}
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+void AISkirmishSimulation::updateWatchCamera()
+{
+	if (!TheGlobalData->m_aiSkirmish || TheGlobalData->m_headless)
+		return;
+	if (!TheGameLogic || !TheGameLogic->isInGame() || !TheTacticalView || !TheTerrainLogic || !ThePlayerList)
+		return;
+
+	// Intro::doPostIntro() sets m_breakTheMovie, which W3DDisplay::draw treats as "render nothing".
+	// It is normally cleared by MainMenuInit / ShellGameLoadScreen, neither of which runs on this
+	// path (shell bypassed, multiplayer load screen), so the window stayed black. Clear it here.
+	if (TheGlobalData->m_breakTheMovie)
+		TheWritableGlobalData->m_breakTheMovie = FALSE;
+
+	static UnsignedInt s_lastHopFrame = 0;
+	static Int s_nextAI = 0;
+	static Bool s_armed = FALSE;
+
+	const UnsignedInt frame = TheGameLogic->getFrame();
+
+	// Optional periodic in-engine screenshot (evidence / timelapse). Taken from the logic update like the
+	// PrintScreen meta-event path, so it captures the last presented frame.
+	const UnsignedInt shotInterval = (UnsignedInt)TheGlobalData->m_aiSkirmishScreenshotSeconds * LOGICFRAMES_PER_SECOND;
+	if (shotInterval != 0 && frame >= 2 * LOGICFRAMES_PER_SECOND && frame % shotInterval == 0 && TheDisplay)
+	{
+		TheDisplay->takeScreenShot(SCREENSHOT_PNG);
+		printf("AISkirmish: screenshot at frame %u\n", frame);
+		fflush(stdout);
+	}
+
+	const UnsignedInt hopInterval = (UnsignedInt)TheGlobalData->m_aiSkirmishCameraSeconds * LOGICFRAMES_PER_SECOND;
+
+	if (frame < 2)
+	{
+		s_armed = TRUE;			// new game: hop once the engine's own start-of-game camera setup is done
+		s_lastHopFrame = 0;
+		s_nextAI = 0;
+	}
+	if (s_armed)
+	{
+		if (frame < LOGICFRAMES_PER_SECOND)	// let load/initial camera placement settle first
+			return;
+	}
+	else if (hopInterval == 0 || frame - s_lastHopFrame < hopInterval)
+		return;
+
+	// Collect the AI players in order.
+	Player* ais[MAX_PLAYER_COUNT];
+	Int numAI = 0;
+	for (Int i = 0; i < ThePlayerList->getPlayerCount() && numAI < MAX_PLAYER_COUNT; ++i)
+	{
+		Player* p = ThePlayerList->getNthPlayer(i);
+		// isSkirmishAIPlayer excludes the civilian/neutral computer players that share start index 0
+		if (p && p->isSkirmishAIPlayer() && p->isPlayerActive() && p->getMpStartIndex() >= 0)
+			ais[numAI++] = p;
+	}
+	if (numAI == 0)
+		return;
+
+	Player* target = ais[s_nextAI % numAI];
+	s_nextAI = (s_nextAI + 1) % numAI;
+
+	AsciiString wpName;
+	wpName.format("Player_%d_Start", target->getMpStartIndex() + 1);	// start waypoints are 1-based
+	Waypoint* wp = TheTerrainLogic->getWaypointByName(wpName);
+	if (!wp)
+		return;
+
+	Coord3D pos = *wp->getLocation();
+	TheTacticalView->lookAt(&pos);
+	printf("AISkirmish: camera -> %s (%s) at %.0f,%.0f frame %u\n", wpName.str(), target->getPlayerTemplate() ? target->getPlayerTemplate()->getName().str() : "?", pos.x, pos.y, frame);
+	fflush(stdout);
+	s_lastHopFrame = frame;
+	s_armed = FALSE;
+}

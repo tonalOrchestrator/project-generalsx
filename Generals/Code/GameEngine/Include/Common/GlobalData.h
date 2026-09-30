@@ -359,6 +359,16 @@ public:
 	AsciiString m_loadSaveGame;				///< If this is specified, load a save game file from the command-line
 
 	std::vector<AsciiString> m_simulateReplays; ///< If not empty, simulate this list of replays and exit.
+
+	// GeneralsX @feature Claude 30/09/2026 AI-vs-AI skirmish runner (-aiskirmish <map>). See AISkirmishSimulation.
+	Bool m_aiSkirmish;					///< run an AI-only skirmish instead of the shell
+	AsciiString m_aiSkirmishMap;		///< map key or display-name substring
+	AsciiString m_aiSkirmishSlots;		///< "H,H" = two Hard AIs; E/M/H per slot, optional ":TemplateName"
+	AsciiString m_aiSkirmishStatsFile;	///< if set, JSON stats are also written here
+	Int m_aiSkirmishMaxMinutes;			///< headless safety cap in game minutes (0 = none)
+	Int m_aiSkirmishSeed;				///< explicit seed (-1 = use m_fixedSeed if set, else clock)
+	Int m_aiSkirmishCameraSeconds;		///< watch mode: seconds between camera hops across AI bases (0 = only at start)
+	Int m_aiSkirmishScreenshotSeconds;	///< watch mode: take an in-engine PNG screenshot every N game seconds (0 = off)
 	Int m_simulateReplayJobs; ///< Maximum number of processes to use for simulation, or SIMULATE_REPLAYS_SEQUENTIAL for sequential simulation
 
 	Int m_maxParticleCount;						///< maximum number of particles that can exist

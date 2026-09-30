@@ -1014,6 +1014,14 @@ GlobalData::GlobalData()
 	m_pendingFile.clear();
 
 	m_simulateReplays.clear();
+	m_aiSkirmish = FALSE;
+	m_aiSkirmishMap.clear();
+	m_aiSkirmishSlots = "H,H";
+	m_aiSkirmishStatsFile.clear();
+	m_aiSkirmishMaxMinutes = 90;
+	m_aiSkirmishSeed = -1;
+	m_aiSkirmishCameraSeconds = 45;
+	m_aiSkirmishScreenshotSeconds = 0;
 	m_simulateReplayJobs = SIMULATE_REPLAYS_SEQUENTIAL;
 
 	for (i = LEVEL_FIRST; i <= LEVEL_LAST; ++i)

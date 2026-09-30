@@ -1282,9 +1282,10 @@ void MultiPlayerLoadScreen::init( GameInfo *game )
 	m_loadScreen->winHide(FALSE);
 	m_loadScreen->winBringToTop();
 	m_mapPreview = TheWindowManager->winGetWindowFromId( m_loadScreen,TheNameKeyGenerator->nameToKey( "MultiplayerLoadScreen.wnd:WinMapPreview"));
-	GameSlot *lSlot = game->getSlot(game->getLocalSlotNum());
+	// GeneralsX @bugfix Claude 30/09/2026 getLocalSlotNum() is -1 when there is no human slot (AI-only skirmish); treat as observer.
+	GameSlot *lSlot = (game->getLocalSlotNum() >= 0) ? game->getSlot(game->getLocalSlotNum()) : nullptr;
 	const PlayerTemplate* pt;
-	if (lSlot->getPlayerTemplate() >= 0)
+	if (lSlot && lSlot->getPlayerTemplate() >= 0)
 		pt = ThePlayerTemplateStore->getNthPlayerTemplate(lSlot->getPlayerTemplate());
 	else
 		pt = ThePlayerTemplateStore->findPlayerTemplate( TheNameKeyGenerator->nameToKey("FactionObserver") );

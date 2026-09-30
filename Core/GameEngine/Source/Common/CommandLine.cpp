@@ -896,6 +896,80 @@ Int parseRunAhead( char *args[], Int num )
 #endif
 
 
+// GeneralsX @feature Claude 30/09/2026 AI-vs-AI skirmish runner
+Int parseAISkirmish(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_aiSkirmish = TRUE;
+		TheWritableGlobalData->m_aiSkirmishMap = args[1];
+		TheWritableGlobalData->m_playIntro = FALSE;
+		TheWritableGlobalData->m_playSizzle = FALSE;
+		return 2;
+	}
+	return 1;
+}
+
+Int parseAISkirmishSlots(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_aiSkirmishSlots = args[1];
+		return 2;
+	}
+	return 1;
+}
+
+Int parseAISkirmishStats(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_aiSkirmishStatsFile = args[1];
+		return 2;
+	}
+	return 1;
+}
+
+Int parseAISkirmishSeed(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_aiSkirmishSeed = atoi(args[1]);
+		return 2;
+	}
+	return 1;
+}
+
+Int parseAISkirmishCameraSeconds(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_aiSkirmishCameraSeconds = atoi(args[1]);
+		return 2;
+	}
+	return 1;
+}
+
+Int parseAISkirmishScreenshotSeconds(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_aiSkirmishScreenshotSeconds = atoi(args[1]);
+		return 2;
+	}
+	return 1;
+}
+
+Int parseAISkirmishMaxMinutes(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_aiSkirmishMaxMinutes = atoi(args[1]);
+		return 2;
+	}
+	return 1;
+}
+
 Int parseSeed(char *args[], int num)
 {
 	if (num > 1)
@@ -1169,6 +1243,24 @@ static CommandLineParam paramsForStartup[] =
 	// (If you have 4 cores, call it with -jobs 4)
 	// If you do not call this, all replays will be simulated in sequence in the same process.
 	{ "-jobs", parseJobs },
+
+	// GeneralsX @feature Claude 30/09/2026
+	// Run an AI-only skirmish on the given map (map key or display-name substring, e.g. "north america").
+	// Combine with -headless to simulate as fast as possible and print AISKIRMISH_RESULT JSON at the end,
+	// or without -headless to watch it as the observer. -seed N makes it reproducible.
+	{ "-aiskirmish", parseAISkirmish },
+	// Slot spec: comma list of E|M|H (easy/medium/hard) with optional ":PlayerTemplateName". Default "H,H".
+	{ "-aiskirmishSlots", parseAISkirmishSlots },
+	// Also write the result JSON to this file.
+	{ "-aiskirmishStats", parseAISkirmishStats },
+	// Headless safety cap in game minutes (default 90, 0 = unlimited).
+	{ "-aiskirmishMaxMinutes", parseAISkirmishMaxMinutes },
+	// Explicit game seed for reproducible matches (GameData.ini FixedSeed overrides -seed after parsing, so this is the reliable one).
+	{ "-aiskirmishSeed", parseAISkirmishSeed },
+	// Watch mode: seconds between automatic camera hops between AI bases (default 45, 0 = only at start).
+	{ "-aiskirmishCameraSeconds", parseAISkirmishCameraSeconds },
+	// Watch mode: save an in-engine PNG screenshot (Screenshots/ in the user data dir) every N game seconds (0 = off).
+	{ "-aiskirmishScreenshotSeconds", parseAISkirmishScreenshotSeconds },
 };
 
 // These Params are parsed during Engine Init before INI data is loaded
