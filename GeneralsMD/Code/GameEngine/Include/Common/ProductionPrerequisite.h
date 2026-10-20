@@ -96,6 +96,11 @@ public:
 
 	Int getAllPossibleBuildFacilityTemplates(const ThingTemplate* tmpls[], Int maxtmpls) const;
 
+// GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
+	/// Read-only access to the required units (used by the autopilot planner to find a missing prerequisite building).
+	Int getUnitPrereqCount() const { return (Int)m_prereqUnits.size(); }
+	const ThingTemplate *getUnitPrereqTemplate(Int i) const { return m_prereqUnits[i].unit; }
+
 private:
 
 	enum

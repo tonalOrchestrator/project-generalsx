@@ -30,12 +30,17 @@ per-minute state CRCs, per-player stats and in-engine screenshots, and `compare.
 Verified: Linux and Windows stay in sync for headless+headless and windowed+windowed matches.
 Docs: `tools/netplay/README.md`. Code: `Core/GameEngine/Source/Common/LanNetplayHarness.cpp`.
 
-### Autopilot (build-only AI for a human player) - wip
+### Autopilot (build-only AI for a human player) - done (v1)
 Hotkey Ctrl+Shift+A toggles, Ctrl+Shift+L cycles the level (Easy / Normal / Hard = the skirmish AI skill states). Goes through the
 network command stream (`MSG_SET_AUTOPILOT`), so every machine flips at the same logic frame; verified in sync across
 Linux/Windows with on, off, on-at-Hard. Attaches a skirmish AI to the player with army/attack logic disabled, adopts the
 structures the player already owns, and shows "Autopilot: ON (Hard)" on screen.
-**Not yet doing its job:** in test runs the autopilot-enabled humans did not place new structures (see backlog).
+Verified Linux+Windows in sync with on / off / on-at-Hard (6 game-minutes, two humans on autopilot at once): the autopilot bases
+grew from 1 to 7-10 buildings and an income started (supply workers/trucks), and growth paused while it was off.
+How it builds: a computer player gets its build order from the skirmish *scripts* (most build-list entries are marked
+`AutomaticallyBuild = No`), a human has none, so `AISkirmishPlayer::autopilotQueueNextStructure` plays that role: cheapest missing
+entry first, per-level cap on duplicates (Easy 1, Normal 2, Hard 3), power plants only when short of power, and missing
+prerequisite buildings (the supply center/stash is not in the list; it can itself need a power plant) are queued recursively.
 
 ### Cheat mode - done, untested in play
 `-cheats` (needed on every machine) enables Ctrl+Shift+M (+$10,000) and Ctrl+Shift+G (+1 general's point) through the
@@ -53,6 +58,8 @@ cheating unnoticed.
   re-verify): windowed+windowed on Linux and Windows is in sync.
 - `AISkirmishPlayer::adjustBuildList` destroys the player's start command center (an AI gets it rebuilt from its list).
   Autopilot adoption must not call it with the default flag.
+- Why autopilot built nothing at first: (1) that command-center destruction, (2) human players have no skirmish scripts and
+  almost every build-list entry is script-triggered, (3) prerequisite buildings (supply center/stash) are not in the list.
 - `macos_2p_vanilla_map.rep` fails at frame 0 with the same CRC on Linux and Windows (a replay/map issue, not platform).
 
 ---
@@ -60,10 +67,12 @@ cheating unnoticed.
 ## Backlog
 
 ### Autopilot
-- [ ] Make the build assist actually place structures for a human (investigate why `doBaseBuilding` produces nothing: dozer
-      selection, build-list placement around the human's layout, starting money).
+- [ ] Prerequisite buildings are sometimes retried several times (20 s each) before a dozer places them; find out why placement
+      fails (ring position, busy GLA workers) and pick a better first location.
+- [ ] Re-adopt manual buildings on toggle-on (done for entries with the same template; extra structures the player built that are
+      not in the list are ignored).
 - [ ] Supply trucks / dozers via the assist; decide on upgrades and general's skills (currently left to the player).
-- [ ] The level should change behaviour (build speed / aggression), not just the difficulty flag.
+- [ ] The level only changes the duplicate cap today; make it change build pace and what tech it goes for.
 - [ ] `getPlayerDifficulty()` returns the attached AI's difficulty: check nothing gameplay-visible changes for the human.
 - [ ] Control-bar toggle button and an options entry instead of hotkeys only.
 - [ ] Autopilot state in saved games (currently not saved).

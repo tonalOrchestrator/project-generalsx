@@ -353,6 +353,7 @@ public:
 	Bool isUnderConstruction() {return m_underConstruction;}
 	void setUnderConstruction(Bool construction) { m_underConstruction=construction;}
 	void markPriorityBuild() {m_priorityBuild = true; }
+	void clearPriorityBuild() {m_priorityBuild = false; }	///< GeneralsX: lets the autopilot planner give up on a stuck entry
 	Bool isPriorityBuild() {return m_priorityBuild;}
 	Bool isAutomaticBuild() {return m_automaticallyBuild;}
 

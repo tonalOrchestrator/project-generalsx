@@ -53,7 +53,9 @@ public:	// AIPlayer interface methods.
 
 	virtual void newMap() override;											///< New map loaded call.
 
-	virtual void adoptExistingBase() override;						///< GeneralsX: claim the human player's existing structures for the build list
+	virtual void adoptExistingBase() override;
+	Bool autopilotQueueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth);
+	void autopilotQueueNextStructure();	///< GeneralsX: autopilot's build planner (the skirmish scripts do this for computer players)						///< GeneralsX: claim the human player's existing structures for the build list
 
 	/// Invoked when a unit I am training comes into existence
 	virtual void onUnitProduced( Object *factory, Object *unit ) override;
@@ -116,4 +118,9 @@ protected:
 	UnsignedInt m_frameToCheckEnemy;
 	Player			*m_currentEnemy;
 
+
+private:
+	BuildListInfo *m_autopilotPending = nullptr;		///< GeneralsX: build-list entry the autopilot queued and is waiting on
+	UnsignedInt m_autopilotPendingFrame = 0;
+	Int m_autopilotRing = 0;							///< GeneralsX: next slot on the ring around the base for a prerequisite structure
 };

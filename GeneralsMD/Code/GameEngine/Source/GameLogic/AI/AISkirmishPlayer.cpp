@@ -961,6 +961,7 @@ void AISkirmishPlayer::update()
 	{
 		// Autopilot: build-only AI for a human player: keep the base growing and the economy running, but no army
 		// teams, no attack waves, no skills or upgrades (those stay the player's decisions).
+		autopilotQueueNextStructure();
 		doBaseBuilding();
 		checkReadyTeams();
 		checkQueuedTeams();
@@ -976,6 +977,191 @@ void AISkirmishPlayer::update()
 }
 
 // GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
+// GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
+// A computer player gets its build order from the skirmish scripts, which queue structures one at a time through
+// buildSpecificAIBuilding(). A human with autopilot has no such scripts, so this picks the next structure itself:
+// walk the faction's build list in order and queue the first one that is missing, allowed and affordable right now.
+// The autopilot level (the AI skill state) caps how many of each structure it will build; power plants are added
+// only when the base is short of power. processBaseBuilding() then places it with a dozer like any other build.
+void AISkirmishPlayer::autopilotQueueNextStructure()
+{
+	if (m_autopilotPending)
+	{
+		if (m_autopilotPending->getObjectID() != INVALID_ID)
+			m_autopilotPending = nullptr;	// placed; processBaseBuilding() owns it from here
+		else if (TheGameLogic->getFrame() - m_autopilotPendingFrame < 20 * LOGICFRAMES_PER_SECOND)
+			return;	// still waiting for a dozer to start it
+		else
+		{
+			// Gave up on it (no legal spot, no money, no dozer): drop the entry for good and plan something else.
+			m_autopilotPending->clearPriorityBuild();
+			m_autopilotPending->setNumRebuilds(0);
+			m_autopilotPending = nullptr;
+		}
+	}
+	if (!m_readyToBuildStructure)
+		return;
+
+	const Int cap = (m_difficulty == DIFFICULTY_EASY) ? 1 : ((m_difficulty == DIFFICULTY_NORMAL) ? 2 : 3);
+	const Bool underPowered = !m_player->getEnergy()->hasSufficientPower();
+	const UnsignedInt money = m_player->getMoney()->countMoney();
+
+	// Candidates: entries that are missing, allowed by the level cap and the power rule. Cheapest first, so the basic
+	// economy and production come before tech and superweapons (which are first in some factions' lists).
+	BuildListInfo *pick = nullptr;
+	UnsignedInt pickCost = 0;
+	BuildListInfo *blocked = nullptr;	// cheapest candidate that is only missing a prerequisite building
+	UnsignedInt blockedCost = 0;
+	Object *dozer = nullptr;
+
+	for (BuildListInfo *info = m_player->getBuildList(); info; info = info->getNext())
+	{
+		const AsciiString name = info->getTemplateName();
+		if (name.isEmpty() || !info->isBuildable())
+			continue;
+		const ThingTemplate *plan = TheThingFactory->findTemplate(name);
+		if (!plan || plan->isKindOf(KINDOF_FS_BASE_DEFENSE))
+			continue;
+		if (TheGameLogic->findObjectByID(info->getObjectID()))
+			continue;	// this entry is built
+
+		const Bool isPower = plan->isKindOf(KINDOF_FS_POWER) && !plan->isKindOf(KINDOF_CASH_GENERATOR);
+		if (isPower != underPowered)
+			continue;	// short of power: only power plants; otherwise no extra ones
+
+		Int have = 0;
+		for (BuildListInfo *other = m_player->getBuildList(); other; other = other->getNext())
+			if (other->getTemplateName() == name && TheGameLogic->findObjectByID(other->getObjectID()))
+				++have;
+		if (!isPower && have >= cap)
+			continue;
+
+		if (!dozer)
+			dozer = findDozer(info->getLocation());
+		if (!dozer)
+		{
+			queueDozer();
+			return;
+		}
+		const UnsignedInt cost = plan->calcCostToBuild(m_player);
+		const CanMakeType canMake = TheBuildAssistant->canMakeUnit(dozer, plan);
+		if (canMake == CANMAKE_OK)
+		{
+			if (isLocationSafe(info->getLocation(), plan) && (!pick || cost < pickCost))
+			{
+				pick = info;
+				pickCost = cost;
+			}
+		}
+		else if (canMake == CANMAKE_NO_PREREQ && (!blocked || cost < blockedCost))
+		{
+			blocked = info;
+			blockedCost = cost;
+		}
+	}
+	if (!pick && blocked)
+	{
+		// Nothing is buildable yet: queue the first missing prerequisite building of the cheapest blocked candidate.
+		const ThingTemplate *plan = TheThingFactory->findTemplate(blocked->getTemplateName());
+		if (plan && autopilotQueueMissingPrerequisite(plan, money, 0))
+			return;
+	}
+
+	if (pick)
+	{
+		pick->markPriorityBuild();
+		m_autopilotPending = pick;
+		m_autopilotPendingFrame = TheGameLogic->getFrame();
+		m_buildDelay = 0;
+		if (TheGlobalData->m_lanHarness)
+		{
+			printf("NETPLAY autopilot queues %s cost=%u money=%u (frame %u)\n", pick->getTemplateName().str(), pickCost, money, TheGameLogic->getFrame());
+			fflush(stdout);
+		}
+	}
+}
+
+// Queues the first prerequisite structure of 'plan' that the player lacks. Returns true if one was queued.
+Bool AISkirmishPlayer::autopilotQueueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth)
+{
+	if (depth > 4)
+		return FALSE;
+	Object *dozer = findDozer(&m_baseCenter);
+	if (!dozer)
+		return FALSE;
+
+	for (Int i = 0; i < plan->getPrereqCount(); ++i)
+	{
+		const ProductionPrerequisite *prereq = plan->getNthPrereq(i);
+		if (prereq->isSatisfied(m_player))
+			continue;
+		for (Int j = 0; j < prereq->getUnitPrereqCount(); ++j)
+		{
+			const ThingTemplate *need = prereq->getUnitPrereqTemplate(j);
+			if (!need || !need->isKindOf(KINDOF_STRUCTURE))
+				continue;
+
+			// Already owned, or already queued/under way (any build-list entry for it that has not failed)?
+			Bool have = false;
+			for (Object *obj = TheGameLogic->getFirstObject(); obj && !have; obj = obj->getNextObject())
+				if (obj->getControllingPlayer() == m_player && obj->getTemplate()->isEquivalentTo(need))
+					have = true;
+			for (BuildListInfo *info = m_player->getBuildList(); info && !have; info = info->getNext())
+				if (info->getTemplateName() == need->getName() && info->isPriorityBuild() && info->getObjectID() == INVALID_ID)
+					have = true;	// already queued and waiting for a dozer
+			if (have)
+				continue;
+
+			// The prerequisite may itself be blocked (a supply center needs a power plant, say): go down a level first.
+			if (TheBuildAssistant->canMakeUnit(dozer, need) == CANMAKE_NO_PREREQ)
+			{
+				if (autopilotQueueMissingPrerequisite(need, money, depth + 1))
+					return TRUE;
+				continue;
+			}
+			if (money < need->calcCostToBuild(m_player))
+				return FALSE;	// cannot afford it yet; wait for money instead of queuing it
+
+			// Prefer an unbuilt entry the faction's build list already has for it (the AI's own layout position).
+			BuildListInfo *existing = nullptr;
+			for (BuildListInfo *info = m_player->getBuildList(); info && !existing; info = info->getNext())
+				if (info->getTemplateName() == need->getName() && info->isBuildable() && !info->isPriorityBuild() &&
+					!TheGameLogic->findObjectByID(info->getObjectID()))
+					existing = info;
+			if (existing)
+			{
+				existing->markPriorityBuild();
+				m_autopilotPending = existing;
+				m_autopilotPendingFrame = TheGameLogic->getFrame();
+				m_buildDelay = 0;
+				if (TheGlobalData->m_lanHarness)
+				{
+					printf("NETPLAY autopilot queues prerequisite %s for %s (list entry, frame %u)\n", need->getName().str(), plan->getName().str(), TheGameLogic->getFrame());
+					fflush(stdout);
+				}
+				return TRUE;
+			}
+
+			// Somewhere on the ring around the base; the dozer placement search adjusts it to a legal spot.
+			const Real angle = (Real)(m_autopilotRing++ % 8) * (PI / 4);
+			Coord3D pos = m_baseCenter;
+			pos.x += WWMath::CosTrig(angle) * (m_baseRadius * 0.8f + 60.0f);
+			pos.y += WWMath::SinTrig(angle) * (m_baseRadius * 0.8f + 60.0f);
+			m_player->addToPriorityBuildList(need->getName(), &pos, need->getPlacementViewAngle());
+			m_autopilotPending = m_player->getBuildList();	// the new entry is the list head
+			m_autopilotPendingFrame = TheGameLogic->getFrame();
+			m_buildDelay = 0;
+			if (TheGlobalData->m_lanHarness)
+			{
+				printf("NETPLAY autopilot queues prerequisite %s for %s (frame %u)\n", need->getName().str(), plan->getName().str(), TheGameLogic->getFrame());
+				fflush(stdout);
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 void AISkirmishPlayer::adoptExistingBase()
 {
 	// A human player normally has no build list. Use this faction's skirmish build list, laid out around the
@@ -1035,6 +1221,8 @@ void AISkirmishPlayer::adoptExistingBase()
 	m_structureTimer = 1;
 	m_buildDelay = 0;
 	m_teamDelay = 0;
+	m_autopilotPending = nullptr;
+	m_autopilotPendingFrame = 0;
 }
 
 //----------------------------------------------------------------------------------------------------------
