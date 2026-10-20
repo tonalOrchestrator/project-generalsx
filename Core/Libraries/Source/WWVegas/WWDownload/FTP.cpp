@@ -35,6 +35,8 @@
 #ifdef _WIN32
 #include <process.h>
 #include <io.h>
+// GeneralsX @build Claude 20/10/2026 MinGW only declares _S_IWRITE/_S_IREAD via <sys/stat.h>
+#include <sys/stat.h>
 #include "winsock.h"
 #include <direct.h>
 #else

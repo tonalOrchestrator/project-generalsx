@@ -35,7 +35,9 @@
 //#include "GameNetwork/NetworkInterface.h"
 #include "GameNetwork/udp.h"
 
-#if defined(_WIN32) && defined(_MSC_VER)
+// GeneralsX @build Claude 20/10/2026 MinGW's winsock headers do not declare socklen_t either
+// (an identical typedef redeclaration is legal C++, so this is safe if a header does).
+#if defined(_WIN32)
 typedef int socklen_t;
 #endif
 

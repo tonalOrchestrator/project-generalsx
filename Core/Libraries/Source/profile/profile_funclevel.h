@@ -49,7 +49,8 @@
 #include <cstdint>
 
 // GeneralsX @bugfix fbraz 03/02/2026 Use guard macro to prevent typedef conflicts
-#if !defined(_MSC_VER) && !defined(_INT64_TYPES_DEFINED)
+// GeneralsX @build Claude 20/10/2026 MinGW build defines __int64/_int64 as macros (-D), so the typedefs are invalid there
+#if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(_INT64_TYPES_DEFINED)
 	#define _INT64_TYPES_DEFINED
 	typedef int64_t __int64;
 	typedef int64_t _int64;
