@@ -28,6 +28,7 @@
 // Description: Lan Game Options Menu
 ///////////////////////////////////////////////////////////////////////////////////////
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
+#include "Common/LanNetplayHarness.h"
 
 
 #include "Common/PlayerTemplate.h"
@@ -385,6 +386,9 @@ void StartPressed()
 
 void LANEnableStartButton(Bool enabled)
 {
+// GeneralsX @feature Claude 20/10/2026 Headless netplay harness: the menu windows do not exist.
+	if (LanNetplayHarness::isActive())
+		return;
 	buttonStart->winEnable(enabled);
 	buttonSelectMap->winEnable(enabled);
 }
@@ -661,6 +665,9 @@ static void handleLimitSuperweaponsClick()
 
 void lanUpdateSlotList()
 {
+// GeneralsX @feature Claude 20/10/2026 Headless netplay harness: skip UI work, the harness polls the game state.
+	if (LanNetplayHarness::isActive())
+		return;
 	if(!AreSlotListUpdatesEnabled() || s_isIniting)
 		return;
 	UpdateSlotList( TheLAN->GetMyGame(), comboBoxPlayer, comboBoxColor,

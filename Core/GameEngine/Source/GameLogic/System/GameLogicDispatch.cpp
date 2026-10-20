@@ -499,6 +499,45 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 			onEnableRetaliationMode(msg);
 			break;
 		}
+// GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
+// GeneralsX @feature Claude 20/10/2026 Opt-in cheat mode (-cheats): give money / general points.
+		case GameMessage::MSG_CHEAT_GIVE:
+		{
+			// Applied only where -cheats is set. A machine without the flag skips it, which desyncs the game
+			// visibly instead of letting anyone cheat unnoticed.
+			if (TheGlobalData->m_allowCheats)
+			{
+				if (Player *cheatPlayer = getMessagePlayer(msg))
+				{
+					const Int money = msg->getArgument(0)->integer;
+					const Int points = msg->getArgument(1)->integer;
+					if (money > 0)
+						cheatPlayer->getMoney()->deposit((UnsignedInt)money, TRUE, FALSE);
+					if (points > 0)
+						cheatPlayer->addSciencePurchasePoints(points);
+				}
+			}
+			break;
+		}
+		case GameMessage::MSG_SET_AUTOPILOT:
+		{
+			if (Player *autopilotPlayer = getMessagePlayer(msg))
+			{
+				const Int level = msg->getArgument(0)->integer;
+				autopilotPlayer->setAutopilot(level);
+				if (TheGlobalData->m_lanHarness)
+				{
+					printf("NETPLAY autopilot applied player=%d level=%d -> now %d (frame %u)\n", msg->getPlayerIndex(), level, autopilotPlayer->getAutopilotLevel(), getFrame());
+					fflush(stdout);
+				}
+				if (autopilotPlayer == ThePlayerList->getLocalPlayer() && TheInGameUI)
+				{
+					const wchar_t *names[] = { L"Autopilot: OFF", L"Autopilot: ON (Easy)", L"Autopilot: ON (Normal)", L"Autopilot: ON (Hard)" };
+					TheInGameUI->messageNoFormat(UnicodeString(names[level < 0 ? 0 : (level > 3 ? 3 : level)]));
+				}
+			}
+			break;
+		}
 		case GameMessage::MSG_DO_WEAPON_AT_LOCATION:
 		{
 			onDoWeaponAtLocation(msg, currentlySelectedGroup);

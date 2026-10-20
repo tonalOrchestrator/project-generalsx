@@ -310,6 +310,7 @@ Player::Player( Int playerIndex )
 	m_upgradeList = nullptr;
 	m_pBuildList = nullptr;
 	m_ai = nullptr;
+	m_autopilotLevel = 0;
 	m_resourceGatheringManager = nullptr;
 	m_defaultTeam = nullptr;
 	m_radarCount = 0;
@@ -383,6 +384,7 @@ void Player::init(const PlayerTemplate* pt)
 
 	deleteInstance(m_ai);
 	m_ai = nullptr;
+	m_autopilotLevel = 0;
 
 	deleteInstance(m_resourceGatheringManager);
 	m_resourceGatheringManager = nullptr;
@@ -739,6 +741,7 @@ void Player::newMap()
 void Player::setPlayerType(PlayerType t, Bool skirmish)
 {
 	m_playerType = t;
+	m_autopilotLevel = 0;
 
 	deleteInstance(m_ai);
 	m_ai = nullptr;
@@ -775,6 +778,48 @@ void Player::deletePlayerAI()
 {
 	deleteInstance(m_ai);
 	m_ai = nullptr;
+}
+
+//=============================================================================
+// GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
+// Attaches (level 1-3 = easy/normal/hard) or detaches (0) a build-only skirmish AI on a human player. The AI
+// adopts the structures the player already owns, then keeps building the rest of its base for them. It never
+// builds army teams and never attacks. Called from the MSG_SET_AUTOPILOT logic command, so it runs on every
+// machine at the same logic frame.
+void Player::setAutopilot(Int level)
+{
+	if (m_playerType != PLAYER_HUMAN)
+	{
+		if (TheGlobalData->m_lanHarness)
+		{
+			printf("NETPLAY autopilot ignored: player type %d is not human\n", (int)m_playerType);
+			fflush(stdout);
+		}
+		return;	// computer players already have their own AI
+	}
+
+	if (level <= 0)
+	{
+		if (m_autopilotLevel > 0)
+		{
+			deletePlayerAI();
+			m_autopilotLevel = 0;
+		}
+		return;
+	}
+
+	if (m_autopilotLevel == 0)
+	{
+		deletePlayerAI();
+		const Bool canBuildUnits = m_canBuildUnits;	// the AI constructors flip this flag
+		m_ai = newInstance(AISkirmishPlayer)( this );
+		m_canBuildUnits = canBuildUnits;
+		m_ai->setAutopilotOnly(TRUE);
+		m_ai->adoptExistingBase();
+	}
+
+	m_ai->setAIDifficulty(level == 1 ? DIFFICULTY_EASY : (level == 2 ? DIFFICULTY_NORMAL : DIFFICULTY_HARD));
+	m_autopilotLevel = level;
 }
 
 //=============================================================================

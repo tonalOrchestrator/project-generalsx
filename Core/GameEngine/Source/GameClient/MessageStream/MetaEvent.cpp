@@ -189,6 +189,10 @@ static const LookupListRec GameMessageMetaTypeNames[] =
 	{ "TOGGLE_FAST_FORWARD_REPLAY",								GameMessage::MSG_META_TOGGLE_FAST_FORWARD_REPLAY },
 	{ "TOGGLE_PAUSE",															GameMessage::MSG_META_TOGGLE_PAUSE },
 	{ "TOGGLE_PAUSE_ALT",													GameMessage::MSG_META_TOGGLE_PAUSE_ALT },
+	{ "TOGGLE_AUTOPILOT",													GameMessage::MSG_META_TOGGLE_AUTOPILOT },
+	{ "CYCLE_AUTOPILOT_LEVEL",										GameMessage::MSG_META_CYCLE_AUTOPILOT_LEVEL },
+	{ "CHEAT_MONEY",															GameMessage::MSG_META_CHEAT_MONEY },
+	{ "CHEAT_GENERALS_POINT",											GameMessage::MSG_META_CHEAT_GENERALS_POINT },
 	{ "STEP_FRAME",																GameMessage::MSG_META_STEP_FRAME },
 	{ "STEP_FRAME_ALT",														GameMessage::MSG_META_STEP_FRAME_ALT },
 	{ "DEMO_INSTANT_QUIT",												GameMessage::MSG_META_DEMO_INSTANT_QUIT },
@@ -833,6 +837,48 @@ void MetaMap::generateMetaMap()
 			map->m_transition = DOWN;
 			map->m_modState = SHIFT; // Requires modifier to avoid key conflicts as a player.
 			map->m_usableIn = COMMANDUSABLE_EVERYWHERE;
+		}
+	}
+	{
+		// GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
+		MetaMapRec *map = getMetaMapRec(GameMessage::MSG_META_TOGGLE_AUTOPILOT);
+		if (map->m_key == MK_NONE)
+		{
+			map->m_key = MK_A;
+			map->m_transition = DOWN;
+			map->m_modState = SHIFT_CTRL;
+			map->m_usableIn = COMMANDUSABLE_GAME;
+		}
+	}
+	{
+		MetaMapRec *map = getMetaMapRec(GameMessage::MSG_META_CYCLE_AUTOPILOT_LEVEL);
+		if (map->m_key == MK_NONE)
+		{
+			map->m_key = MK_L;
+			map->m_transition = DOWN;
+			map->m_modState = SHIFT_CTRL;
+			map->m_usableIn = COMMANDUSABLE_GAME;
+		}
+	}
+	{
+		// GeneralsX @feature Claude 20/10/2026 Opt-in cheat mode (-cheats): give money / general points.
+		MetaMapRec *map = getMetaMapRec(GameMessage::MSG_META_CHEAT_MONEY);
+		if (map->m_key == MK_NONE)
+		{
+			map->m_key = MK_M;
+			map->m_transition = DOWN;
+			map->m_modState = SHIFT_CTRL;
+			map->m_usableIn = COMMANDUSABLE_GAME;
+		}
+	}
+	{
+		MetaMapRec *map = getMetaMapRec(GameMessage::MSG_META_CHEAT_GENERALS_POINT);
+		if (map->m_key == MK_NONE)
+		{
+			map->m_key = MK_G;
+			map->m_transition = DOWN;
+			map->m_modState = SHIFT_CTRL;
+			map->m_usableIn = COMMANDUSABLE_GAME;
 		}
 	}
 	{

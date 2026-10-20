@@ -42,7 +42,12 @@ public:
 	// and -aiskirmishLog > 0. Safe to call with a null player.
 	static void aiLog(const Player* player, const char* fmt, ...);
 
-private:
+	// Per-player end-of-game stats as one JSON object (empty string if no game). Shared with LanNetplayHarness.
+	static AsciiString buildStatsJson(const AsciiString& mapName, Int seed, Bool timedOut, UnsignedInt realTimeMs);
+
+	// Map key or display-name substring -> map cache key (empty if not found). Shared with LanNetplayHarness.
 	static AsciiString resolveMapName(const AsciiString& wanted);
+
+private:
 	static void dumpStats(const AsciiString& mapName, Int seed, Bool timedOut, UnsignedInt realTimeMs);
 };

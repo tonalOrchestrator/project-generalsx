@@ -275,10 +275,11 @@ int AISkirmishSimulation::run()
 }
 
 //-------------------------------------------------------------------------------------------------
-void AISkirmishSimulation::dumpStats(const AsciiString& mapName, Int seed, Bool timedOut, UnsignedInt realTimeMs)
+// GeneralsX @refactor Claude 20/10/2026 JSON building split out of dumpStats so the LAN netplay harness reuses it.
+AsciiString AISkirmishSimulation::buildStatsJson(const AsciiString& mapName, Int seed, Bool timedOut, UnsignedInt realTimeMs)
 {
 	if (!ThePlayerList || !TheGameLogic)
-		return;
+		return AsciiString::TheEmptyString;
 
 	const UnsignedInt frame = TheGameLogic->getFrame();
 	const UnsignedInt endFrame = TheVictoryConditions ? TheVictoryConditions->getEndFrame() : 0;
@@ -304,7 +305,7 @@ void AISkirmishSimulation::dumpStats(const AsciiString& mapName, Int seed, Bool 
 		disp.translate(p->getPlayerDisplayName());
 
 		tmp.format("%s{\"name\":\"%s\",\"template\":\"%s\",\"side\":\"%s\",\"type\":\"%s\",\"difficulty\":\"%s\","
-			"\"alive\":%s,\"victory\":%s,\"defeated\":%s,"
+			"\"alive\":%s,\"victory\":%s,\"defeated\":%s,\"autopilot\":%d,"
 			"\"moneyEarned\":%d,\"moneySpent\":%d,"
 			"\"unitsBuilt\":%d,\"unitsLost\":%d,\"unitsDestroyed\":%d,"
 			"\"buildingsBuilt\":%d,\"buildingsLost\":%d,\"buildingsDestroyed\":%d,"
@@ -318,6 +319,7 @@ void AISkirmishSimulation::dumpStats(const AsciiString& mapName, Int seed, Bool 
 			p->isPlayerActive() ? "true" : "false",
 			(TheVictoryConditions && TheVictoryConditions->hasAchievedVictory(p)) ? "true" : "false",
 			(TheVictoryConditions && TheVictoryConditions->hasBeenDefeated(p)) ? "true" : "false",
+			p->getAutopilotLevel(),
 			sk->getTotalMoneyEarned(), sk->getTotalMoneySpent(),
 			sk->getTotalUnitsBuilt(), sk->getTotalUnitsLost(), sk->getTotalUnitsDestroyed(),
 			sk->getTotalBuildingsBuilt(), sk->getTotalBuildingsLost(), sk->getTotalBuildingsDestroyed(),
@@ -326,6 +328,15 @@ void AISkirmishSimulation::dumpStats(const AsciiString& mapName, Int seed, Bool 
 		first = FALSE;
 	}
 	json.concat("]}");
+	return json;
+}
+
+//-------------------------------------------------------------------------------------------------
+void AISkirmishSimulation::dumpStats(const AsciiString& mapName, Int seed, Bool timedOut, UnsignedInt realTimeMs)
+{
+	AsciiString json = buildStatsJson(mapName, seed, timedOut, realTimeMs);
+	if (json.isEmpty())
+		return;
 
 	printf("AISKIRMISH_RESULT %s\n", json.str());
 	fflush(stdout);
@@ -348,7 +359,8 @@ void AISkirmishSimulation::dumpStats(const AsciiString& mapName, Int seed, Bool 
 //-------------------------------------------------------------------------------------------------
 void AISkirmishSimulation::updateWatchCamera()
 {
-	if (!TheGlobalData->m_aiSkirmish || TheGlobalData->m_headless)
+	// GeneralsX @feature Claude 20/10/2026 Shared with the LAN netplay harness windowed mode.
+	if ((!TheGlobalData->m_aiSkirmish && !TheGlobalData->m_lanHarness) || TheGlobalData->m_headless)
 		return;
 	if (!TheGameLogic || !TheGameLogic->isInGame() || !TheTacticalView || !TheTerrainLogic || !ThePlayerList)
 		return;
@@ -367,7 +379,8 @@ void AISkirmishSimulation::updateWatchCamera()
 
 	// Optional periodic in-engine screenshot (evidence / timelapse). Taken from the logic update like the
 	// PrintScreen meta-event path, so it captures the last presented frame.
-	const UnsignedInt shotInterval = (UnsignedInt)TheGlobalData->m_aiSkirmishScreenshotSeconds * LOGICFRAMES_PER_SECOND;
+	const Int shotSeconds = TheGlobalData->m_aiSkirmish ? TheGlobalData->m_aiSkirmishScreenshotSeconds : TheGlobalData->m_lanScreenshotSeconds;
+	const UnsignedInt shotInterval = (UnsignedInt)shotSeconds * LOGICFRAMES_PER_SECOND;
 	if (shotInterval != 0 && frame >= 2 * LOGICFRAMES_PER_SECOND && frame % shotInterval == 0 && TheDisplay)
 	{
 		TheDisplay->takeScreenShot(SCREENSHOT_PNG);
@@ -375,7 +388,8 @@ void AISkirmishSimulation::updateWatchCamera()
 		fflush(stdout);
 	}
 
-	const UnsignedInt hopInterval = (UnsignedInt)TheGlobalData->m_aiSkirmishCameraSeconds * LOGICFRAMES_PER_SECOND;
+	const Int hopSeconds = TheGlobalData->m_aiSkirmish ? TheGlobalData->m_aiSkirmishCameraSeconds : TheGlobalData->m_lanCameraSeconds;
+	const UnsignedInt hopInterval = (UnsignedInt)hopSeconds * LOGICFRAMES_PER_SECOND;
 
 	if (frame < 2)
 	{
@@ -471,7 +485,7 @@ void AISkirmishSimulation::aiLog(const Player* player, const char* fmt, ...)
 //-------------------------------------------------------------------------------------------------
 void AISkirmishSimulation::perFrame()
 {
-	if (!TheGlobalData || !TheGlobalData->m_aiSkirmish)
+	if (!TheGlobalData || (!TheGlobalData->m_aiSkirmish && !TheGlobalData->m_lanHarness))
 		return;
 
 	updateWatchCamera();

@@ -896,6 +896,94 @@ Int parseRunAhead( char *args[], Int num )
 #endif
 
 
+// GeneralsX @feature Claude 20/10/2026 Headless LAN netplay harness
+static Int parseLanStringArg(char *args[], int num, AsciiString &dest)
+{
+	if (num > 1)
+	{
+		dest = args[1];
+		return 2;
+	}
+	return 1;
+}
+
+Int parseLanHost(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_lanHarness = TRUE;
+		TheWritableGlobalData->m_lanHost = TRUE;
+		TheWritableGlobalData->m_lanMap = args[1];
+		TheWritableGlobalData->m_playIntro = FALSE;
+		TheWritableGlobalData->m_playSizzle = FALSE;
+		return 2;
+	}
+	return 1;
+}
+
+Int parseLanJoin(char *args[], int num)
+{
+	if (num > 1)
+	{
+		TheWritableGlobalData->m_lanHarness = TRUE;
+		TheWritableGlobalData->m_lanHost = FALSE;
+		TheWritableGlobalData->m_lanJoinIP = args[1];
+		TheWritableGlobalData->m_playIntro = FALSE;
+		TheWritableGlobalData->m_playSizzle = FALSE;
+		return 2;
+	}
+	return 1;
+}
+
+Int parseLanSlots(char *args[], int num)      { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanSlots); }
+Int parseLanLocalIP(char *args[], int num)    { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanLocalIP); }
+Int parseLanName(char *args[], int num)       { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanName); }
+Int parseLanStats(char *args[], int num)      { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanStatsFile); }
+
+Int parseLanHumans(char *args[], int num)
+{
+	if (num > 1) { TheWritableGlobalData->m_lanHumans = atoi(args[1]); return 2; }
+	return 1;
+}
+
+Int parseLanMaxMinutes(char *args[], int num)
+{
+	if (num > 1) { TheWritableGlobalData->m_lanMaxMinutes = atoi(args[1]); return 2; }
+	return 1;
+}
+
+Int parseLanSeed(char *args[], int num)
+{
+	if (num > 1) { TheWritableGlobalData->m_lanSeed = atoi(args[1]); return 2; }
+	return 1;
+}
+
+Int parseLanScreenshotSeconds(char *args[], int num)
+{
+	if (num > 1) { TheWritableGlobalData->m_lanScreenshotSeconds = atoi(args[1]); return 2; }
+	return 1;
+}
+
+Int parseLanCameraSeconds(char *args[], int num)
+{
+	if (num > 1) { TheWritableGlobalData->m_lanCameraSeconds = atoi(args[1]); return 2; }
+	return 1;
+}
+
+Int parseLanAutopilotSchedule(char *args[], int num) { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanAutopilotSchedule); }
+
+Int parseCheats(char *args[], int num)
+{
+	TheWritableGlobalData->m_allowCheats = TRUE;
+	return 1;
+}
+
+Int parseLanObserver(char *args[], int num)
+{
+	TheWritableGlobalData->m_lanObserver = TRUE;
+	return 1;
+}
+
 // GeneralsX @feature Claude 30/09/2026 AI-vs-AI skirmish runner
 Int parseAISkirmish(char *args[], int num)
 {
@@ -1268,6 +1356,21 @@ static CommandLineParam paramsForStartup[] =
 	// Run an AI-only skirmish on the given map (map key or display-name substring, e.g. "north america").
 	// Combine with -headless to simulate as fast as possible and print AISKIRMISH_RESULT JSON at the end,
 	// or without -headless to watch it as the observer. -seed N makes it reproducible.
+	// GeneralsX @feature Claude 20/10/2026 Headless LAN netplay harness
+	{ "-lanhost", parseLanHost },
+	{ "-lanjoin", parseLanJoin },
+	{ "-lanSlots", parseLanSlots },
+	{ "-lanIP", parseLanLocalIP },
+	{ "-lanName", parseLanName },
+	{ "-lanStats", parseLanStats },
+	{ "-lanHumans", parseLanHumans },
+	{ "-lanMaxMinutes", parseLanMaxMinutes },
+	{ "-lanSeed", parseLanSeed },
+	{ "-lanObserver", parseLanObserver },
+	{ "-cheats", parseCheats },
+	{ "-lanAutopilotSchedule", parseLanAutopilotSchedule },
+	{ "-lanScreenshotSeconds", parseLanScreenshotSeconds },
+	{ "-lanCameraSeconds", parseLanCameraSeconds },
 	{ "-aiskirmish", parseAISkirmish },
 	// Slot spec: comma list of E|M|H (easy/medium/hard) with optional ":PlayerTemplateName". Default "H,H".
 	{ "-aiskirmishSlots", parseAISkirmishSlots },

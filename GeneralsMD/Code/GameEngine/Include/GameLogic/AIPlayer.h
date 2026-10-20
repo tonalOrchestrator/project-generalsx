@@ -185,6 +185,13 @@ public: // AIPlayer interface, may be overridden by AISkirmishPlayer.  jba.
 
 	virtual void selectSkillset(Int skillset);
 
+// GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
+	/// Autopilot (build-only) AIs build the player's base (structures, dozers, supply trucks) but never army teams or attacks.
+	void setAutopilotOnly(Bool assistOnly) { m_autopilotOnly = assistOnly; }
+	Bool isAutopilotOnly() const { return m_autopilotOnly; }
+	/// Link the structures the player already owns to this AI's build list so they are not rebuilt.
+	virtual void adoptExistingBase() {}
+
 public:
 	Bool getBaseCenter(Coord3D *pos) const {*pos = m_baseCenter; return m_baseCenterSet;}
 	/// Difficulty level for this player.
@@ -271,6 +278,8 @@ protected:
 	GameDifficulty m_difficulty;
 
 	Int			m_skillsetSelector;
+
+	Bool		m_autopilotOnly;						///< GeneralsX: build-only AI attached to a human player (not saved, not in the CRC)
 
 	Coord3D m_baseCenter; // Center of the initial build list of structures.
 	Bool		m_baseCenterSet; // True if baseCenter is valid.

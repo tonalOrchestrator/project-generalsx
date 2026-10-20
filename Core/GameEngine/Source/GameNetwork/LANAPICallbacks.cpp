@@ -33,6 +33,7 @@
 #include "WWLib/strtok_r.h"
 #include "Common/GameEngine.h"
 #include "Common/GlobalData.h"
+#include "Common/LanNetplayHarness.h"
 #include "Common/MessageStream.h"
 #include "Common/MultiplayerSettings.h"
 #include "Common/PlayerTemplate.h"
@@ -516,6 +517,13 @@ void LANAPI::OnPlayerJoin( Int slot, UnicodeString playerName )
 
 void LANAPI::OnGameJoin( ReturnType ret, LANGameInfo *theGame )
 {
+// GeneralsX @feature Claude 20/10/2026 Headless netplay harness: skip UI work, the harness polls the game state.
+	if (LanNetplayHarness::isActive())
+	{
+		LanNetplayHarness::onEvent(ret == RET_OK ? "game join ok" : "game join failed");
+		return;
+	}
+
 	if (ret == RET_OK)
 	{
 		LANbuttonPushed = true;
@@ -552,6 +560,13 @@ void LANAPI::OnHostLeave()
 		return;
 	LANbuttonPushed = true;
 	DEBUG_LOG(("Host left - popping to lobby"));
+// GeneralsX @feature Claude 20/10/2026 Headless netplay harness: skip UI work, the harness polls the game state.
+	if (LanNetplayHarness::isActive())
+	{
+		LanNetplayHarness::onEvent("host left");
+		TheGameEngine->setQuitting(TRUE);
+		return;
+	}
 	TheShell->pop();
 }
 
@@ -579,6 +594,12 @@ void LANAPI::OnPlayerLeave( UnicodeString player )
 		}
 		LANbuttonPushed = true;
 		DEBUG_LOG(("OnPlayerLeave says we're leaving!  pop away!"));
+// GeneralsX @feature Claude 20/10/2026 Headless netplay harness: skip UI work, the harness polls the game state.
+		if (LanNetplayHarness::isActive())
+		{
+			LanNetplayHarness::onEvent("local player leaving lobby");
+			return;
+		}
 		TheShell->pop();
 	}
 	else
@@ -597,6 +618,9 @@ void LANAPI::OnPlayerLeave( UnicodeString player )
 
 void LANAPI::OnGameList( LANGameInfo *gameList )
 {
+// GeneralsX @feature Claude 20/10/2026 Headless netplay harness: skip UI work, the harness polls the game state.
+	if (LanNetplayHarness::isActive())
+		return;
 
 	if (m_inLobby)
 	{
@@ -606,6 +630,14 @@ void LANAPI::OnGameList( LANGameInfo *gameList )
 
 void LANAPI::OnGameCreate( ReturnType ret )
 {
+// GeneralsX @feature Claude 20/10/2026 Headless netplay harness: skip UI work, the harness polls the game state.
+	if (LanNetplayHarness::isActive())
+	{
+		LanNetplayHarness::onEvent(ret == RET_OK ? "game create ok" : "game create failed");
+		if (ret == RET_OK)
+			RequestLobbyLeave( false );
+		return;
+	}
 	if (ret == RET_OK)
 	{
 
@@ -637,6 +669,9 @@ void LANAPI::OnGameCreate( ReturnType ret )
 
 void LANAPI::OnPlayerList( LANPlayer *playerList )
 {
+// GeneralsX @feature Claude 20/10/2026 Headless netplay harness: skip UI work, the harness polls the game state.
+	if (LanNetplayHarness::isActive())
+		return;
 	if (m_inLobby)
 	{
 
@@ -679,6 +714,9 @@ void LANAPI::OnInActive(UnsignedInt IP) {
 
 void LANAPI::OnChat( UnicodeString player, UnsignedInt ip, UnicodeString message, ChatType format )
 {
+// GeneralsX @feature Claude 20/10/2026 Headless netplay harness: skip UI work, the harness polls the game state.
+	if (LanNetplayHarness::isActive())
+		return;
 	GameWindow *chatWindow = nullptr;
 
 	if (m_inLobby)

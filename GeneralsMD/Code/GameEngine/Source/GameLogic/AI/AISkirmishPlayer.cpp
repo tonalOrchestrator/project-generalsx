@@ -954,16 +954,94 @@ void AISkirmishPlayer::doTeamBuilding()
 /**
  * Perform computer-controlled player AI
  */
+// GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
 void AISkirmishPlayer::update()
 {
+	if (m_autopilotOnly)
+	{
+		// Autopilot: build-only AI for a human player: keep the base growing and the economy running, but no army
+		// teams, no attack waves, no skills or upgrades (those stay the player's decisions).
+		doBaseBuilding();
+		checkReadyTeams();
+		checkQueuedTeams();
+		m_teamDelay--;
+		if (m_teamDelay < 1)
+		{
+			queueUnits();	// queues a supply truck when short, and trains any queued truck/dozer orders
+			m_teamDelay = 2*LOGICFRAMES_PER_SECOND;
+		}
+		return;
+	}
 	AIPlayer::update();
+}
+
+// GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
+void AISkirmishPlayer::adoptExistingBase()
+{
+	// A human player normally has no build list. Use this faction's skirmish build list, laid out around the
+	// player's start position exactly like a computer player's.
+	if (!m_player->getBuildList())
+	{
+		const AsciiString mySide = m_player->getSide();
+		for (const AISideBuildList *build = TheAI->getAiData()->m_sideBuildLists; build; build = build->m_next)
+		{
+			if (build->m_side == mySide)
+			{
+				BuildListInfo *buildList = build->m_buildList->duplicate();
+				adjustBuildList(buildList, false);	// keep the player's command center
+				m_player->setBuildList(buildList);
+				break;
+			}
+		}
+	}
+
+	// Claim structures the player already owns, one per build-list entry of the same template.
+	for (BuildListInfo *info = m_player->getBuildList(); info; info = info->getNext())
+	{
+		const AsciiString name = info->getTemplateName();
+		if (name.isEmpty())
+			continue;
+		if (info->getObjectID() != INVALID_ID && TheGameLogic->findObjectByID(info->getObjectID()))
+			continue;	// still linked to a live structure
+
+		info->setObjectID(INVALID_ID);
+		for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
+		{
+			if (obj->getControllingPlayer() != m_player || obj->getTemplate()->getName() != name)
+				continue;
+			Bool claimed = false;
+			for (BuildListInfo *other = m_player->getBuildList(); other; other = other->getNext())
+			{
+				if (other != info && other->getObjectID() == obj->getID())
+				{
+					claimed = true;
+					break;
+				}
+			}
+			if (!claimed)
+			{
+				info->setObjectID(obj->getID());
+				break;
+			}
+		}
+
+		// Entries the player does not have yet get built once (newMap does the same for non-initial entries).
+		if (info->getObjectID() == INVALID_ID)
+			info->incrementNumRebuilds();
+	}
+
+	computeCenterAndRadiusOfBase(&m_baseCenter, &m_baseRadius);
+	m_readyToBuildStructure = true;
+	m_structureTimer = 1;
+	m_buildDelay = 0;
+	m_teamDelay = 0;
 }
 
 //----------------------------------------------------------------------------------------------------------
 /**
  * Adjusts the build list to match the starting position.
  */
-void AISkirmishPlayer::adjustBuildList(BuildListInfo *list)
+void AISkirmishPlayer::adjustBuildList(BuildListInfo *list, Bool destroyStartCommandCenter)
 {
 	Bool foundStart = false;
 	Coord3D startPos;
@@ -979,9 +1057,14 @@ void AISkirmishPlayer::adjustBuildList(BuildListInfo *list)
 			if (obj->isKindOf(KINDOF_COMMANDCENTER)) {
 				foundStart = true;
 				startPos = *obj->getPosition();
-				m_player->onStructureUndone(obj);
-				TheAI->pathfinder()->removeObjectFromPathfindMap(obj);
-				TheGameLogic->destroyObject(obj);
+				// GeneralsX @bugfix Claude 20/10/2026 Autopilot adopts a human's live base: keep the command center.
+				// (A computer player's start structure is removed here and rebuilt right away from the build list.)
+				if (destroyStartCommandCenter)
+				{
+					m_player->onStructureUndone(obj);
+					TheAI->pathfinder()->removeObjectFromPathfindMap(obj);
+					TheGameLogic->destroyObject(obj);
+				}
 				break;
 			}
 		}

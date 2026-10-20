@@ -53,6 +53,8 @@ public:	// AIPlayer interface methods.
 
 	virtual void newMap() override;											///< New map loaded call.
 
+	virtual void adoptExistingBase() override;						///< GeneralsX: claim the human player's existing structures for the build list
+
 	/// Invoked when a unit I am training comes into existence
 	virtual void onUnitProduced( Object *factory, Object *unit ) override;
 
@@ -97,7 +99,7 @@ protected:
 	virtual void processTeamBuilding() override;		///< do team-building behaviors
 
 protected:
-	void adjustBuildList(BuildListInfo *list);
+	void adjustBuildList(BuildListInfo *list, Bool destroyStartCommandCenter = true);
 	Int getMyEnemyPlayerIndex();
 	void acquireEnemy();
 

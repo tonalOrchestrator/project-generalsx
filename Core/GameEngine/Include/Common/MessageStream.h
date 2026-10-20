@@ -278,6 +278,10 @@ public:
 		MSG_META_TOGGLE_PAUSE_ALT,									///< TheSuperHackers @feature Toggle game pause (alternative mapping)
 		MSG_META_STEP_FRAME,												///< TheSuperHackers @feature Step one frame
 		MSG_META_STEP_FRAME_ALT,										///< TheSuperHackers @feature Step one frame (alternative mapping)
+		MSG_META_CHEAT_MONEY,												///< GeneralsX @feature -cheats only: give the local player money
+		MSG_META_CHEAT_GENERALS_POINT,							///< GeneralsX @feature -cheats only: give the local player a general's point
+		MSG_META_CYCLE_AUTOPILOT_LEVEL,							///< GeneralsX @feature Cycle the autopilot level easy -> normal -> hard
+		MSG_META_TOGGLE_AUTOPILOT,									///< GeneralsX @feature Toggle build-only autopilotance for the local player
 		MSG_META_DEMO_INSTANT_QUIT,									///< bail out of game immediately
 
 
@@ -604,6 +608,8 @@ public:
 		MSG_LOGIC_CRC,															///< CRC from the logic passed around in a network game :)
 		MSG_SET_MINE_CLEARING_DETAIL,								///< CRC from the logic passed around in a network game :)
 		MSG_ENABLE_RETALIATION_MODE,								///< Turn retaliation mode on or off.
+		MSG_CHEAT_GIVE,														///< GeneralsX: -cheats only. arg0 money, arg1 general points, for the message's player
+		MSG_SET_AUTOPILOT,													///< GeneralsX: set the autopilot level (arg0: 0 off, 1 easy, 2 normal, 3 hard) for the message's player
 
 		MSG_BEGIN_DEBUG_NETWORK_MESSAGES = 1900,		///< network messages that exist only in debug/internal builds. all grouped separately.
 
