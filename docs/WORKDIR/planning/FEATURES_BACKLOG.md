@@ -103,6 +103,11 @@ buildings belong to the opposing general (22 of 31 on Chem), which Explore never
 (houses, a convenience store, the Palace); on every map some 10 candidate buildings "refuse": the trace now says why, and on Tank General 8 of 10 are still in the shroud (none enemy-owned or full). The squad now scouts them first (walks to the nearest shrouded one, then enters next cycle): Tank General $15.6k -> $20.5k earned, 13 scouting walks; Wallet vs Medium survival stays 12/12; Linux + Windows Wallet match in sync.
 (4) The human, who only builds and defends, is wiped out by the Challenge AI on most maps after 6-11 game-minutes; that is the Wallet-vs-Hard story again.
 
+Wallet (level 4) vs Explore (level 5) on the same nine Challenge maps (China Infantry General, 15-minute cap, seconds survived; 900 = survived):
+Air 900 / 665, Chem 580 / 755, China Boss 630 / 645, Demolition 900 / 900, Laser 490 / 900, Nuke 795 / 775, Stealth 900 / 840, Super Weapons 350 / 410,
+Tank 605 / 685. Mean survival 683 s (Wallet) vs 730 s (Explore); Explore earns more on 7 of 9 maps. Neither holds a Challenge general's base for
+long: Super Weapons falls in under 7 minutes in both modes. A Challenge-tuned defence (or Explore's income feeding Wallet's defenders) is the open item.
+
 ### Defending against a Hard AI (Wallet mode) - improved, not solved
 Goal from Ben: a 1v1 setup that can actually defend against a Hard opponent. Measured solo, headless, 16 game-minute cap, all 12 factions vs one
 Hard AI (median survival; none survived 16 minutes until the extra defenses):
