@@ -938,6 +938,8 @@ Int parseLanJoin(char *args[], int num)
 Int parseLanSlots(char *args[], int num)      { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanSlots); }
 Int parseLanLocalIP(char *args[], int num)    { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanLocalIP); }
 Int parseLanName(char *args[], int num)       { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanName); }
+Int parseLanFast(char *[], int) { TheWritableGlobalData->m_lanFast = TRUE; return 1; }
+Int parseLanHostTemplate(char *args[], int num) { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanHostTemplate); }
 Int parseLanStats(char *args[], int num)      { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanStatsFile); }
 
 Int parseLanHumans(char *args[], int num)
@@ -1360,6 +1362,8 @@ static CommandLineParam paramsForStartup[] =
 	{ "-lanhost", parseLanHost },
 	{ "-lanjoin", parseLanJoin },
 	{ "-lanSlots", parseLanSlots },
+	{ "-lanHostTemplate", parseLanHostTemplate },
+	{ "-lanFast", parseLanFast },
 	{ "-lanIP", parseLanLocalIP },
 	{ "-lanName", parseLanName },
 	{ "-lanStats", parseLanStats },

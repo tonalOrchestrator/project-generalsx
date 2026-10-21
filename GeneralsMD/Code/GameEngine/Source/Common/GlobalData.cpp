@@ -1028,6 +1028,8 @@ GlobalData::GlobalData()
 	m_lanMap.clear();
 	m_lanSlots = "H,H";
 	m_lanName = "NetplayBot";
+	m_lanHostTemplate.clear();
+	m_lanFast = FALSE;
 	m_lanStatsFile.clear();
 	m_lanHumans = 2;
 	m_lanObserver = FALSE;

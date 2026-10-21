@@ -380,6 +380,8 @@ public:
 	AsciiString m_lanMap;				///< host only: map key or display-name substring
 	AsciiString m_lanSlots;				///< host only: AI slots after the humans, e.g. "H,H" (E/M/H, optional ":Template")
 	AsciiString m_lanName;				///< local player name
+	Bool m_lanFast;						///< GeneralsX: skip the network frame pacing (faster than real time; solo test runs)
+	AsciiString m_lanHostTemplate;		///< GeneralsX: faction template for the host's own slot (empty = random)
 	AsciiString m_lanStatsFile;			///< if set, JSON stats are also written here
 	Int m_lanHumans;					///< host only: number of human machines (including the host) to wait for
 	Bool m_lanObserver;					///< the human machines observe instead of playing

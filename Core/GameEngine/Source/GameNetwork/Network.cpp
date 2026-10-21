@@ -796,6 +796,10 @@ void Network::endOfGameCheck() {
 }
 
 Bool Network::timeForNewFrame() {
+	// GeneralsX @feature Claude 20/10/2026 -lanFast: run frames as fast as the CPU allows (test runs only). Pacing is only
+	// a wall-clock wait, so this changes how long a game takes, not what happens in it.
+	if (TheGlobalData->m_lanFast)
+		return TRUE;
 	// GeneralsX @bugfix GitHubCopilot 27/04/2026 Keep network frame pacing in nanoseconds on Linux
 	int64_t curTime;
 	#ifdef _WIN32

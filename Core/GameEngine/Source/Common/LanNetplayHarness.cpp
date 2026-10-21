@@ -167,7 +167,14 @@ static Bool configureHostGame(LANGameInfo* g, const AsciiString& mapName)
 
 	// Slot 0: the host machine.
 	LANGameSlot* host = g->getLANSlot(0);
-	host->setPlayerTemplate(TheGlobalData->m_lanObserver ? PLAYERTEMPLATE_OBSERVER : PLAYERTEMPLATE_RANDOM);
+	Int hostTemplate = PLAYERTEMPLATE_RANDOM;
+	if (TheGlobalData->m_lanHostTemplate.isNotEmpty())
+	{
+		hostTemplate = ThePlayerTemplateStore->getTemplateNumByName(TheGlobalData->m_lanHostTemplate);
+		if (hostTemplate < 0)
+			hostTemplate = PLAYERTEMPLATE_RANDOM;
+	}
+	host->setPlayerTemplate(TheGlobalData->m_lanObserver ? PLAYERTEMPLATE_OBSERVER : hostTemplate);
 	host->setColor(-1);
 	host->setStartPos(-1);
 	host->setTeamNumber(-1);
