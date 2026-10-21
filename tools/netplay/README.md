@@ -55,3 +55,16 @@ tools/netplay/run-netplay.sh --map "Tournament Desert" --ai H,H --observer --min
 - Network games run at real time: N game-minutes take about N real minutes.
 - The Windows box joins (outbound first) because its Wi-Fi is the Public firewall profile.
 - `linux-launch.sh` runs the windowed game inside Xvfb; software Vulkan ran out of memory on the 9 GB box, so it is unused.
+
+## Autopilot scenario matrix
+
+```bash
+tools/netplay/autopilot_scenarios.py                                    # 12 factions x levels 2 and 4, 4 game-minutes
+tools/netplay/autopilot_scenarios.py --levels 1 2 3 4 --minutes 8       # full matrix (about two minutes)
+tools/netplay/autopilot_scenarios.py --factions FactionGLA --levels 4   # one scenario
+```
+
+One human on Autopilot vs one Easy AI, headless, one machine, `-lanFast` (no network pacing). Per scenario it checks the player
+is alive, the faction really was the one requested, placements did not fail, the supply center went up, income started and the
+base grew. Logs and `summary.json` land in `logs/autopilot-scenarios/<timestamp>/`. Extra engine flags: `-lanHostTemplate
+<Faction>` (the host's faction, e.g. `FactionAmericaAirForceGeneral`), `-lanFast`.
