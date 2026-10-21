@@ -20,6 +20,9 @@ level). It builds your base and economy and never attacks, so it is a helper rat
 - **Easy / Normal / Hard** use the game's own skirmish AI skill levels: Hard builds more, earns more and adds a second supply center.
 - **Wallet Mode** is "defend, survive, hoard money": it builds the foundation, then stops spending and keeps a cash reserve.
 - Verified on all 12 factions and generals at all four levels (48 automated runs, about two minutes to run the whole set).
+- Under attack, Wallet Mode spends its bank on extra defenses and a few defenders. Measured over 14 game-minutes against one computer
+  opponent: against a Medium AI, plain Autopilot survives in 0 of 12 runs and Wallet Mode in 8 of 12; against a Hard AI nothing survives, but
+  Wallet Mode lasts a little longer.
 - The switch goes through the network command stream, so every machine flips on the same game frame.
 
 ## Testing tools
@@ -28,5 +31,5 @@ level). It builds your base and economy and never attacks, so it is a helper rat
 
 ## Honest limits
 - Cheat mode (opt-in `-cheats`) is built but not yet tried in play.
-- Autopilot does not build an army or defend with units; Wallet Mode's defenses are limited on some factions.
+- Autopilot never attacks. Only Wallet Mode trains a few defenders, and only when the base is under attack; it cannot hold off a Hard AI.
 - Not yet tried over the internet or against players on the original retail game.

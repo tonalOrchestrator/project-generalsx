@@ -55,6 +55,8 @@ public:	// AIPlayer interface methods.
 
 	virtual void adoptExistingBase() override;
 	Bool autopilotQueueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth, KindOfType onlyKind = KINDOF_INVALID);
+	Bool autopilotIsThreatened();	///< GeneralsX: enemy units near the base
+	void autopilotTrainDefenders();	///< GeneralsX: wallet mode under attack: queue a defender at a barracks / war factory
 	Int autopilotGatherers() const;	///< GeneralsX: desired supply gatherers for the current level
 	Bool autopilotFindSupplySpot(const ThingTemplate *need, Object *dozer, const Object *warehouse, Coord3D *out);
 	Bool autopilotQueueSupplyExpansion(UnsignedInt money);	///< GeneralsX: a second supply center at another warehouse

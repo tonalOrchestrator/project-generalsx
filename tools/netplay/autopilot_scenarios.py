@@ -30,7 +30,7 @@ def run_scenario(faction, level, args, outdir):
     name = f"{faction}-{LEVEL_NAMES[level]}"
     log = outdir / f"{name}.log"
     cmd = [
-        "./GeneralsXZH", "-headless", "-lanhost", args.map, "-lanHumans", "1", "-lanSlots", "E",
+        "./GeneralsXZH", "-headless", "-lanhost", args.map, "-lanHumans", "1", "-lanSlots", args.enemy,
         "-lanSeed", str(args.seed), "-lanMaxMinutes", str(args.minutes),
         "-lanHostTemplate", faction, "-lanAutopilotSchedule", args.schedule or f"5:{level}",
     ] + ([] if args.realtime else ["-lanFast"])
@@ -48,7 +48,7 @@ def run_scenario(faction, level, args, outdir):
 def analyse(log, level, minutes, faction):
     text = Path(log).read_text(errors="replace")
     res = {"finished": False, "alive": False, "failed_places": text.count("-> FAILED"),
-           "supply_placed": False, "first_income_s": None, "earned": 0, "spent": 0, "buildings": 0, "units": 0,
+           "supply_placed": False, "first_income_s": None, "earned": 0, "spent": 0, "buildings": 0, "lost": 0, "units": 0, "enemy_killed": 0,
            "expansions": text.count("autopilot supply expansion:"), "template": "?"}
     for line in text.splitlines():
         if line.startswith("NETPLAY progress ") or line.startswith("NETPLAY_RESULT "):
@@ -63,6 +63,7 @@ def analyse(log, level, minutes, faction):
             res["alive"] = p["alive"] and not p["defeated"]
             res["earned"], res["spent"] = p["moneyEarned"], p["moneySpent"]
             res["buildings"], res["units"] = p["buildingsBuilt"], p["unitsBuilt"]
+            res["lost"], res["enemy_killed"] = p["buildingsLost"], p["unitsDestroyed"]
             if p["moneyEarned"] > 0 and res["first_income_s"] is None:
                 res["first_income_s"] = d["gameSeconds"]
             if line.startswith("NETPLAY_RESULT "):
@@ -95,6 +96,7 @@ def main():
     ap.add_argument("--minutes", type=int, default=4)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--schedule", help='custom autopilot schedule "sec:level,..." instead of one level (e.g. a stress test); counts as level 0')
+    ap.add_argument("--enemy", default="E", help="enemy AI slot spec: E, M or H (optionally E:FactionChina), default E")
     ap.add_argument("--realtime", action="store_true", help="do not use -lanFast (run at game speed)")
     ap.add_argument("--list", action="store_true")
     args = ap.parse_args()
@@ -117,7 +119,7 @@ def main():
         status = "PASS" if not r["problems"] else "FAIL"
         failed += status == "FAIL"
         print(f"{status}  {name:34s} earned=${r['earned']:<6} first_income={r['first_income_s']}s "
-              f"buildings={r['buildings']} expansions={r['expansions']} failed_places={r['failed_places']}"
+              f"buildings={r['buildings']} lost={r['lost']} expansions={r['expansions']} failed_places={r['failed_places']}"
               + ("  <- " + "; ".join(r["problems"]) if r["problems"] else ""), flush=True)
         (outdir / "summary.json").write_text(json.dumps(rows, indent=1))
     print(f"\n{len(rows) - failed}/{len(rows)} passed")

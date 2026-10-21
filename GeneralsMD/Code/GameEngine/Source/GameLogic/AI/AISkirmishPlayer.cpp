@@ -981,6 +981,7 @@ void AISkirmishPlayer::update()
 		if (m_teamDelay < 1)
 		{
 			queueUnits();	// queues a supply truck when short, and trains any queued truck/dozer orders
+			autopilotTrainDefenders();	// wallet mode only, and only under attack
 			m_teamDelay = 2*LOGICFRAMES_PER_SECOND;
 		}
 		return;
@@ -1056,9 +1057,11 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 	// into the reserve on defenses, so the rest of the money stays in the bank.
 	const Bool wallet = m_autopilotWallet;
 	const Int cap = wallet ? 1 : ((m_difficulty == DIFFICULTY_EASY) ? 1 : ((m_difficulty == DIFFICULTY_NORMAL) ? 2 : 3));
-	const Int walletDefenseCap = 2;			// per defense template
-	const Int walletDefenseTotal = 4;		// all defenses together
-	const UnsignedInt walletReserve = 1500;	// defenses are only started if this much stays in the bank
+	// Under threat (enemy units near the base) the bank is there to be spent: many more defenses, almost no reserve.
+	const Bool threatened = wallet && autopilotIsThreatened();
+	const Int walletDefenseCap = threatened ? 4 : 2;				// per defense template
+	const Int walletDefenseTotal = threatened ? 12 : 4;				// all defenses together
+	const UnsignedInt walletReserve = threatened ? 300 : 1500;		// defenses are only started if this much stays in the bank
 	Int defensesBuilt = 0;
 	if (wallet)
 		for (BuildListInfo *d = m_player->getBuildList(); d; d = d->getNext())
@@ -1105,7 +1108,7 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 				if (at && at->isKindOf(KINDOF_FS_ADVANCED_TECH) && info->isBuildable() && !TheGameLogic->findObjectByID(info->getObjectID()))
 					advancedEntry = info;
 			}
-		buildingUp = (advancedEntry != nullptr);
+		buildingUp = (advancedEntry != nullptr) && !threatened;	// an attack ends the build-up: defend first
 		if (buildingUp && !underPowered)
 		{
 			const ThingTemplate *advanced = TheThingFactory->findTemplate(advancedEntry->getTemplateName());
@@ -1226,7 +1229,7 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 		}
 		// Wallet defenses that need a prerequisite building (a barracks for the GLA tunnel network, say) are only worth the
 		// extra spend once the bank is comfortably full.
-		else if (canMake == CANMAKE_NO_PREREQ && !(wallet && isDefense && money < cost + walletReserve + 3000) && (!blocked || cost < blockedCost))
+		else if (canMake == CANMAKE_NO_PREREQ && !(wallet && isDefense && money < cost + walletReserve + (threatened ? 0 : 3000)) && (!blocked || cost < blockedCost))
 		{
 			blocked = info;
 			blockedCost = cost;
@@ -1250,6 +1253,70 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 		{
 			printf("NETPLAY autopilot queues %s cost=%u money=%u (frame %u)\n", pick->getTemplateName().str(), pickCost, money, TheGameLogic->getFrame());
 			fflush(stdout);
+		}
+	}
+}
+
+// GeneralsX @feature Claude 20/10/2026 Autopilot wallet mode: enemy units near the base.
+Bool AISkirmishPlayer::autopilotIsThreatened()
+{
+	const ThingTemplate *anchor = nullptr;
+	for (Object *obj = TheGameLogic->getFirstObject(); obj && !anchor; obj = obj->getNextObject())
+		if (obj->getControllingPlayer() == m_player && obj->isKindOf(KINDOF_COMMANDCENTER))
+			anchor = obj->getTemplate();
+	return anchor && !isLocationSafe(&m_baseCenter, anchor);
+}
+
+// Wallet mode under attack: spend the bank on a few defenders. Every so often (called every two seconds) one affordable combat unit
+// is queued at a barracks or war factory, up to a cap on the army; idle units defend themselves, so nothing here ever attacks.
+void AISkirmishPlayer::autopilotTrainDefenders()
+{
+	if (!m_autopilotWallet || !autopilotIsThreatened())
+		return;
+	const Int armyCap = 16;
+	Int army = 0;
+	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
+		if (obj->getControllingPlayer() == m_player && !obj->isKindOf(KINDOF_STRUCTURE) && obj->isKindOf(KINDOF_CAN_ATTACK)
+			&& !obj->isKindOf(KINDOF_HARVESTER) && !obj->isKindOf(KINDOF_DOZER))
+			++army;
+	if (army >= armyCap)
+		return;
+
+	UnsignedInt money = m_player->getMoney()->countMoney();
+	for (Object *factory = TheGameLogic->getFirstObject(); factory; factory = factory->getNextObject())
+	{
+		if (factory->getControllingPlayer() != m_player || !(factory->isKindOf(KINDOF_FS_BARRACKS) || factory->isKindOf(KINDOF_FS_WARFACTORY)))
+			continue;
+		if (factory->getStatusBits().test(OBJECT_STATUS_UNDER_CONSTRUCTION))
+			continue;
+		ProductionUpdateInterface *pu = factory->getProductionUpdateInterface();
+		if (!pu || pu->getProductionCount() >= 2)
+			continue;
+
+		// The strongest (most expensive) combat unit this factory can build that leaves a small reserve and is at most a quarter of the bank.
+		const ThingTemplate *best = nullptr;
+		UnsignedInt bestCost = 0;
+		for (const ThingTemplate *t = TheThingFactory->firstTemplate(); t; t = t->friend_getNextTemplate())
+		{
+			if (t->isKindOf(KINDOF_STRUCTURE) || !t->isKindOf(KINDOF_CAN_ATTACK) || t->isKindOf(KINDOF_HARVESTER) || t->isKindOf(KINDOF_DOZER))
+				continue;
+			const UnsignedInt cost = t->calcCostToBuild(m_player);
+			if (cost == 0 || cost + 300 > money || cost > money / 4 + 400 || cost <= bestCost)
+				continue;
+			if (TheBuildAssistant->canMakeUnit(factory, t) != CANMAKE_OK)
+				continue;
+			best = t;
+			bestCost = cost;
+		}
+		if (best && pu->queueCreateUnit(best, pu->requestUniqueUnitID()))
+		{
+			money = money > bestCost ? money - bestCost : 0;
+			if (TheGlobalData->m_lanHarness)
+			{
+				printf("NETPLAY autopilot defender: %s (cost %u) at %s (frame %u)\n", best->getName().str(), bestCost, factory->getTemplate()->getName().str(), TheGameLogic->getFrame());
+				fflush(stdout);
+			}
+			return;	// one per call: the factory's queue and the bank are re-read next time
 		}
 	}
 }
