@@ -78,6 +78,7 @@ private:
 	void track(BuildListInfo *info);
 	Bool queueSupplyCenterForIncome(UnsignedInt money);
 	Bool queueFoundation(Pass &pass);
+	Bool queueExtraDefense(const Pass &pass);	///< wallet: more base defenses than the build list holds, on a ring around the base
 	void queueCheapestCandidate(const Pass &pass);
 	Bool queueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth, KindOfType onlyKind = KINDOF_INVALID);
 	void explainStall(BuildListInfo *info);
@@ -89,4 +90,5 @@ private:
 	BuildListInfo *m_pending;			///< build-list entry the planner queued and is waiting on
 	UnsignedInt m_pendingFrame;
 	Int m_ring;							///< next slot on the ring around the base for a prerequisite structure
+	Int m_defenseRotation = 0;			///< which of the buildable defenses the next extra one is
 };

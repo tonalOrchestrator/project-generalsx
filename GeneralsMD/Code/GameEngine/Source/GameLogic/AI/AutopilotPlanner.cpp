@@ -95,7 +95,63 @@ void AutopilotPlanner::update()
 		}
 	}
 
+	if (pass.m_wallet && !pass.m_buildingUp && queueExtraDefense(pass))
+		return;
+
 	queueCheapestCandidate(pass);
+}
+
+// GeneralsX @feature Claude 21/10/2026 The faction's build list holds only one or two base defenses, so a wallet player under attack (or sitting on a
+// big surplus) was left with one defense and thousands unspent. Add further defenses on a ring around the base: rotate through the ones the
+// dozer can build (so ground and air are both covered), skip a kind already at its cap, and spend only above the budget's reserve.
+Bool AutopilotPlanner::queueExtraDefense(const Pass &pass)
+{
+	const Bool threatened = pass.m_defense.m_threatened;
+	const UnsignedInt reserve = threatened ? pass.m_defense.m_reserve : 2500;	// a quiet player only spends a real surplus
+	if (pass.m_defensesBuilt >= pass.m_defense.m_totalCap || (!threatened && pass.m_money < 5000))
+		return FALSE;
+
+	Player *player = m_host.player();
+	const Coord3D &baseCenter = m_host.baseCenter();
+	Object *dozer = m_host.findDozerNear(&baseCenter);
+	if (!dozer)
+	{
+		m_host.requestDozer();
+		return FALSE;
+	}
+
+	// The defenses the dozer can build now and afford, minus kinds already at the per-kind cap.
+	const ThingTemplate *candidates[16];
+	Int numCandidates = 0;
+	for (const ThingTemplate *t = TheThingFactory->firstTemplate(); t && numCandidates < 16; t = t->friend_getNextTemplate())
+	{
+		if (!t->isKindOf(KINDOF_FS_BASE_DEFENSE) || t->isKindOf(KINDOF_FS_FAKE))
+			continue;
+		const UnsignedInt cost = t->calcCostToBuild(player);
+		if (cost == 0 || cost + reserve > pass.m_money || TheBuildAssistant->canMakeUnit(dozer, t) != CANMAKE_OK)
+			continue;
+		Int have = 0;
+		for (BuildListInfo *info = player->getBuildList(); info; info = info->getNext())
+			if (info->getTemplateName() == t->getName() && TheGameLogic->findObjectByID(info->getObjectID()))
+				++have;
+		if (have >= pass.m_defense.m_perTemplateCap)
+			continue;
+		candidates[numCandidates++] = t;
+	}
+	if (numCandidates == 0)
+		return FALSE;
+
+	const ThingTemplate *pick = candidates[m_defenseRotation++ % numCandidates];
+	const Int slot = m_ring++;
+	const Real angle = (Real)(slot % 8) * (PI / 4);
+	const Real radius = m_host.baseRadius() * 0.8f + 120.0f + (Real)((slot / 8) % 3) * 90.0f;	// ring outwards as the inner positions fill
+	Coord3D pos = baseCenter;
+	pos.x += WWMath::CosTrig(angle) * radius;
+	pos.y += WWMath::SinTrig(angle) * radius;
+	player->addToPriorityBuildList(pick->getName(), &pos, pick->getPlacementViewAngle());
+	track(player->getBuildList());	// the new entry is the list head
+	AutopilotLog::line("NETPLAY autopilot extra defense: %s at (%.0f,%.0f), %d defenses so far (frame %u)\n", pick->getName().str(), pos.x, pos.y, pass.m_defensesBuilt, TheGameLogic->getFrame());
+	return TRUE;
 }
 
 // Follows up on the structure queued earlier. Returns false while the planner must keep waiting for it.

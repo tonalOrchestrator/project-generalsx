@@ -42,13 +42,23 @@ Bool AutopilotDefense::isThreatened()
 	return anchor && !m_host.isSafeToBuildAt(&m_host.baseCenter(), anchor);
 }
 
+// GeneralsX @tweak Claude 21/10/2026 The threat flag stays on for 90 seconds after enemy units were last seen near the base: a wave that steps back
+// out of range for a moment is still coming back, and flipping the budget on and off stopped the spending in between.
+Bool AutopilotDefense::underThreat()
+{
+	const UnsignedInt frame = TheGameLogic->getFrame();
+	if (isThreatened())
+		m_threatUntilFrame = frame + 90 * LOGICFRAMES_PER_SECOND;
+	return frame < m_threatUntilFrame;
+}
+
 AutopilotDefense::Budget AutopilotDefense::budget(UnsignedInt bank)
 {
 	Budget b;
-	b.m_threatened = m_profile.m_wallet && isThreatened();
-	b.m_perTemplateCap = b.m_threatened ? 6 : 2;
-	b.m_totalCap = b.m_threatened ? 12 + (Int)(bank / 3000 < 12 ? bank / 3000 : 12) : 4;
-	b.m_reserve = b.m_threatened ? 300 : 1500;
+	b.m_threatened = m_profile.m_wallet && underThreat();
+	b.m_perTemplateCap = b.m_threatened ? 16 : 3;
+	b.m_totalCap = b.m_threatened ? 24 + (Int)(bank / 2000 < 24 ? bank / 2000 : 24) : 6;
+	b.m_reserve = b.m_threatened ? 200 : 1500;
 	return b;
 }
 
@@ -56,7 +66,7 @@ AutopilotDefense::Budget AutopilotDefense::budget(UnsignedInt bank)
 // is queued at a barracks or war factory, up to a cap on the army; idle units defend themselves, so nothing here ever attacks.
 void AutopilotDefense::trainDefenders()
 {
-	if (!m_profile.m_wallet || !isThreatened())
+	if (!m_profile.m_wallet || !underThreat())
 		return;
 	Player *player = m_host.player();
 	UnsignedInt money = player->getMoney()->countMoney();

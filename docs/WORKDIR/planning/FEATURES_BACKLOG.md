@@ -79,6 +79,18 @@ Diagnosed with traces: first "not neutral" (the relationship toward an unowned b
 "special not ready" (the upgrade), then "in the shroud" (scouting). Built for Challenge mode, which has many neutral buildings; not yet
 tried on a Challenge map (the harness cannot start one: `-file` does not launch maps in this build).
 
+### Defending against a Hard AI (Wallet mode) - improved, not solved
+Goal from Ben: a 1v1 setup that can actually defend against a Hard opponent. Measured solo, headless, 16 game-minute cap, all 12 factions vs one
+Hard AI (median survival; none survived 16 minutes until the extra defenses):
+- before today's defence work: 11.4 min (9.8-12.1), ~8 kills / 60 losses per game.
+- sticky threat flag (90 s) + bigger caps: 11.3 min - **no change**: the faction build lists hold only 1-2 defenses, so the caps never applied.
+- **extra defenses beyond the build list** (`AutopilotPlanner::queueExtraDefense`: rotate through the defenses the dozer can build, ring around
+  the base, spend a surplus even before an attack): 12.2 min, one run survived all 16; then a lower gate ($5k) and higher caps: **12.9 min**
+  (10.9-14.9), ~14 kills per game. The USA still builds only 6-10 (one defense type, cause not yet found); GLA and China 20-30+.
+- Against a **Medium** AI: Wallet survivors **12/12** (plain Autopilot 0/12; Wallet was 8/12 this morning).
+Findings that mattered: units die piecemeal (60 losses / 8 kills), the bank sat unspent ($14k at death) and the only defense was the one the build
+list names. Not yet tried: repair of damaged structures, keeping defenders grouped at the defenses, an anti-vehicle mix tuned to the Hard AI's waves.
+
 ### Garrison squad and Hackers (Wallet and Explore modes) - done (solo-verified)
 Both requested by Ben. **Garrison squad** (wallet and explore): keeps a standing pair, alternating a "tank person" (Tank Hunter, Missile
 Defender, GLA RPG trooper) and a "gun person" (Ranger, Red Guard, Rebel, Minigunner), trained at a barracks while the bank is comfortable and

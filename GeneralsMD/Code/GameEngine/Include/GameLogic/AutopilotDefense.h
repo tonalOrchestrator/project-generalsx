@@ -45,6 +45,9 @@ public:
 	/// Wallet mode only: enemy units near the base.
 	Bool isThreatened();
 
+	/// isThreatened(), held for 90 seconds after the last sighting.
+	Bool underThreat();
+
 	/// Under threat the bank is there to be spent (many more defenses, almost no reserve); otherwise a few defenses and a big reserve.
 	Budget budget(UnsignedInt bank);
 
@@ -54,5 +57,6 @@ public:
 private:
 	AutopilotHost &m_host;
 	const AutopilotProfile &m_profile;
+	UnsignedInt m_threatUntilFrame = 0;	///< the threat flag stays on until this frame
 	AutopilotLog::Throttle m_traceThrottle;
 };
