@@ -100,7 +100,7 @@ Explore + garrison squad as China Infantry General, 12 game-minutes, Normal diff
 Findings: (1) Challenge maps give their capturable buildings to the *civilian* player (relationship neutral), not the game's neutral player, so Explore
 captured nothing on most maps; it now targets those too (Laser $15k -> $38k, Demolition 0 -> 4 captures, Death Valley identical). (2) Most capturable
 buildings belong to the opposing general (22 of 31 on Chem), which Explore never touches, so income stays modest. (3) The squad does garrison
-(houses, a convenience store, the Palace); on every map some 10 candidate buildings "refuse": the trace now says why, and on Tank General 8 of 10 are still in the shroud (none enemy-owned or full). Scouting them first, as Explore does, would open more positions.
+(houses, a convenience store, the Palace); on every map some 10 candidate buildings "refuse": the trace now says why, and on Tank General 8 of 10 are still in the shroud (none enemy-owned or full). The squad now scouts them first (walks to the nearest shrouded one, then enters next cycle): Tank General $15.6k -> $20.5k earned, 13 scouting walks; Wallet vs Medium survival stays 12/12; Linux + Windows Wallet match in sync.
 (4) The human, who only builds and defends, is wiped out by the Challenge AI on most maps after 6-11 game-minutes; that is the Wallet-vs-Hard story again.
 
 ### Defending against a Hard AI (Wallet mode) - improved, not solved
@@ -203,7 +203,7 @@ money and general's points (frame request + 4) and that without the flag the req
 - [x] Explore for China Infantry General: he has no Red Guard (his barracks builds Minigunner, Tank Hunter, Hacker, Black Lotus), so the explorer
       is the Minigunner; fixed, 8 captured and ~$104k earned on Death Valley (was 0 and ~$29k).
 - [ ] Explore: explorers do not run from enemies; the Challenge-map runs (headless) are done, a hand-played one is not.
-- [ ] Squad: scout shrouded garrison buildings before ordering entry (8 of the ~10 refusals on Challenge maps are shroud).
+- [x] Squad scouts shrouded garrison buildings before ordering entry.
 
 ### Netplay / determinism
 - [x] Cross-machine check of the placement/economy/cheat changes (Linux + Windows, Autopilot wallet/normal/hard + cheat gifts): in sync.
