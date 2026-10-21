@@ -38,6 +38,21 @@
 #include "GameLogic/AutopilotLog.h"
 #include "GameLogic/AutopilotProfile.h"
 
+// GeneralsX @feature Claude 21/10/2026 The infantry that carry the capture-building special power once the "Capture Building" upgrade is bought. A
+// template cannot report its special powers (only a built object can), so this is a list by unit name, taken from the game's object INIs:
+// the Ranger (USA), Red Guard (China), Rebel (GLA) and, for the Infantry General who has no Red Guard, the Minigunner. Variants of a general
+// carry a prefix (Lazr_, Nuke_, Infa_, ...), so the match is on the unit name inside the template name.
+static Bool isCaptureCapableInfantry(const ThingTemplate *t)
+{
+	AsciiString lower = t->getName();
+	lower.toLower();
+	static const char *const names[] = { "ranger", "redguard", "rebel", "minigunner" };
+	for (Int i = 0; i < (Int)(sizeof(names) / sizeof(names[0])); ++i)
+		if (strstr(lower.str(), names[i]))
+			return TRUE;
+	return FALSE;
+}
+
 AutopilotExplorer::AutopilotExplorer(AutopilotHost &host, const AutopilotProfile &profile)
 	: m_host(host), m_profile(profile)
 {
@@ -147,9 +162,7 @@ void AutopilotExplorer::trainExplorer(UnsignedInt frame)
 		{
 			if (!t->isKindOf(KINDOF_INFANTRY) || !t->isKindOf(KINDOF_CAN_ATTACK))
 				continue;
-			AsciiString lower = t->getName();
-			lower.toLower();
-			if (!strstr(lower.str(), "ranger") && !strstr(lower.str(), "redguard") && !strstr(lower.str(), "rebel"))
+			if (!isCaptureCapableInfantry(t))
 				continue;
 			if (t->calcCostToBuild(player) + 500 > money || TheBuildAssistant->canMakeUnit(barracks, t) != CANMAKE_OK)
 				continue;

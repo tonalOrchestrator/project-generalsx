@@ -143,8 +143,9 @@ money and general's points (frame request + 4) and that without the flag the req
       actually saving and loading a skirmish (the harness has no save/load path): test by hand, then tick this.
 - [x] Rapid on/off/level toggling (15 changes per run, all 12 factions) leaves the player alive and building: no crash.
 
-- [ ] Explore: China Infantry General captures 0 (unexplained, everything else captures); explorers do not run from enemies;
-      try it on a Challenge map by hand.
+- [x] Explore for China Infantry General: he has no Red Guard (his barracks builds Minigunner, Tank Hunter, Hacker, Black Lotus), so the explorer
+      is the Minigunner; fixed, 8 captured and ~$104k earned on Death Valley (was 0 and ~$29k).
+- [ ] Explore: explorers do not run from enemies; try it on a Challenge map by hand.
 
 ### Netplay / determinism
 - [x] Cross-machine check of the placement/economy/cheat changes (Linux + Windows, Autopilot wallet/normal/hard + cheat gifts): in sync.
