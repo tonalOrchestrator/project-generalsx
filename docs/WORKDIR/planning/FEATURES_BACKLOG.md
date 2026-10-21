@@ -115,9 +115,11 @@ money and general's points (frame request + 4) and that without the flag the req
 
 ### Netplay / determinism
 - [x] Cross-machine check of the placement/economy/cheat changes (Linux + Windows, Autopilot wallet/normal/hard + cheat gifts): in sync.
-- [ ] Re-run all headless netplay baselines now that the harness sends `MSG_FRAME_TICK` (true lockstep).
-- [~] Commands from a human player across machines: `-lanBuildSchedule` sends a real select + construct command and works solo;
-      not yet run across Linux + Windows. Note: with Autopilot on, a human's build click is placed with the AI's relaxed rules.
+- [x] Headless netplay now runs true lockstep (frame tick): every Linux + Windows match since 2026-10-20 evening (autopilot modes, cheats,
+      hand orders) is in sync. [ ] Re-run the old pre-fix baselines for the record now that the harness sends `MSG_FRAME_TICK` (true lockstep).
+- [x] Commands from a human player across machines: `-lanBuildSchedule` sends a real select + construct command; each machine's
+      human ordered a barracks by hand (Autopilot off at 100 s, on again at 190 s) in a Linux + Windows match: in sync on all 6
+      per-minute CRCs, identical final stats. Note: with Autopilot on, a human's build click is placed with the AI's relaxed rules.
 - [ ] Windows exe packaged for a remote friend (exe + DLLs + launcher .bat, no game data), shared by drive link.
 - [ ] Retail compatibility: confirm whether `RETAIL_COMPATIBLE_CRC` is on in the Windows build and what that means for
       cross-play with the original game.

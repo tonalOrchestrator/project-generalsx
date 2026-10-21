@@ -5,6 +5,7 @@
 # Usage: tools/netplay/run-netplay.sh [--map NAME] [--ai H,H] [--observer] [--minutes N] [--seed N]
 #   --map      map substring (default "Tournament Desert")   --ai    AI slots (E/M/H[:Template], comma separated)
 #   --autopilot "10:2,70:0,140:3"  schedule autopilot level changes (game-second:level, 0 off 1 easy 2 normal 3 hard) on both machines
+#   --build-schedule "130:barracks"  every human orders a structure by hand at that game-second (headless runs)
 #   --camera-local  windowed runs: each machine's camera stays on its own base (two human players) instead of hopping between AIs
 #   --cheats   pass -cheats to both machines (money / general-point hotkeys)
 #   --cheat-schedule "30:5000:1"  gift money / general points from a test run (game-second:money:points; headless runs, needs --cheats)
@@ -16,7 +17,7 @@
 # Environment: LINUX_GAME_DIR (default ~/GeneralsX/GeneralsZH), WIN_GAME_DIR (default C:\GeneralsZH)
 set -euo pipefail
 
-MAP="Tournament Desert" AI="H,H" OBS="" MINUTES=10 SEED="" LINUX_IP="" WIN_IP="" WATCH=0 LWATCH=0 SHOT_SECS=30 CAM_SECS=30 AUTOP="" AUTOP_SCHED="" CHEATS="" CHEAT_SCHED="" CAMLOCAL=""
+MAP="Tournament Desert" AI="H,H" OBS="" MINUTES=10 SEED="" LINUX_IP="" WIN_IP="" WATCH=0 LWATCH=0 SHOT_SECS=30 CAM_SECS=30 AUTOP="" AUTOP_SCHED="" CHEATS="" CHEAT_SCHED="" CAMLOCAL="" BUILD_SCHED=""
 HOST=vadapuppy
 LINUX_GAME_DIR=${LINUX_GAME_DIR:-$HOME/GeneralsX/GeneralsZH}
 WIN_GAME_DIR=${WIN_GAME_DIR:-C:\\GeneralsZH}
@@ -29,6 +30,7 @@ while [[ $# -gt 0 ]]; do
     --seed) SEED="-lanSeed $2"; shift 2;;
     --autopilot) AUTOP_SCHED=$2; AUTOP="-lanAutopilotSchedule $2"; shift 2;;
     --cheats) CHEATS="-cheats"; shift;;
+    --build-schedule) BUILD_SCHED=$2; shift 2;;
     --camera-local) CAMLOCAL="-lanCameraLocal -lanCameraSeconds 0"; shift;;
     --cheat-schedule) CHEAT_SCHED=$2; shift 2;;
     --watch) WATCH=1; shift;;
@@ -66,7 +68,7 @@ if [[ $LWATCH == 1 ]]; then
 else
   cd "$LINUX_GAME_DIR"
   LD_LIBRARY_PATH="$LINUX_GAME_DIR" ./GeneralsXZH -headless -lanhost "$MAP" -lanHumans 2 -lanSlots "$AI" $OBS $SEED \
-    -lanMaxMinutes "$MINUTES" -lanName LinuxHost -lanIP "$LINUX_IP" -lanStats "$OUT/host-stats.json" $AUTOP $CHEATS ${CHEAT_SCHED:+-lanCheatSchedule $CHEAT_SCHED} > "$OUT/host.log" 2>&1 &
+    -lanMaxMinutes "$MINUTES" -lanName LinuxHost -lanIP "$LINUX_IP" -lanStats "$OUT/host-stats.json" $AUTOP $CHEATS ${CHEAT_SCHED:+-lanCheatSchedule $CHEAT_SCHED} ${BUILD_SCHED:+-lanBuildSchedule $BUILD_SCHED} > "$OUT/host.log" 2>&1 &
 fi
 HOST_PID=$!
 for _ in $(seq 1 90); do grep -q "host lobby ready" "$OUT/host.log" 2>/dev/null && break; kill -0 $HOST_PID 2>/dev/null || break; sleep 1; done
@@ -89,7 +91,7 @@ if [[ $WATCH == 1 ]]; then
   ) &
   WIN_SSH=$!
 else
-  ssh "$HOST" "cd $WIN_GAME_DIR; \$p = Start-Process .\\GeneralsXZH.exe -ArgumentList '-headless','-lanjoin','$LINUX_IP','-lanName','WinJoin','-lanIP','$WIN_IP','-lanMaxMinutes','$MINUTES','-lanStats','$WIN_GAME_DIR\\netplay-stats.json' ${OBS:+,'-lanObserver'} ${AUTOP_SCHED:+,'-lanAutopilotSchedule','$AUTOP_SCHED'} ${CHEATS:+,'-cheats'} ${CHEAT_SCHED:+,'-lanCheatSchedule','$CHEAT_SCHED'} -PassThru -NoNewWindow -RedirectStandardOutput netplay-join.log -RedirectStandardError netplay-join.err; \$p.WaitForExit(); \$p.WaitForExit(); 'win exit ' + \$p.ExitCode" > "$OUT/win-exit.txt" 2>&1 &
+  ssh "$HOST" "cd $WIN_GAME_DIR; \$p = Start-Process .\\GeneralsXZH.exe -ArgumentList '-headless','-lanjoin','$LINUX_IP','-lanName','WinJoin','-lanIP','$WIN_IP','-lanMaxMinutes','$MINUTES','-lanStats','$WIN_GAME_DIR\\netplay-stats.json' ${OBS:+,'-lanObserver'} ${AUTOP_SCHED:+,'-lanAutopilotSchedule','$AUTOP_SCHED'} ${CHEATS:+,'-cheats'} ${CHEAT_SCHED:+,'-lanCheatSchedule','$CHEAT_SCHED'} ${BUILD_SCHED:+,'-lanBuildSchedule','$BUILD_SCHED'} -PassThru -NoNewWindow -RedirectStandardOutput netplay-join.log -RedirectStandardError netplay-join.err; \$p.WaitForExit(); \$p.WaitForExit(); 'win exit ' + \$p.ExitCode" > "$OUT/win-exit.txt" 2>&1 &
   WIN_SSH=$!
 fi
 
