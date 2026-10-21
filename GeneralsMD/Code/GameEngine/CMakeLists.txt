@@ -234,6 +234,13 @@ set(GAMEENGINE_SRC
 #    Include/GameLogic/AIPathfind.h
     Include/GameLogic/AIPlayer.h
     Include/GameLogic/AISkirmishPlayer.h
+    Include/GameLogic/AIAutopilot.h
+    Include/GameLogic/AutopilotDefense.h
+    Include/GameLogic/AutopilotEconomy.h
+    Include/GameLogic/AutopilotExplorer.h
+    Include/GameLogic/AutopilotHost.h
+    Include/GameLogic/AutopilotLog.h
+    Include/GameLogic/AutopilotPlanner.h
     Include/GameLogic/AutopilotProfile.h
     Include/GameLogic/AIStateMachine.h
     Include/GameLogic/AITNGuard.h
@@ -832,6 +839,12 @@ set(GAMEENGINE_SRC
 #    Source/GameLogic/AI/AIPathfind.cpp
     Source/GameLogic/AI/AIPlayer.cpp
     Source/GameLogic/AI/AISkirmishPlayer.cpp
+    Source/GameLogic/AI/AIAutopilot.cpp
+    Source/GameLogic/AI/AutopilotDefense.cpp
+    Source/GameLogic/AI/AutopilotEconomy.cpp
+    Source/GameLogic/AI/AutopilotExplorer.cpp
+    Source/GameLogic/AI/AutopilotLog.cpp
+    Source/GameLogic/AI/AutopilotPlanner.cpp
     Source/GameLogic/AI/AutopilotProfile.cpp
     Source/GameLogic/AI/AIStates.cpp
     Source/GameLogic/AI/AITNGuard.cpp

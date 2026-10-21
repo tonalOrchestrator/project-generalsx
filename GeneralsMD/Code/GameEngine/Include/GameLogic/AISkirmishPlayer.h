@@ -30,7 +30,9 @@
 
 #include "Common/GameMemory.h"
 #include "GameLogic/AIPlayer.h"
+#include "GameLogic/AutopilotHost.h"
 
+class AIAutopilot;
 class BuildListInfo;
 class SpecialPowerTemplate;
 
@@ -38,7 +40,8 @@ class SpecialPowerTemplate;
 /**
  * The computer-controlled opponent.
  */
-class AISkirmishPlayer : public AIPlayer
+// GeneralsX @refactor Claude 21/10/2026 Also the AutopilotHost of the autopilot attached to a human player (see AIAutopilot).
+class AISkirmishPlayer : public AIPlayer, private AutopilotHost
 {
 	MEMORY_POOL_GLUE_WITH_USERLOOKUP_CREATE( AISkirmishPlayer, "AISkirmishPlayer"  )
 
@@ -54,16 +57,7 @@ public:	// AIPlayer interface methods.
 	virtual void newMap() override;											///< New map loaded call.
 
 	virtual void adoptExistingBase() override;
-	Bool autopilotQueueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth, KindOfType onlyKind = KINDOF_INVALID);
-	void autopilotExplore();	///< GeneralsX: explore mode: train a capture-capable infantry unit and send it to capture neutral buildings
-	Bool autopilotIsThreatened();	///< GeneralsX: enemy units near the base
-	void autopilotTrainDefenders();	///< GeneralsX: wallet mode under attack: queue a defender at a barracks / war factory
-	Int autopilotGatherers() const;	///< GeneralsX: desired supply gatherers for the current level
-	Bool autopilotFindSupplySpot(const ThingTemplate *need, Object *dozer, const Object *warehouse, Coord3D *out);
-	Bool autopilotQueueSupplyExpansion(UnsignedInt money);	///< GeneralsX: a second supply center at another warehouse
-	void autopilotMarkSupplyEntry(BuildListInfo *info, const ThingTemplate *tmpl);	///< GeneralsX: flag a supply center entry so trucks are sent to it
-	void autopilotExplainStall(BuildListInfo *info);	///< GeneralsX: log why a queued structure was not placed (harness runs only)
-	void autopilotQueueNextStructure();	///< GeneralsX: autopilot's build planner (the skirmish scripts do this for computer players)						///< GeneralsX: claim the human player's existing structures for the build list
+	virtual void attachAutopilot(const AutopilotProfile &profile) override;	///< GeneralsX: start (or re-level) the autopilot on this AI player
 
 	/// Invoked when a unit I am training comes into existence
 	virtual void onUnitProduced( Object *factory, Object *unit ) override;
@@ -128,13 +122,24 @@ protected:
 
 
 private:
-	BuildListInfo *m_autopilotPending = nullptr;		///< GeneralsX: build-list entry the autopilot queued and is waiting on
-	UnsignedInt m_autopilotPendingFrame = 0;
-	ObjectID m_exploreExplorer[8] = {};				///< GeneralsX explore mode: explorer on each errand ...
-	ObjectID m_exploreTarget[8] = {};				///< ... and the building it was sent to capture
-	UnsignedInt m_exploreOrderFrame[8] = {};
-	Bool m_exploreScouting[8] = {};					///< the errand is a walk to reveal the building, not a capture yet
-	ObjectID m_exploreBlacklist[16] = {};			///< targets an explorer failed to capture (unreachable ...), skipped until the frame below
-	UnsignedInt m_exploreBlacklistUntil[16] = {};
-	Int m_autopilotRing = 0;							///< GeneralsX: next slot on the ring around the base for a prerequisite structure
+	// GeneralsX @refactor Claude 21/10/2026 AutopilotHost: what the autopilot may use of this AI player, nothing more.
+	virtual Player *player() const override { return m_player; }
+	virtual const Coord3D &baseCenter() const override { return m_baseCenter; }
+	virtual Real baseRadius() const override { return m_baseRadius; }
+	virtual GameDifficulty difficulty() const override { return m_difficulty; }
+	virtual Object *findDozerNear(const Coord3D *pos) override { return findDozer(pos); }
+	virtual void requestDozer() override { queueDozer(); }
+	virtual Bool isSafeToBuildAt(const Coord3D *pos, const ThingTemplate *tmpl) override { return isLocationSafe(pos, tmpl); }
+	virtual Object *findSupplyWarehouse(Int minSupplies) override { return findSupplyCenter(minSupplies); }
+	virtual void requestUpgrade(const AsciiString &upgradeName) override { buildUpgrade(upgradeName); }
+	virtual Bool structureSlotReady() const override { return m_readyToBuildStructure; }
+	virtual Int buildDelayFrames() const override { return m_buildDelay; }
+	virtual Int structureTimerFrames() const override { return m_structureTimer; }
+	virtual void kickBuildTimer() override { m_buildDelay = 0; }
+	virtual void runBaseBuilding() override { doBaseBuilding(); checkReadyTeams(); checkQueuedTeams(); }
+	virtual Bool tickTeamTimer() override { --m_teamDelay; return m_teamDelay < 1; }
+	virtual void queueProduction() override { queueUnits(); }
+	virtual void restartTeamTimer(Int frames) override { m_teamDelay = frames; }
+
+	AIAutopilot *m_autopilot = nullptr;		///< GeneralsX: the autopilot driving this (human) player's base, or null (not saved, not in the CRC)
 };

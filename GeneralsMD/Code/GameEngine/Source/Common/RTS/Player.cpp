@@ -793,9 +793,7 @@ void Player::applyAutopilotProfile(Int level)
 	const AutopilotProfile *profile = AutopilotProfile::forLevel(level);
 	if (!profile || !m_ai)
 		return;
-	m_ai->setAutopilotWallet(profile->m_wallet);
-	m_ai->setAutopilotExplore(profile->m_explore);
-	m_ai->setAIDifficulty(profile->m_difficulty);
+	m_ai->attachAutopilot(*profile);
 }
 
 void Player::setAutopilot(Int level)
@@ -828,7 +826,6 @@ void Player::setAutopilot(Int level)
 		const Bool canBuildUnits = m_canBuildUnits;	// the AI constructors flip this flag
 		m_ai = newInstance(AISkirmishPlayer)( this );
 		m_canBuildUnits = canBuildUnits;
-		m_ai->setAutopilotOnly(TRUE);
 		m_ai->adoptExistingBase();
 	}
 
@@ -4325,7 +4322,6 @@ void Player::xfer( Xfer *xfer )
 			const Bool canBuildUnits = m_canBuildUnits;	// the AI constructors flip this flag
 			m_ai = newInstance(AISkirmishPlayer)( this );
 			m_canBuildUnits = canBuildUnits;
-			m_ai->setAutopilotOnly(TRUE);
 			applyAutopilotProfile(savedAutopilotLevel);
 			m_autopilotLevel = savedAutopilotLevel;
 		}

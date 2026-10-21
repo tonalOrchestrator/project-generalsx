@@ -34,6 +34,7 @@
 enum { INVALID_SKILLSET_SELECTION = -1 };
 
 class BuildListInfo;
+struct AutopilotProfile;
 
 /**
  * When a team is selected for training, a list of these
@@ -186,15 +187,9 @@ public: // AIPlayer interface, may be overridden by AISkirmishPlayer.  jba.
 	virtual void selectSkillset(Int skillset);
 
 // GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
-	/// Autopilot (build-only) AIs build the player's base (structures, dozers, supply trucks) but never army teams or attacks.
-	void setAutopilotOnly(Bool assistOnly) { m_autopilotOnly = assistOnly; }
-	Bool isAutopilotOnly() const { return m_autopilotOnly; }
-	/// Wallet mode (autopilot level 4): defend, survive, hoard money. Builds economy and base defenses only.
-	void setAutopilotWallet(Bool wallet) { m_autopilotWallet = wallet; }
-	Bool isAutopilotWallet() const { return m_autopilotWallet; }
-	/// Explore mode (autopilot level 5): like normal, plus capture-capable infantry sent to capture neutral buildings for income.
-	void setAutopilotExplore(Bool explore) { m_autopilotExplore = explore; }
-	Bool isAutopilotExplore() const { return m_autopilotExplore; }
+	/// Autopilot (see AIAutopilot) builds a human's base (structures, dozers, supply trucks) but never army teams or attacks.
+	/// Only the skirmish AI can host one; the level is applied by Player::applyAutopilotProfile.
+	virtual void attachAutopilot(const AutopilotProfile &profile) {}
 	/// Link the structures the player already owns to this AI's build list so they are not rebuilt.
 	virtual void adoptExistingBase() {}
 
@@ -284,10 +279,6 @@ protected:
 	GameDifficulty m_difficulty;
 
 	Int			m_skillsetSelector;
-
-	Bool		m_autopilotOnly;						///< GeneralsX: build-only AI attached to a human player (not saved, not in the CRC)
-	Bool		m_autopilotExplore;						///< GeneralsX: autopilot explore mode: capture neutral buildings
-	Bool		m_autopilotWallet;						///< GeneralsX: autopilot wallet mode: economy and defenses only, keep a cash reserve
 
 	Coord3D m_baseCenter; // Center of the initial build list of structures.
 	Bool		m_baseCenterSet; // True if baseCenter is valid.
