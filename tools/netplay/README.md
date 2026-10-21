@@ -56,6 +56,10 @@ tools/netplay/run-netplay.sh --map "Tournament Desert" --ai H,H --observer --min
 - The Windows box joins (outbound first) because its Wi-Fi is the Public firewall profile.
 - `linux-launch.sh` runs the windowed game inside Xvfb; software Vulkan ran out of memory on the 9 GB box, so it is unused.
 
+`run-netplay.sh --fast` skips the real-time frame pacing on both machines (headless runs): the game phase of a match is ~3.6x shorter,
+and the machines still have to agree on every checksum. Scheduled commands land on a frame chosen from live timing, so two runs with
+the same seed can differ by a couple of frames' worth of results; use the solo scenario matrix for exact before/after comparisons.
+
 ## Autopilot scenario matrix
 
 ```bash

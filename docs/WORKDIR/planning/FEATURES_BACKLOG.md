@@ -163,6 +163,11 @@ money and general's points (frame request + 4) and that without the flag the req
 - [ ] Netplay over the internet (Tailscale) between two homes.
 
 ### Tooling
+- [x] `run-netplay.sh --fast` (skip the frame pacing on both machines): the game phase of a 4 game-minute Linux + Windows match took 68 s instead
+      of 247 s (3.6x), both runs IN SYNC. Two runs with the same seed end with slightly different numbers because the network picks the
+      frame a scheduled command (autopilot switch, cheat, hand order) lands on from live timing (frame 304 vs 306): consistent across the two
+      machines, not a determinism bug. [ ] ~75 s of fixed setup and teardown per match remain (lobby, map load, ssh, log fetch): trim.
+- Windows build is not the bottleneck: it is incremental (~1 min for a sim change) on the 16-thread laptop.
 - [ ] Linux screenshots are written with a literal backslash in the file name (task spawned; driver works around it).
 - [x] Demo video: `tools/netplay/make_demo.sh` runs a visible solo game (Autopilot on, off, a hand-ordered Barracks via the real
       select + construct commands, on again) and stitches in-engine screenshots into a captioned mp4. [ ] A real screen recording with
