@@ -121,8 +121,12 @@ money and general's points (frame request + 4) and that without the flag the req
       human ordered a barracks by hand (Autopilot off at 100 s, on again at 190 s) in a Linux + Windows match: in sync on all 6
       per-minute CRCs, identical final stats. Note: with Autopilot on, a human's build click is placed with the AI's relaxed rules.
 - [ ] Windows exe packaged for a remote friend (exe + DLLs + launcher .bat, no game data), shared by drive link.
-- [ ] Retail compatibility: confirm whether `RETAIL_COMPATIBLE_CRC` is on in the Windows build and what that means for
-      cross-play with the original game.
+- [x] Retail compatibility, answer: `RETAIL_COMPATIBLE_CRC` is `(0)` by default (`Core/GameEngine/Include/Common/GameDefines.h`), so
+      neither the Linux nor the Windows build is expected to be CRC-compatible with retail Zero Hour 1.04 and a match against the
+      original game would desync or be refused. Linux <-> Windows builds of THIS fork agree with each other (every match above).
+      The autopilot code only changes anything for a player who has switched Autopilot on, so it would not break CRC compatibility
+      for ordinary games if that switch were turned on later (it is a compile definition guarded by `#ifndef`).
+      [ ] Try a build with `RETAIL_COMPATIBLE_CRC=1` against a real retail client if retail cross-play is ever wanted.
 - [ ] Netplay over the internet (Tailscale) between two homes.
 
 ### Tooling
