@@ -285,6 +285,25 @@ int LanNetplayHarness::run()
 	// -lanAutopilotSchedule "10:2,70:0,140:2": game-second:level pairs, sent as MSG_SET_AUTOPILOT through the
 	// message stream (same path as the hotkey), so they travel the network command stream and stay in sync.
 	struct AutopilotStep { UnsignedInt frame; Int level; };
+	struct CheatStep { UnsignedInt frame; Int money; Int points; };
+	CheatStep cheatSteps[16];
+	Int numCheatSteps = 0;
+	Int nextCheatStep = 0;
+	{
+		AsciiString spec = TheGlobalData->m_lanCheatSchedule;
+		AsciiString token;
+		while (spec.nextToken(&token, ",") && numCheatSteps < 16)
+		{
+			int sec = 0, money = 0, points = 0;
+			if (sscanf(token.str(), "%d:%d:%d", &sec, &money, &points) == 3)
+			{
+				cheatSteps[numCheatSteps].frame = (UnsignedInt)sec * LOGICFRAMES_PER_SECOND;
+				cheatSteps[numCheatSteps].money = money;
+				cheatSteps[numCheatSteps].points = points;
+				++numCheatSteps;
+			}
+		}
+	}
 	AutopilotStep autopilotSteps[16];
 	Int numAutopilotSteps = 0;
 	Int nextAutopilotStep = 0;
@@ -547,6 +566,18 @@ int LanNetplayHarness::run()
 					}
 
 					const UnsignedInt frame = TheGameLogic->getFrame();
+					while (nextCheatStep < numCheatSteps && frame >= cheatSteps[nextCheatStep].frame)
+					{
+						Player* local = ThePlayerList ? ThePlayerList->getLocalPlayer() : nullptr;
+						if (local && !local->isPlayerObserver())
+						{
+							GameMessage* cheatMsg = TheMessageStream->appendMessage(GameMessage::MSG_CHEAT_GIVE);
+							cheatMsg->appendIntegerArgument(cheatSteps[nextCheatStep].money);
+							cheatMsg->appendIntegerArgument(cheatSteps[nextCheatStep].points);
+							log("cheat request money=%d points=%d at frame %u", cheatSteps[nextCheatStep].money, cheatSteps[nextCheatStep].points, frame);
+						}
+						++nextCheatStep;
+					}
 					while (nextAutopilotStep < numAutopilotSteps && frame >= autopilotSteps[nextAutopilotStep].frame)
 					{
 						Player* local = ThePlayerList ? ThePlayerList->getLocalPlayer() : nullptr;

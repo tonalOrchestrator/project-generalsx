@@ -515,6 +515,12 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 						cheatPlayer->getMoney()->deposit((UnsignedInt)money, TRUE, FALSE);
 					if (points > 0)
 						cheatPlayer->addSciencePurchasePoints(points);
+					if (TheGlobalData->m_lanHarness)
+					{
+						printf("NETPLAY cheat applied player=%d money=+%d points=+%d -> money=%u points=%d (frame %u)\n", msg->getPlayerIndex(), money, points,
+							cheatPlayer->getMoney()->countMoney(), (Int)cheatPlayer->getSciencePurchasePoints(), getFrame());
+						fflush(stdout);
+					}
 				}
 			}
 			break;

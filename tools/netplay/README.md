@@ -67,4 +67,4 @@ tools/netplay/autopilot_scenarios.py --factions FactionGLA --levels 4   # one sc
 One human on Autopilot vs one Easy AI, headless, one machine, `-lanFast` (no network pacing). Per scenario it checks the player
 is alive, the faction really was the one requested, placements did not fail, the supply center went up, income started and the
 base grew. Logs and `summary.json` land in `logs/autopilot-scenarios/<timestamp>/`. Extra engine flags: `-lanHostTemplate
-<Faction>` (the host's faction, e.g. `FactionAmericaAirForceGeneral`), `-lanFast`.
+<Faction>` (the host's faction, e.g. `FactionAmericaAirForceGeneral`), `-lanFast`, `-lanCheatSchedule "sec:money:points,..."` (with `-cheats`).

@@ -390,6 +390,7 @@ public:
 	Int m_lanScreenshotSeconds;			///< windowed: in-engine PNG screenshot every N game seconds (0 = off)
 	Int m_lanCameraSeconds;				///< windowed: seconds between camera hops across AI bases (0 = only at start)
 	Bool m_allowCheats;					///< GeneralsX: -cheats, enables the money / general-point cheat hotkeys (must be set on every machine)
+	AsciiString m_lanCheatSchedule;		///< GeneralsX: "sec:money:points,...": send cheat gifts (needs -cheats on every machine)
 	AsciiString m_lanAutopilotSchedule;	///< "sec:level,sec:level": send autopilot level changes (0-3) at those game seconds
 	Int m_simulateReplayJobs; ///< Maximum number of processes to use for simulation, or SIMULATE_REPLAYS_SEQUENTIAL for sequential simulation
 

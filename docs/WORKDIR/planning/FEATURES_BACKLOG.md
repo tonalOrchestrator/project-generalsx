@@ -61,10 +61,11 @@ spending stopped at the foundation cost.
 - Self-diagnosing logs (harness runs): `NETPLAY autopilot place ... placed|waiting for money|FAILED`, a stall explanation with
   dozer / money / legality codes, and a reason whenever the supply expansion declines.
 
-### Cheat mode - done, untested in play
+### Cheat mode - done, verified solo (not yet by hand in play)
 `-cheats` (needed on every machine) enables Ctrl+Shift+M (+$10,000) and Ctrl+Shift+G (+1 general's point) through the
 network command stream. A machine without `-cheats` skips the command, so the match desyncs visibly instead of anyone
-cheating unnoticed.
+cheating unnoticed. `-lanCheatSchedule "sec:money:points,..."` triggers it from a test run: verified that `-cheats` applies the
+money and general's points (frame request + 4) and that without the flag the request is ignored.
 
 ---
 
@@ -93,11 +94,13 @@ cheating unnoticed.
 
 ### Autopilot
 - [x] Prerequisite retries: caused by the human-only placement checks above, fixed.
-- [ ] Wallet defenses: several factions end phase 2 with no defense at all (the defense needs a prerequisite or is not in the
-      faction's build list); decide what "defend" should build for them, and add defending units.
-- [ ] Second supply center on GLA factions (no legal spot found near the second warehouse in the matrix).
+- [x] Wallet defenses: USA builds a Patriot battery, China speaker towers, GLA tunnel networks (prerequisite defenses once the bank
+      is $3,000 over their cost). [ ] Add defending units and scale the number of defenses with the bank.
+- [x] Second supply center on GLA factions (fan search around the warehouse).
 - [ ] Replace lost trucks/workers explicitly and scale it with the level (today the AI's gatherer logic does it).
-- [ ] Do not take a dozer the human just ordered; count manually built structures towards the caps.
+- [x] Manually built structures count towards the caps (the planner counts what the player owns). A dozer with a build task pending
+      is already skipped by `findDozer`, so a dozer the human ordered to build is left alone.
+- [ ] Cheat mode across two machines (one without `-cheats` should desync visibly) and by hand with the hotkeys.
 - [ ] Re-adopt manual buildings on toggle-on (done for entries with the same template; extra structures the player built that are
       not in the list are ignored).
 - [ ] Supply trucks / dozers via the assist; decide on upgrades and general's skills (currently left to the player).

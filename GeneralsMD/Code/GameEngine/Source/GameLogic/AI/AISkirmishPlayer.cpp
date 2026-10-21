@@ -1150,6 +1150,30 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 	UnsignedInt blockedCost = 0;
 	Object *dozer = nullptr;
 
+	// GeneralsX @feature Claude 20/10/2026 Count the structures the player really owns, so ones built by hand count towards the
+	// per-level caps (the planner used to see only its own build-list entries and would build a duplicate).
+	AsciiString ownedNames[96];
+	Int ownedCounts[96];
+	Int numOwned = 0;
+	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
+	{
+		if (obj->getControllingPlayer() != m_player || !obj->isKindOf(KINDOF_STRUCTURE))
+			continue;
+		const AsciiString tmplName = obj->getTemplate()->getName();
+		Int slot = 0;
+		while (slot < numOwned && !(ownedNames[slot] == tmplName))
+			++slot;
+		if (slot == numOwned)
+		{
+			if (numOwned >= 96)
+				continue;
+			ownedNames[numOwned] = tmplName;
+			ownedCounts[numOwned] = 0;
+			++numOwned;
+		}
+		++ownedCounts[slot];
+	}
+
 	for (BuildListInfo *info = m_player->getBuildList(); info; info = info->getNext())
 	{
 		const AsciiString name = info->getTemplateName();
@@ -1174,10 +1198,10 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 		if (wallet && isDefense && defensesBuilt >= walletDefenseTotal)
 			continue;
 
-		Int have = 0;
-		for (BuildListInfo *other = m_player->getBuildList(); other; other = other->getNext())
-			if (other->getTemplateName() == name && TheGameLogic->findObjectByID(other->getObjectID()))
-				++have;
+		Int have = 0;	// what the player owns of this structure, whoever built it
+		for (Int o = 0; o < numOwned; ++o)
+			if (ownedNames[o] == name)
+				have = ownedCounts[o];
 		if (!isPower && have >= (isDefense ? walletDefenseCap : cap))
 			continue;
 
