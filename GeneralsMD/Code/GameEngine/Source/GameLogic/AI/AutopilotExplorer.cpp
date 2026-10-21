@@ -37,19 +37,20 @@
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
 #include "GameLogic/AutopilotProfile.h"
+#include "GameLogic/AutopilotUnits.h"
 
-// GeneralsX @feature Claude 21/10/2026 The infantry that carry the capture-building special power once the "Capture Building" upgrade is bought. A
-// template cannot report its special powers (only a built object can), so this is a list by unit name, taken from the game's object INIs:
-// the Ranger (USA), Red Guard (China), Rebel (GLA) and, for the Infantry General who has no Red Guard, the Minigunner. Variants of a general
-// carry a prefix (Lazr_, Nuke_, Infa_, ...), so the match is on the unit name inside the template name.
-static Bool isCaptureCapableInfantry(const ThingTemplate *t)
+Bool AutopilotExplorer::isExplorer(const Object *unit) const
 {
-	AsciiString lower = t->getName();
-	lower.toLower();
-	static const char *const names[] = { "ranger", "redguard", "rebel", "minigunner" };
-	for (Int i = 0; i < (Int)(sizeof(names) / sizeof(names[0])); ++i)
-		if (strstr(lower.str(), names[i]))
-			return TRUE;
+	if (!m_profile.m_explore)
+		return FALSE;
+	Int seen = 0;
+	for (Object *obj = TheGameLogic->getFirstObject(); obj && seen < EXPLORER_ROSTER; obj = obj->getNextObject())
+		if (obj->getControllingPlayer() == m_host.player() && !obj->isKindOf(KINDOF_STRUCTURE) && obj->hasSpecialPower(SPECIAL_INFANTRY_CAPTURE_BUILDING))
+		{
+			if (obj == unit)
+				return TRUE;
+			++seen;
+		}
 	return FALSE;
 }
 
@@ -79,14 +80,14 @@ void AutopilotExplorer::update()
 		return;
 	Player *player = m_host.player();
 	const UnsignedInt frame = TheGameLogic->getFrame();
-	const Int wantedExplorers = 2;
+	const Int wantedExplorers = EXPLORER_ROSTER;
 
 	// The explorers we have, and forget errands whose explorer is idle again (done, or failed).
 	Object *explorers[MAX_EXPLORERS];
 	Int numExplorers = 0;
-	for (Object *obj = TheGameLogic->getFirstObject(); obj && numExplorers < MAX_EXPLORERS; obj = obj->getNextObject())
+	for (Object *obj = TheGameLogic->getFirstObject(); obj && numExplorers < wantedExplorers; obj = obj->getNextObject())
 		if (obj->getControllingPlayer() == player && !obj->isKindOf(KINDOF_STRUCTURE) && obj->hasSpecialPower(SPECIAL_INFANTRY_CAPTURE_BUILDING))
-			explorers[numExplorers++] = obj;
+			explorers[numExplorers++] = obj;	// the first EXPLORER_ROSTER capture-capable units are the explorers; any others belong to the garrison squad
 
 	forgetFinishedErrands(frame);
 
@@ -162,7 +163,7 @@ void AutopilotExplorer::trainExplorer(UnsignedInt frame)
 		{
 			if (!t->isKindOf(KINDOF_INFANTRY) || !t->isKindOf(KINDOF_CAN_ATTACK))
 				continue;
-			if (!isCaptureCapableInfantry(t))
+			if (!AutopilotUnits::isCaptureCapableInfantry(t))
 				continue;
 			if (t->calcCostToBuild(player) + 500 > money || TheBuildAssistant->canMakeUnit(barracks, t) != CANMAKE_OK)
 				continue;

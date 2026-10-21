@@ -27,6 +27,7 @@
 #include "GameLogic/AutopilotLog.h"
 
 class AutopilotHost;
+class Object;
 struct AutopilotProfile;
 
 class AutopilotExplorer
@@ -38,8 +39,11 @@ public:
 	/// (or scout) the nearest safe neutral building. A building it fails to take is skipped for a while. Nothing here attacks an enemy.
 	void update();
 
+	/// True for the explorers: the first EXPLORER_ROSTER capture-capable units. The garrison squad leaves them alone.
+	Bool isExplorer(const Object *unit) const;
+
 private:
-	enum { MAX_EXPLORERS = 8, BLACKLIST_SIZE = 16 };
+	enum { MAX_EXPLORERS = 8, BLACKLIST_SIZE = 16, EXPLORER_ROSTER = 2 };
 
 	void forgetFinishedErrands(UnsignedInt frame);
 	void trainExplorer(UnsignedInt frame);

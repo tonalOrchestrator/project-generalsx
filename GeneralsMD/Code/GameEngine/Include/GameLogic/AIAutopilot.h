@@ -23,6 +23,8 @@
 //   AutopilotEconomy   supply gatherers, supply center placement and expansion
 //   AutopilotDefense   wallet mode: threat detection, base-defense budget, defender training
 //   AutopilotExplorer  explore mode: capture upgrade, explorers, scouting
+//   AutopilotSquad     wallet and explore modes: a tank person + a gun person garrisoned in buildings near the base
+//   AutopilotHackers   wallet mode (China): hackers holed up in the Internet Center for income
 // Applying a different level (setProfile) keeps every module's state; turning the autopilot off deletes this object.
 
 #pragma once
@@ -30,10 +32,12 @@
 #include "GameLogic/AutopilotDefense.h"
 #include "GameLogic/AutopilotEconomy.h"
 #include "GameLogic/AutopilotExplorer.h"
+#include "GameLogic/AutopilotHackers.h"
 #include "GameLogic/AutopilotPlanner.h"
 #include "GameLogic/AutopilotProfile.h"
+#include "GameLogic/AutopilotSquad.h"
 
-class AIAutopilot : private AutopilotPlanner::Links
+class AIAutopilot : private AutopilotPlanner::Links, private AutopilotSquad::Links
 {
 public:
 	AIAutopilot(AutopilotHost &host, const AutopilotProfile &profile);
@@ -56,10 +60,15 @@ private:
 	virtual void markSupplyEntry(BuildListInfo *info, const ThingTemplate *tmpl) override { m_economy.markSupplyEntry(info, tmpl); }
 	virtual Bool findSupplySpot(const ThingTemplate *need, Object *dozer, const Object *warehouse, Coord3D *out) override { return m_economy.findSupplySpot(need, dozer, warehouse, out); }
 
+	// AutopilotSquad::Links: the squad must not touch the explorers
+	virtual Bool isExplorer(const Object *unit) const override { return m_explorer.isExplorer(unit); }
+
 	AutopilotHost &m_host;
 	AutopilotProfile m_profile;	// declared before the modules: they hold a reference to it
 	AutopilotEconomy m_economy;
 	AutopilotDefense m_defense;
 	AutopilotExplorer m_explorer;
+	AutopilotSquad m_squad;
+	AutopilotHackers m_hackers;
 	AutopilotPlanner m_planner;
 };

@@ -79,6 +79,20 @@ Diagnosed with traces: first "not neutral" (the relationship toward an unowned b
 "special not ready" (the upgrade), then "in the shroud" (scouting). Built for Challenge mode, which has many neutral buildings; not yet
 tried on a Challenge map (the harness cannot start one: `-file` does not launch maps in this build).
 
+### Garrison squad and Hackers (Wallet and Explore modes) - done (solo-verified)
+Both requested by Ben. **Garrison squad** (wallet and explore): keeps a standing pair, alternating a "tank person" (Tank Hunter, Missile
+Defender, GLA RPG trooper) and a "gun person" (Ranger, Red Guard, Rebel, Minigunner), trained at a barracks while the bank is comfortable and
+sent into the nearest building that can hold troops within reach of the base (neutral buildings count; the game decides who may enter);
+the explorers are exempt (the first two capture-capable units). **Hackers** (wallet): the planner builds the Internet Center and a barracks,
+then China trains up to 6 Hackers and sends them into the Internet Center, where the game data says they hack faster. Measured solo:
+- vs a Medium AI, 14 game-minutes: Wallet survivors **8/12 -> 10/12**.
+- China Wallet income per game-minute rises from ~$3k (minute 4) to ~$5.8-6.7k by minutes 8-10 with the hackers in; over only 8 minutes
+  Wallet earns slightly less ($22.9k vs $24.8k on average) because the barracks, hackers and squad cost money up front.
+- Garrison orders happen on maps with enterable buildings within ~1,500 units of the base (Golden Oasis tents, Bitter Winter towers, Death
+  Valley watchtowers, Hostile Dawn bunkers); Leipzig Lowlands has none.
+Open: the USA squad made no garrison orders on Death Valley in Wallet mode (not yet understood); squad units are not sent to captured
+buildings specifically; supply drops (USA) are already covered by the supply logic.
+
 ### Autopilot economy and scenario matrix - done
 - Supply centers are placed next to the nearest warehouse with cash (fan search 6-20 cells around it, base side first), the
   engine refuses a center too close to supplies and trucks ignore one with no supplies in reach. Trucks are sent only to

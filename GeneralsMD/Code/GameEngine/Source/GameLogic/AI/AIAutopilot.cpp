@@ -24,6 +24,7 @@
 AIAutopilot::AIAutopilot(AutopilotHost &host, const AutopilotProfile &profile)
 	: m_host(host), m_profile(profile),
 	  m_economy(host, m_profile), m_defense(host, m_profile), m_explorer(host, m_profile),
+	  m_squad(host, m_profile, *this), m_hackers(host, m_profile),
 	  m_planner(host, m_profile, *this)
 {
 }
@@ -40,6 +41,8 @@ void AIAutopilot::update()
 		m_host.queueProduction();	// queues a supply truck when short, and trains any queued truck/dozer orders
 		m_defense.trainDefenders();	// wallet mode only, and only under attack
 		m_explorer.update();		// explore mode only
+		m_squad.update();			// wallet and explore modes: a standing tank person + gun person, garrisoned
+		m_hackers.update();			// wallet mode: hackers in the Internet Center
 		m_host.restartTeamTimer(2 * LOGICFRAMES_PER_SECOND);
 	}
 }

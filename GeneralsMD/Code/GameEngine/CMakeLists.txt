@@ -241,7 +241,10 @@ set(GAMEENGINE_SRC
     Include/GameLogic/AutopilotHost.h
     Include/GameLogic/AutopilotLog.h
     Include/GameLogic/AutopilotPlanner.h
+    Include/GameLogic/AutopilotHackers.h
     Include/GameLogic/AutopilotProfile.h
+    Include/GameLogic/AutopilotSquad.h
+    Include/GameLogic/AutopilotUnits.h
     Include/GameLogic/AIStateMachine.h
     Include/GameLogic/AITNGuard.h
     Include/GameLogic/Armor.h
@@ -845,7 +848,10 @@ set(GAMEENGINE_SRC
     Source/GameLogic/AI/AutopilotExplorer.cpp
     Source/GameLogic/AI/AutopilotLog.cpp
     Source/GameLogic/AI/AutopilotPlanner.cpp
+    Source/GameLogic/AI/AutopilotHackers.cpp
     Source/GameLogic/AI/AutopilotProfile.cpp
+    Source/GameLogic/AI/AutopilotSquad.cpp
+    Source/GameLogic/AI/AutopilotUnits.cpp
     Source/GameLogic/AI/AIStates.cpp
     Source/GameLogic/AI/AITNGuard.cpp
     Source/GameLogic/AI/Squad.cpp
