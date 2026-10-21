@@ -106,7 +106,7 @@ buildings belong to the opposing general (22 of 31 on Chem), which Explore never
 Wallet (level 4) vs Explore (level 5) on the same nine Challenge maps (China Infantry General, 15-minute cap, seconds survived; 900 = survived):
 Air 900 / 665, Chem 580 / 755, China Boss 630 / 645, Demolition 900 / 900, Laser 490 / 900, Nuke 795 / 775, Stealth 900 / 840, Super Weapons 350 / 410,
 Tank 605 / 685. Mean survival 683 s (Wallet) vs 730 s (Explore); Explore earns more on 7 of 9 maps. Neither holds a Challenge general's base for
-long: Super Weapons falls in under 7 minutes in both modes. A Challenge-tuned defence (or Explore's income feeding Wallet's defenders) is the open item.
+long: Super Weapons falls in under 7 minutes in both modes: at the end the player has $3,400, no dozer and no factory that could train one (`AIPlayer::findDozer` already queues a dozer when it has a factory), so it is a destroyed base, not a missing replacement rule. A Challenge-tuned defence (or Explore's income feeding Wallet's defenders) is the open item.
 
 ### Defending against a Hard AI (Wallet mode) - improved, not solved
 Goal from Ben: a 1v1 setup that can actually defend against a Hard opponent. Measured solo, headless, 16 game-minute cap, all 12 factions vs one
