@@ -116,7 +116,8 @@ money and general's points (frame request + 4) and that without the flag the req
 ### Netplay / determinism
 - [x] Cross-machine check of the placement/economy/cheat changes (Linux + Windows, Autopilot wallet/normal/hard + cheat gifts): in sync.
 - [ ] Re-run all headless netplay baselines now that the harness sends `MSG_FRAME_TICK` (true lockstep).
-- [ ] Commands from a human player (real orders) across machines, not just idle + autopilot.
+- [~] Commands from a human player across machines: `-lanBuildSchedule` sends a real select + construct command and works solo;
+      not yet run across Linux + Windows. Note: with Autopilot on, a human's build click is placed with the AI's relaxed rules.
 - [ ] Windows exe packaged for a remote friend (exe + DLLs + launcher .bat, no game data), shared by drive link.
 - [ ] Retail compatibility: confirm whether `RETAIL_COMPATIBLE_CRC` is on in the Windows build and what that means for
       cross-play with the original game.
@@ -124,7 +125,9 @@ money and general's points (frame request + 4) and that without the flag the req
 
 ### Tooling
 - [ ] Linux screenshots are written with a literal backslash in the file name (task spawned; driver works around it).
-- [ ] Record the demo video (Windows screen capture via ffmpeg) and drive manual clicks with scripted input.
+- [x] Demo video: `tools/netplay/make_demo.sh` runs a visible solo game (Autopilot on, off, a hand-ordered Barracks via the real
+      select + construct commands, on again) and stitches in-engine screenshots into a captioned mp4. [ ] A real screen recording with
+      mouse clicks on the Windows laptop (ffmpeg gdigrab + SendInput) is still optional and would take over its desktop.
 - [ ] Remove the Linux software-Vulkan Xvfb path (`tools/netplay/linux-launch.sh`) or make it work.
 
 ### Housekeeping

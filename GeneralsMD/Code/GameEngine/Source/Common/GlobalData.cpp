@@ -1039,6 +1039,8 @@ GlobalData::GlobalData()
 	m_lanCameraSeconds = 45;
 	m_lanAutopilotSchedule.clear();
 	m_lanCheatSchedule.clear();
+	m_lanBuildSchedule.clear();
+	m_lanCameraLocal = FALSE;
 	m_allowCheats = FALSE;
 	m_aiSkirmishScreenshotSeconds = 0;
 	m_aiSkirmishLog = 1;

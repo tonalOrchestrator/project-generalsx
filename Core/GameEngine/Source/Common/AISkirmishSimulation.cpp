@@ -408,7 +408,14 @@ void AISkirmishSimulation::updateWatchCamera()
 	// Collect the AI players in order.
 	Player* ais[MAX_PLAYER_COUNT];
 	Int numAI = 0;
-	for (Int i = 0; i < ThePlayerList->getPlayerCount() && numAI < MAX_PLAYER_COUNT; ++i)
+	// GeneralsX @feature Claude 20/10/2026 -lanCameraLocal: look at the local player's own base (a demo recording follows the human).
+	if (TheGlobalData->m_lanHarness && TheGlobalData->m_lanCameraLocal)
+	{
+		Player* local = ThePlayerList->getLocalPlayer();
+		if (local && !local->isPlayerObserver() && local->getMpStartIndex() >= 0)
+			ais[numAI++] = local;
+	}
+	for (Int i = 0; i < ThePlayerList->getPlayerCount() && numAI < MAX_PLAYER_COUNT && !(TheGlobalData->m_lanHarness && TheGlobalData->m_lanCameraLocal); ++i)
 	{
 		Player* p = ThePlayerList->getNthPlayer(i);
 		// isSkirmishAIPlayer excludes the civilian/neutral computer players that share start index 0

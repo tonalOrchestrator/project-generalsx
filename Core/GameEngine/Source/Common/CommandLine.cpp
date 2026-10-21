@@ -972,6 +972,8 @@ Int parseLanCameraSeconds(char *args[], int num)
 	return 1;
 }
 
+Int parseLanCameraLocal(char *[], int) { TheWritableGlobalData->m_lanCameraLocal = TRUE; return 1; }
+Int parseLanBuildSchedule(char *args[], int num) { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanBuildSchedule); }
 Int parseLanCheatSchedule(char *args[], int num) { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanCheatSchedule); }
 Int parseLanAutopilotSchedule(char *args[], int num) { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanAutopilotSchedule); }
 
@@ -1366,6 +1368,8 @@ static CommandLineParam paramsForStartup[] =
 	{ "-lanHostTemplate", parseLanHostTemplate },
 	{ "-lanFast", parseLanFast },
 	{ "-lanCheatSchedule", parseLanCheatSchedule },
+	{ "-lanBuildSchedule", parseLanBuildSchedule },
+	{ "-lanCameraLocal", parseLanCameraLocal },
 	{ "-lanIP", parseLanLocalIP },
 	{ "-lanName", parseLanName },
 	{ "-lanStats", parseLanStats },

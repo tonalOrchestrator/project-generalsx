@@ -29,10 +29,17 @@
 #include "Common/Player.h"
 #include "Common/PlayerList.h"
 #include "Common/PlayerTemplate.h"
+#include "Common/BuildAssistant.h"
 #include "Common/RandomValue.h"
+#include "Common/ThingFactory.h"
+#include "Common/ThingTemplate.h"
 #include "GameClient/GameClient.h"
 #include "GameClient/MapUtil.h"
+#include "GameClient/TerrainVisual.h"
 #include "GameLogic/GameLogic.h"
+#include "GameLogic/AIPathfind.h"
+#include "GameLogic/Object.h"
+#include "GameLogic/TerrainLogic.h"
 #include "GameLogic/VictoryConditions.h"
 #include "GameNetwork/GameInfo.h"
 #include "GameNetwork/IPEnumeration.h"
@@ -50,6 +57,66 @@
 static UnsignedInt nowMs()
 {
 	return GetTickCount();
+}
+
+// A human ordering a structure by hand, the way the UI does it: select the dozer, then construct. 'kind' is the structure type
+// ("barracks"); the template is the first one the dozer can build, the spot the first legal one around the command center.
+static void orderManualBuild(const AsciiString& kind)
+{
+	Player* local = ThePlayerList ? ThePlayerList->getLocalPlayer() : nullptr;
+	auto skip = [](const char* why) { printf("NETPLAY manual build skipped: %s\n", why); fflush(stdout); };
+	if (!local || local->isPlayerObserver())
+		return skip("no active local player");
+	Object* dozer = nullptr;
+	Object* hq = nullptr;
+	for (Object* obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
+	{
+		if (obj->getControllingPlayer() != local)
+			continue;
+		if (!dozer && obj->isKindOf(KINDOF_DOZER))
+			dozer = obj;
+		if (!hq && obj->isKindOf(KINDOF_COMMANDCENTER))
+			hq = obj;
+	}
+	if (!dozer || !hq)
+		return skip(dozer ? "no command center" : "no dozer or worker");
+	const KindOfType wanted = kind.compareNoCase("barracks") == 0 ? KINDOF_FS_BARRACKS : KINDOF_FS_POWER;
+	const ThingTemplate* place = nullptr;
+	for (const ThingTemplate* t = TheThingFactory->firstTemplate(); t && !place; t = t->friend_getNextTemplate())
+		if (t->isKindOf(KINDOF_STRUCTURE) && t->isKindOf(wanted) && TheBuildAssistant->canMakeUnit(dozer, t) == CANMAKE_OK)
+			place = t;
+	if (!place)
+		return skip("no buildable structure of that kind");
+	const Coord3D* center = hq->getPosition();
+	Coord3D spot = *center;
+	Bool found = FALSE;
+	for (Int ring = 12; ring <= 40 && !found; ring += 2)
+		for (Int a = 0; a < 8 && !found; ++a)
+		{
+			const Real ang = a * (PI / 4);
+			Coord3D c = *center;
+			c.x += WWMath::CosTrig(ang) * ring * PATHFIND_CELL_SIZE_F;
+			c.y += WWMath::SinTrig(ang) * ring * PATHFIND_CELL_SIZE_F;
+			c.z = TheTerrainLogic->getGroundHeight(c.x, c.y);
+			if (TheBuildAssistant->isLocationLegalToBuild(&c, place, place->getPlacementViewAngle(),
+					BuildAssistant::TERRAIN_RESTRICTIONS | BuildAssistant::CLEAR_PATH | BuildAssistant::NO_OBJECT_OVERLAP, dozer, nullptr) == LBC_OK)
+			{
+				spot = c;
+				found = TRUE;
+			}
+		}
+	TheTerrainVisual->removeAllBibs();
+	if (!found)
+		return skip("no legal spot near the command center");
+	GameMessage* selectMsg = TheMessageStream->appendMessage(GameMessage::MSG_CREATE_SELECTED_GROUP);
+	selectMsg->appendBooleanArgument(TRUE);
+	selectMsg->appendObjectIDArgument(dozer->getID());
+	GameMessage* buildMsg = TheMessageStream->appendMessage(GameMessage::MSG_DOZER_CONSTRUCT);
+	buildMsg->appendIntegerArgument(place->getTemplateID());
+	buildMsg->appendLocationArgument(spot);
+	buildMsg->appendRealArgument(place->getPlacementViewAngle());
+	printf("NETPLAY manual build ordered: %s at (%.0f,%.0f) with dozer %d\n", place->getName().str(), spot.x, spot.y, (int)dozer->getID());
+	fflush(stdout);
 }
 
 static void sleepMs(UnsignedInt ms)
@@ -285,6 +352,24 @@ int LanNetplayHarness::run()
 	// -lanAutopilotSchedule "10:2,70:0,140:2": game-second:level pairs, sent as MSG_SET_AUTOPILOT through the
 	// message stream (same path as the hotkey), so they travel the network command stream and stay in sync.
 	struct AutopilotStep { UnsignedInt frame; Int level; };
+	struct BuildStep { UnsignedInt frame; AsciiString kind; };
+	BuildStep buildSteps[16];
+	Int numBuildSteps = 0;
+	Int nextBuildStep = 0;
+	{
+		AsciiString spec = TheGlobalData->m_lanBuildSchedule;
+		AsciiString token;
+		while (spec.nextToken(&token, ",") && numBuildSteps < 16)
+		{
+			const char* colon = strchr(token.str(), ':');
+			if (colon && *(colon + 1))
+			{
+				buildSteps[numBuildSteps].frame = (UnsignedInt)atoi(token.str()) * LOGICFRAMES_PER_SECOND;
+				buildSteps[numBuildSteps].kind = AsciiString(colon + 1);
+				++numBuildSteps;
+			}
+		}
+	}
 	struct CheatStep { UnsignedInt frame; Int money; Int points; };
 	CheatStep cheatSteps[16];
 	Int numCheatSteps = 0;
@@ -566,6 +651,11 @@ int LanNetplayHarness::run()
 					}
 
 					const UnsignedInt frame = TheGameLogic->getFrame();
+					while (nextBuildStep < numBuildSteps && frame >= buildSteps[nextBuildStep].frame)
+					{
+						orderManualBuild(buildSteps[nextBuildStep].kind);
+						++nextBuildStep;
+					}
 					while (nextCheatStep < numCheatSteps && frame >= cheatSteps[nextCheatStep].frame)
 					{
 						Player* local = ThePlayerList ? ThePlayerList->getLocalPlayer() : nullptr;

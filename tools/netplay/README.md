@@ -68,4 +68,5 @@ tools/netplay/autopilot_scenarios.py --schedule "5:1,6:0,7:2,8:4,9:3,10:0"  # cu
 One human on Autopilot vs one Easy AI, headless, one machine, `-lanFast` (no network pacing). Per scenario it checks the player
 is alive, the faction really was the one requested, placements did not fail, the supply center went up, income started and the
 base grew. Logs and `summary.json` land in `logs/autopilot-scenarios/<timestamp>/`. Extra engine flags: `-lanHostTemplate
-<Faction>` (the host's faction, e.g. `FactionAmericaAirForceGeneral`), `-lanFast`, `-lanCheatSchedule "sec:money:points,..."` (with `-cheats`).
+<Faction>` (the host's faction, e.g. `FactionAmericaAirForceGeneral`), `-lanFast`, `-lanCheatSchedule "sec:money:points,..."` (with `-cheats`), `-lanBuildSchedule "sec:barracks,..."` (the local player orders a
+structure by hand), `-lanCameraLocal` (camera stays on the local base). `tools/netplay/make_demo.sh` builds the Autopilot demo video.
