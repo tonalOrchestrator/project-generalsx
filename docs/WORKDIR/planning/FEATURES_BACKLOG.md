@@ -108,7 +108,10 @@ money and general's points (frame request + 4) and that without the flag the req
 - [ ] Levels now differ in duplicate cap, gatherers and second supply center; make them change build pace and tech choice too.
 - [ ] `getPlayerDifficulty()` returns the attached AI's difficulty: check nothing gameplay-visible changes for the human.
 - [ ] Control-bar toggle button and an options entry instead of hotkeys only.
-- [ ] Autopilot state in saved games (currently not saved).
+- [~] Saved games: a save made with Autopilot on used to be unloadable (the load found "AI present" for a human player). `Player::xfer`
+      now saves the autopilot level for that case and re-creates the autopilot AI on load; old saves are unchanged. NOT yet tried by
+      actually saving and loading a skirmish (the harness has no save/load path): test by hand, then tick this.
+- [x] Rapid on/off/level toggling (15 changes per run, all 12 factions) leaves the player alive and building: no crash.
 
 ### Netplay / determinism
 - [x] Cross-machine check of the placement/economy/cheat changes (Linux + Windows, Autopilot wallet/normal/hard + cheat gifts): in sync.

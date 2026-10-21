@@ -4299,6 +4299,27 @@ void Player::xfer( Xfer *xfer )
 	// ai player data
 	Bool aiPlayerPresent = m_ai ? TRUE : FALSE;
 	xfer->xferBool( &aiPlayerPresent );
+
+	// GeneralsX @bugfix Claude 20/10/2026 A human with autopilot on has an AI attached, so a save made then claims "AI present" for a
+	// human player, which a fresh load has no AI for (the mismatch check below refused the whole save). Such a save also carries the
+	// autopilot level, and a load re-creates the autopilot AI shell here; its state follows from the snapshot below and the build
+	// list loaded above. Saves without autopilot never have this combination, so their format is unchanged.
+	if( aiPlayerPresent == TRUE && m_playerType == PLAYER_HUMAN )
+	{
+		Int savedAutopilotLevel = m_autopilotLevel;
+		xfer->xferInt( &savedAutopilotLevel );
+		if( xfer->getXferMode() == XFER_LOAD && m_ai == nullptr && savedAutopilotLevel > 0 )
+		{
+			const Bool canBuildUnits = m_canBuildUnits;	// the AI constructors flip this flag
+			m_ai = newInstance(AISkirmishPlayer)( this );
+			m_canBuildUnits = canBuildUnits;
+			m_ai->setAutopilotOnly(TRUE);
+			m_ai->setAutopilotWallet(savedAutopilotLevel == 4);
+			m_ai->setAIDifficulty(savedAutopilotLevel == 1 ? DIFFICULTY_EASY : ((savedAutopilotLevel == 2 || savedAutopilotLevel == 4) ? DIFFICULTY_NORMAL : DIFFICULTY_HARD));
+			m_autopilotLevel = savedAutopilotLevel;
+		}
+	}
+
 	if( (aiPlayerPresent == TRUE && m_ai == nullptr) || (aiPlayerPresent == FALSE && m_ai != nullptr) )
 	{
 

@@ -62,6 +62,7 @@ tools/netplay/run-netplay.sh --map "Tournament Desert" --ai H,H --observer --min
 tools/netplay/autopilot_scenarios.py                                    # 12 factions x levels 2 and 4, 4 game-minutes
 tools/netplay/autopilot_scenarios.py --levels 1 2 3 4 --minutes 8       # full matrix (about two minutes)
 tools/netplay/autopilot_scenarios.py --factions FactionGLA --levels 4   # one scenario
+tools/netplay/autopilot_scenarios.py --schedule "5:1,6:0,7:2,8:4,9:3,10:0"  # custom schedule / stress test (all factions)
 ```
 
 One human on Autopilot vs one Easy AI, headless, one machine, `-lanFast` (no network pacing). Per scenario it checks the player

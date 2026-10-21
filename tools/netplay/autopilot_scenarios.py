@@ -23,7 +23,7 @@ FACTIONS = [
     "FactionChina", "FactionChinaInfantryGeneral", "FactionChinaNukeGeneral", "FactionChinaTankGeneral",
     "FactionGLA", "FactionGLADemolitionGeneral", "FactionGLAStealthGeneral", "FactionGLAToxinGeneral",
 ]
-LEVEL_NAMES = {1: "easy", 2: "normal", 3: "hard", 4: "wallet"}
+LEVEL_NAMES = {1: "easy", 2: "normal", 3: "hard", 4: "wallet", 0: "custom"}
 
 
 def run_scenario(faction, level, args, outdir):
@@ -32,7 +32,7 @@ def run_scenario(faction, level, args, outdir):
     cmd = [
         "./GeneralsXZH", "-headless", "-lanhost", args.map, "-lanHumans", "1", "-lanSlots", "E",
         "-lanSeed", str(args.seed), "-lanMaxMinutes", str(args.minutes),
-        "-lanHostTemplate", faction, "-lanAutopilotSchedule", f"5:{level}",
+        "-lanHostTemplate", faction, "-lanAutopilotSchedule", args.schedule or f"5:{level}",
     ] + ([] if args.realtime else ["-lanFast"])
     env = dict(os.environ, LD_LIBRARY_PATH=str(GAME_DIR))
     started = time.time()
@@ -77,7 +77,7 @@ def analyse(log, level, minutes, faction):
         problems.append("player not alive")
     if res["failed_places"] > 2:
         problems.append(f"{res['failed_places']} failed placements")
-    if level != 4 and not res["supply_placed"] and res["earned"] == 0:
+    if level not in (0, 4) and not res["supply_placed"] and res["earned"] == 0:
         problems.append("no supply center and no income")
     if res["earned"] < 500 and minutes >= 4:
         problems.append("income under $500")
@@ -94,11 +94,12 @@ def main():
     ap.add_argument("--map", default="Dark Night")
     ap.add_argument("--minutes", type=int, default=4)
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--schedule", help='custom autopilot schedule "sec:level,..." instead of one level (e.g. a stress test); counts as level 0')
     ap.add_argument("--realtime", action="store_true", help="do not use -lanFast (run at game speed)")
     ap.add_argument("--list", action="store_true")
     args = ap.parse_args()
 
-    scenarios = [(f, l) for f in args.factions for l in args.levels]
+    scenarios = [(f, 0) for f in args.factions] if args.schedule else [(f, l) for f in args.factions for l in args.levels]
     if args.list:
         for f, l in scenarios:
             print(f"{f}-{LEVEL_NAMES[l]}")
