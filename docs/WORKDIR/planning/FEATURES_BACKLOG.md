@@ -100,7 +100,8 @@ money and general's points (frame request + 4) and that without the flag the req
 - [ ] Replace lost trucks/workers explicitly and scale it with the level (today the AI's gatherer logic does it).
 - [x] Manually built structures count towards the caps (the planner counts what the player owns). A dozer with a build task pending
       is already skipped by `findDozer`, so a dozer the human ordered to build is left alone.
-- [ ] Cheat mode across two machines (one without `-cheats` should desync visibly) and by hand with the hotkeys.
+- [x] Cheat mode across two machines with `-cheats` on both: gifts land on the same frame with identical money/points, in sync.
+- [ ] One machine without `-cheats` should desync visibly (untested), and the hotkeys by hand.
 - [ ] Re-adopt manual buildings on toggle-on (done for entries with the same template; extra structures the player built that are
       not in the list are ignored).
 - [ ] Supply trucks / dozers via the assist; decide on upgrades and general's skills (currently left to the player).
@@ -110,7 +111,8 @@ money and general's points (frame request + 4) and that without the flag the req
 - [ ] Autopilot state in saved games (currently not saved).
 
 ### Netplay / determinism
-- [ ] Cross-machine check of the placement/economy changes (running 2026-10-20); re-run all headless netplay baselines now that the harness sends `MSG_FRAME_TICK` (true lockstep).
+- [x] Cross-machine check of the placement/economy/cheat changes (Linux + Windows, Autopilot wallet/normal/hard + cheat gifts): in sync.
+- [ ] Re-run all headless netplay baselines now that the harness sends `MSG_FRAME_TICK` (true lockstep).
 - [ ] Commands from a human player (real orders) across machines, not just idle + autopilot.
 - [ ] Windows exe packaged for a remote friend (exe + DLLs + launcher .bat, no game data), shared by drive link.
 - [ ] Retail compatibility: confirm whether `RETAIL_COMPATIBLE_CRC` is on in the Windows build and what that means for

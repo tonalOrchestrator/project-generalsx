@@ -506,6 +506,13 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 		/* 		fprintf(stderr, "[LAN86] handleRequestJoin deny sender=%d.%d.%d.%d reason=game-gone responseIP=%d.%d.%d.%d\n",
 			PRINTF_IP_AS_4_INTS(senderIP), PRINTF_IP_AS_4_INTS(responseIP)); */
 	}
+	// GeneralsX @feature Claude 20/10/2026 Say why a join was denied (harness runs): the joiner only learns "failed".
+	if (TheGlobalData->m_lanHarness)
+	{
+		printf("NETPLAY host join request from %d.%d.%d.%d -> %s (reason code %d)\n", PRINTF_IP_AS_4_INTS(senderIP),
+			reply.messageType == LANMessage::MSG_JOIN_DENY ? "DENIED" : "accepted", reply.messageType == LANMessage::MSG_JOIN_DENY ? (int)reply.GameNotJoined.reason : 0);
+		fflush(stdout);
+	}
 	sendMessage(&reply, responseIP);
 	RequestGameOptions(GenerateGameOptionsString(), true);
 }
