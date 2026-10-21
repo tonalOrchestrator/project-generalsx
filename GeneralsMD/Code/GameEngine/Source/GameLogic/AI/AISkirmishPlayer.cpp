@@ -36,8 +36,10 @@
 #include "Common/PlayerList.h"
 #include "Common/Team.h"
 #include "Common/ThingFactory.h"
+#include "Common/ActionManager.h"
 #include "Common/BuildAssistant.h"
 #include "Common/SpecialPower.h"
+#include "Common/Upgrade.h"
 #include "Common/ThingTemplate.h"
 #include "Common/WellKnownKeys.h"
 #include "Common/Xfer.h"
@@ -55,6 +57,7 @@
 #include "GameLogic/PartitionManager.h"
 #include "GameLogic/ScriptEngine.h"
 #include "GameLogic/Module/ProductionUpdate.h"
+#include "GameLogic/Module/SpecialPowerModule.h"
 #include "GameLogic/Module/SupplyWarehouseDockUpdate.h"
 #include "GameClient/TerrainVisual.h"
 
@@ -982,6 +985,7 @@ void AISkirmishPlayer::update()
 		{
 			queueUnits();	// queues a supply truck when short, and trains any queued truck/dozer orders
 			autopilotTrainDefenders();	// wallet mode only, and only under attack
+			autopilotExplore();			// explore mode only
 			m_teamDelay = 2*LOGICFRAMES_PER_SECOND;
 		}
 		return;
@@ -1344,6 +1348,243 @@ void AISkirmishPlayer::autopilotTrainDefenders()
 	{
 		printf("NETPLAY autopilot defenders none queued: army %d/%d, %d factories (%d queue full, %d nothing affordable), bank %u (frame %u)\n", army, armyCap, factories, queueFull, nothingToBuild, money, TheGameLogic->getFrame());
 		fflush(stdout);
+	}
+}
+
+// GeneralsX @feature Claude 21/10/2026 Autopilot explore mode (level 5): normal autopilot plus explorers. An explorer is an infantry unit
+// that can capture buildings (Ranger, Red Guard, Rebel). One is trained at a barracks, then every idle explorer is sent, with the game's
+// own capture special power, to the nearest safe neutral capturable building (oil derricks and the other tech buildings); a building it
+// fails to take (unreachable, destroyed first) is skipped for a while. Nothing here attacks an enemy.
+void AISkirmishPlayer::autopilotExplore()
+{
+	if (!m_autopilotExplore)
+		return;
+	const UnsignedInt frame = TheGameLogic->getFrame();
+	const Int wantedExplorers = 2;
+
+	// The explorers we have, and forget errands whose explorer is idle again (done, or failed).
+	Object *explorers[8];
+	Int numExplorers = 0;
+	for (Object *obj = TheGameLogic->getFirstObject(); obj && numExplorers < 8; obj = obj->getNextObject())
+		if (obj->getControllingPlayer() == m_player && !obj->isKindOf(KINDOF_STRUCTURE) && obj->hasSpecialPower(SPECIAL_INFANTRY_CAPTURE_BUILDING))
+			explorers[numExplorers++] = obj;
+
+	for (Int e = 0; e < 8; ++e)
+	{
+		if (m_exploreExplorer[e] == INVALID_ID)
+			continue;
+		Object *who = TheGameLogic->findObjectByID(m_exploreExplorer[e]);
+		AIUpdateInterface *whoAI = who ? who->getAIUpdateInterface() : nullptr;
+		if (who && whoAI && !whoAI->isIdle())
+			continue;	// still on its errand
+		Object *target = TheGameLogic->findObjectByID(m_exploreTarget[e]);
+		const Bool stillHidden = target && target->getShroudedStatus(m_player->getPlayerIndex()) != OBJECTSHROUD_CLEAR;
+		if (who && target && target->getControllingPlayer() != m_player && (!m_exploreScouting[e] || stillHidden))
+		{
+			// Idle again but the building is not ours (a scouting walk that did not reveal it counts as a failure too): skip that
+			// building for five minutes.
+			for (Int b = 0; b < 16; ++b)
+				if (m_exploreBlacklist[b] == INVALID_ID || m_exploreBlacklistUntil[b] <= frame)
+				{
+					m_exploreBlacklist[b] = m_exploreTarget[e];
+					m_exploreBlacklistUntil[b] = frame + 300 * LOGICFRAMES_PER_SECOND;
+					break;
+				}
+		}
+		m_exploreExplorer[e] = INVALID_ID;
+		m_exploreTarget[e] = INVALID_ID;
+		m_exploreScouting[e] = FALSE;
+	}
+
+	// Infantry cannot capture anything until the player has bought the faction's "Capture Building" upgrade (the same player upgrade for
+	// the Ranger, Red Guard and Rebel); buildUpgrade() finds a barracks queue for it and ignores a request it cannot place.
+	static const char *const captureUpgradeName = "Upgrade_InfantryCaptureBuilding";
+	const UpgradeTemplate *captureUpgrade = TheUpgradeCenter->findUpgrade(captureUpgradeName);
+	if (captureUpgrade && !m_player->hasUpgradeComplete(captureUpgrade) && !m_player->hasUpgradeInProduction(captureUpgrade)
+		&& TheUpgradeCenter->canAffordUpgrade(m_player, captureUpgrade))
+	{
+		buildUpgrade(captureUpgradeName);
+		if (TheGlobalData->m_lanHarness && m_player->hasUpgradeInProduction(captureUpgrade))
+		{
+			printf("NETPLAY autopilot explore: capture upgrade queued (frame %u)\n", frame);
+			fflush(stdout);
+		}
+	}
+
+	static UnsignedInt s_lastStatusFrame = 0;	// logging only
+	if (TheGlobalData->m_lanHarness && frame >= s_lastStatusFrame + 600)
+	{
+		s_lastStatusFrame = frame;
+		printf("NETPLAY autopilot explore status: %d explorers, capture upgrade %s (frame %u)\n", numExplorers,
+			!captureUpgrade ? "unknown" : (m_player->hasUpgradeComplete(captureUpgrade) ? "done" : (m_player->hasUpgradeInProduction(captureUpgrade) ? "in production" : "not started")), frame);
+		fflush(stdout);
+	}
+
+	// Train one when short: the strongest affordable capture-capable infantry at a finished barracks with an empty queue.
+	if (numExplorers < wantedExplorers)
+	{
+		const UnsignedInt money = m_player->getMoney()->countMoney();
+		for (Object *barracks = TheGameLogic->getFirstObject(); barracks; barracks = barracks->getNextObject())
+		{
+			if (barracks->getControllingPlayer() != m_player || !barracks->isKindOf(KINDOF_FS_BARRACKS) || barracks->getStatusBits().test(OBJECT_STATUS_UNDER_CONSTRUCTION))
+				continue;
+			ProductionUpdateInterface *pu = barracks->getProductionUpdateInterface();
+			if (!pu || pu->getProductionCount() != 0)
+				continue;
+			const ThingTemplate *pick = nullptr;
+			for (const ThingTemplate *t = TheThingFactory->firstTemplate(); t; t = t->friend_getNextTemplate())
+			{
+				if (!t->isKindOf(KINDOF_INFANTRY) || !t->isKindOf(KINDOF_CAN_ATTACK))
+					continue;
+				AsciiString lower = t->getName();
+				lower.toLower();
+				if (!strstr(lower.str(), "ranger") && !strstr(lower.str(), "redguard") && !strstr(lower.str(), "rebel"))
+					continue;
+				if (t->calcCostToBuild(m_player) + 500 > money || TheBuildAssistant->canMakeUnit(barracks, t) != CANMAKE_OK)
+					continue;
+				pick = t;
+				break;
+			}
+			if (pick && pu->queueCreateUnit(pick, pu->requestUniqueUnitID()))
+			{
+				if (TheGlobalData->m_lanHarness)
+				{
+					printf("NETPLAY autopilot explore: training %s (frame %u)\n", pick->getName().str(), frame);
+					fflush(stdout);
+				}
+				break;
+			}
+		}
+	}
+
+	// Send every idle explorer to the nearest safe, neutral, capturable building that nobody is already heading for.
+	for (Int i = 0; i < numExplorers; ++i)
+	{
+		Object *explorer = explorers[i];
+		AIUpdateInterface *ai = explorer->getAIUpdateInterface();
+		if (!ai || !ai->isIdle())
+			continue;
+		Int slot = -1;
+		for (Int e = 0; e < 8 && slot < 0; ++e)
+			if (m_exploreExplorer[e] == INVALID_ID)
+				slot = e;
+		if (slot < 0)
+			break;
+
+		Object *best = nullptr;
+		Real bestDistSqr = 0;
+		Object *hidden = nullptr;	// nearest neutral building still in the shroud: somewhere to scout when nothing can be captured yet
+		Real hiddenDistSqr = 0;
+		Int seen = 0, notNeutral = 0, takenOrSkipped = 0, cannotCapture = 0, unsafe = 0, shrouded = 0, notReady = 0;	// for the trace below
+		for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
+		{
+			if (!obj->isKindOf(KINDOF_STRUCTURE) || !obj->isKindOf(KINDOF_CAPTURABLE) || obj->isKindOf(KINDOF_REBUILD_HOLE))
+				continue;
+			++seen;
+			// Only buildings nobody owns: the game's neutral player (tech buildings, oil derricks, ...). The relationship toward such a
+			// building is not NEUTRAL, so the owner is what is checked; a player's own, allied or enemy buildings are never targets.
+			if (obj->getControllingPlayer() != ThePlayerList->getNeutralPlayer())
+			{
+				++notNeutral;
+				continue;	// ours, an ally's or an enemy's (never attack an enemy)
+			}
+			Bool taken = FALSE;
+			for (Int e = 0; e < 8 && !taken; ++e)
+				taken = (m_exploreTarget[e] == obj->getID());
+			for (Int b = 0; b < 16 && !taken; ++b)
+				taken = (m_exploreBlacklist[b] == obj->getID() && m_exploreBlacklistUntil[b] > frame);
+			if (taken)
+			{
+				++takenOrSkipped;
+				continue;
+			}
+			if (!TheActionManager->canCaptureBuilding(explorer, obj, CMD_FROM_AI))
+			{
+				++cannotCapture;
+				SpecialPowerModuleInterface *spi = explorer->findSpecialPowerModuleInterface(SPECIAL_INFANTRY_CAPTURE_BUILDING);
+				if (spi && spi->getPercentReady() < 1.0f)
+					++notReady;
+				else if (obj->getShroudedStatus(m_player->getPlayerIndex()) != OBJECTSHROUD_CLEAR)
+				{
+					++shrouded;
+					if (isLocationSafe(obj->getPosition(), obj->getTemplate()))
+					{
+						const Real hx = obj->getPosition()->x - explorer->getPosition()->x;
+						const Real hy = obj->getPosition()->y - explorer->getPosition()->y;
+						if (!hidden || hx * hx + hy * hy < hiddenDistSqr)
+						{
+							hidden = obj;
+							hiddenDistSqr = hx * hx + hy * hy;
+						}
+					}
+				}
+				continue;
+			}
+			if (!isLocationSafe(obj->getPosition(), obj->getTemplate()))
+			{
+				++unsafe;
+				continue;
+			}
+			const Real dx = obj->getPosition()->x - explorer->getPosition()->x;
+			const Real dy = obj->getPosition()->y - explorer->getPosition()->y;
+			const Real distSqr = dx * dx + dy * dy;
+			if (!best || distSqr < bestDistSqr)
+			{
+				best = obj;
+				bestDistSqr = distSqr;
+			}
+		}
+		if (!best && hidden)
+		{
+			// Walk to the hidden building: seeing it lifts the shroud, and the next cycle can then order the capture.
+			ai->aiMoveToPosition(hidden->getPosition(), CMD_FROM_AI);
+			m_exploreExplorer[slot] = explorer->getID();
+			m_exploreTarget[slot] = hidden->getID();
+			m_exploreOrderFrame[slot] = frame;
+			m_exploreScouting[slot] = TRUE;
+			if (TheGlobalData->m_lanHarness)
+			{
+				printf("NETPLAY autopilot explore: %s -> scout %s at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
+					hidden->getTemplate()->getName().str(), hidden->getPosition()->x, hidden->getPosition()->y, frame);
+				fflush(stdout);
+			}
+			continue;
+		}
+		if (!best)
+		{
+			static UnsignedInt s_lastExploreTrace = 0;	// logging only
+			if (TheGlobalData->m_lanHarness && frame >= s_lastExploreTrace + 600)
+			{
+				s_lastExploreTrace = frame;
+				printf("NETPLAY autopilot explore: nothing to capture: %d capturable buildings seen (%d not neutral, %d taken/skipped, %d cannot capture [%d special not ready, %d in the shroud], %d unsafe) (frame %u)\n", seen, notNeutral, takenOrSkipped, cannotCapture, notReady, shrouded, unsafe, frame);
+				fflush(stdout);
+			}
+			continue;
+		}
+
+		SpecialPowerModuleInterface *capture = explorer->findSpecialPowerModuleInterface(SPECIAL_INFANTRY_CAPTURE_BUILDING);
+		if (!capture || !capture->getSpecialPowerTemplate())
+			continue;
+		AIGroupPtr group = TheAI->createGroup();
+		if (!group)
+			continue;
+		group->add(explorer);
+		group->groupDoSpecialPowerAtObject(capture->getSpecialPowerTemplate()->getID(), best, 0);
+#if RETAIL_COMPATIBLE_AIGROUP
+		TheAI->destroyGroup(group);
+#else
+		group->removeAll();
+#endif
+		m_exploreExplorer[slot] = explorer->getID();
+		m_exploreScouting[slot] = FALSE;
+		m_exploreTarget[slot] = best->getID();
+		m_exploreOrderFrame[slot] = frame;
+		if (TheGlobalData->m_lanHarness)
+		{
+			printf("NETPLAY autopilot explore: %s -> capture %s at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
+				best->getTemplate()->getName().str(), best->getPosition()->x, best->getPosition()->y, frame);
+			fflush(stdout);
+		}
 	}
 }
 

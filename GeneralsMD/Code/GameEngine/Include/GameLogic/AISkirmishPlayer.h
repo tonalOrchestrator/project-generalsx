@@ -55,6 +55,7 @@ public:	// AIPlayer interface methods.
 
 	virtual void adoptExistingBase() override;
 	Bool autopilotQueueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth, KindOfType onlyKind = KINDOF_INVALID);
+	void autopilotExplore();	///< GeneralsX: explore mode: train a capture-capable infantry unit and send it to capture neutral buildings
 	Bool autopilotIsThreatened();	///< GeneralsX: enemy units near the base
 	void autopilotTrainDefenders();	///< GeneralsX: wallet mode under attack: queue a defender at a barracks / war factory
 	Int autopilotGatherers() const;	///< GeneralsX: desired supply gatherers for the current level
@@ -129,5 +130,11 @@ protected:
 private:
 	BuildListInfo *m_autopilotPending = nullptr;		///< GeneralsX: build-list entry the autopilot queued and is waiting on
 	UnsignedInt m_autopilotPendingFrame = 0;
+	ObjectID m_exploreExplorer[8] = {};				///< GeneralsX explore mode: explorer on each errand ...
+	ObjectID m_exploreTarget[8] = {};				///< ... and the building it was sent to capture
+	UnsignedInt m_exploreOrderFrame[8] = {};
+	Bool m_exploreScouting[8] = {};					///< the errand is a walk to reveal the building, not a capture yet
+	ObjectID m_exploreBlacklist[16] = {};			///< targets an explorer failed to capture (unreachable ...), skipped until the frame below
+	UnsignedInt m_exploreBlacklistUntil[16] = {};
 	Int m_autopilotRing = 0;							///< GeneralsX: next slot on the ring around the base for a prerequisite structure
 };

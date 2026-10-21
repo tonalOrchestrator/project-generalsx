@@ -192,6 +192,9 @@ public: // AIPlayer interface, may be overridden by AISkirmishPlayer.  jba.
 	/// Wallet mode (autopilot level 4): defend, survive, hoard money. Builds economy and base defenses only.
 	void setAutopilotWallet(Bool wallet) { m_autopilotWallet = wallet; }
 	Bool isAutopilotWallet() const { return m_autopilotWallet; }
+	/// Explore mode (autopilot level 5): like normal, plus capture-capable infantry sent to capture neutral buildings for income.
+	void setAutopilotExplore(Bool explore) { m_autopilotExplore = explore; }
+	Bool isAutopilotExplore() const { return m_autopilotExplore; }
 	/// Link the structures the player already owns to this AI's build list so they are not rebuilt.
 	virtual void adoptExistingBase() {}
 
@@ -283,6 +286,7 @@ protected:
 	Int			m_skillsetSelector;
 
 	Bool		m_autopilotOnly;						///< GeneralsX: build-only AI attached to a human player (not saved, not in the CRC)
+	Bool		m_autopilotExplore;						///< GeneralsX: autopilot explore mode: capture neutral buildings
 	Bool		m_autopilotWallet;						///< GeneralsX: autopilot wallet mode: economy and defenses only, keep a cash reserve
 
 	Coord3D m_baseCenter; // Center of the initial build list of structures.

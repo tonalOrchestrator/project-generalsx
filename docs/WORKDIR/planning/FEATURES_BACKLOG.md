@@ -66,6 +66,19 @@ that is not being chased further.
 Cross-machine: a 12-minute Linux + Windows match vs a Medium AI with both humans in Wallet Mode (real combat, 18 defenders queued on
 each machine) stayed in sync on all 12 per-minute CRCs with identical final stats.
 
+### Explore mode (autopilot level 5) - done (solo-verified, not yet across machines)
+Like Normal, plus explorers that capture neutral buildings (oil derricks and the other tech buildings) for income. It buys the faction's
+"Capture Building" upgrade at the barracks (every faction needs it; without it the capture special is "not ready"), trains up to two
+capture-capable infantry (Ranger, Red Guard, Rebel), and sends each idle explorer to the nearest safe neutral building owned by the game's
+neutral player. A building still in the shroud is first *scouted*: the explorer walks to it, which lifts the shroud, and the next cycle
+orders the capture (the game's own capture special, via an AI group, same path as a player's click). A building an explorer fails to take
+or reveal is skipped for five minutes. Nothing attacks an enemy. Measured on Death Valley, 12 game-minutes: 8-14 buildings captured
+and ~$95-120k earned for 11 of 12 factions (Normal earns ~$25-31k there). On the standard Dark Night map there is nothing to capture,
+so level 5 behaves like Normal. Hotkey cycle is now easy / normal / hard / wallet / explore.
+Diagnosed with traces: first "not neutral" (the relationship toward an unowned building is not NEUTRAL: test the owner instead), then
+"special not ready" (the upgrade), then "in the shroud" (scouting). Built for Challenge mode, which has many neutral buildings; not yet
+tried on a Challenge map (the harness cannot start one: `-file` does not launch maps in this build).
+
 ### Autopilot economy and scenario matrix - done
 - Supply centers are placed next to the nearest warehouse with cash (fan search 6-20 cells around it, base side first), the
   engine refuses a center too close to supplies and trucks ignore one with no supplies in reach. Trucks are sent only to
@@ -129,6 +142,9 @@ money and general's points (frame request + 4) and that without the flag the req
       now saves the autopilot level for that case and re-creates the autopilot AI on load; old saves are unchanged. NOT yet tried by
       actually saving and loading a skirmish (the harness has no save/load path): test by hand, then tick this.
 - [x] Rapid on/off/level toggling (15 changes per run, all 12 factions) leaves the player alive and building: no crash.
+
+- [ ] Explore: China Infantry General captures 0 (unexplained, everything else captures); explorers do not run from enemies;
+      try it on a Challenge map by hand.
 
 ### Netplay / determinism
 - [x] Cross-machine check of the placement/economy/cheat changes (Linux + Windows, Autopilot wallet/normal/hard + cheat gifts): in sync.
