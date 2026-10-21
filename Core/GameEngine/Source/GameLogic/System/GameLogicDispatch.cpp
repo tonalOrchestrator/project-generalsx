@@ -35,6 +35,7 @@
 #include "Common/GameAudio.h"
 #include "Common/GameEngine.h"
 #include "Common/GlobalData.h"
+#include "Common/LanNetplayOptions.h"
 #include "Common/NameKeyGenerator.h"
 #include "Common/ThingFactory.h"
 #include "Common/Player.h"
@@ -515,7 +516,7 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 						cheatPlayer->getMoney()->deposit((UnsignedInt)money, TRUE, FALSE);
 					if (points > 0)
 						cheatPlayer->addSciencePurchasePoints(points);
-					if (TheGlobalData->m_lanHarness)
+					if (lanNetplayOptions().m_active)
 					{
 						printf("NETPLAY cheat applied player=%d money=+%d points=+%d -> money=%u points=%d (frame %u)\n", msg->getPlayerIndex(), money, points,
 							cheatPlayer->getMoney()->countMoney(), (Int)cheatPlayer->getSciencePurchasePoints(), getFrame());
@@ -531,7 +532,7 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 			{
 				const Int level = msg->getArgument(0)->integer;
 				autopilotPlayer->setAutopilot(level);
-				if (TheGlobalData->m_lanHarness)
+				if (lanNetplayOptions().m_active)
 				{
 					printf("NETPLAY autopilot applied player=%d level=%d -> now %d (frame %u)\n", msg->getPlayerIndex(), level, autopilotPlayer->getAutopilotLevel(), getFrame());
 					fflush(stdout);

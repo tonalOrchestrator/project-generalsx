@@ -52,6 +52,7 @@
 #include "Common/DisabledTypes.h"
 #include "Common/GameState.h"
 #include "Common/GlobalData.h"
+#include "Common/LanNetplayOptions.h"
 #include "Common/AISkirmishSimulation.h"
 #include "Common/MessageStream.h"
 #include "Common/MiscAudio.h"
@@ -790,7 +791,7 @@ void Player::setAutopilot(Int level)
 {
 	if (m_playerType != PLAYER_HUMAN)
 	{
-		if (TheGlobalData->m_lanHarness)
+		if (lanNetplayOptions().m_active)
 		{
 			printf("NETPLAY autopilot ignored: player type %d is not human\n", (int)m_playerType);
 			fflush(stdout);

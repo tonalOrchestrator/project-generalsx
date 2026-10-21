@@ -41,6 +41,7 @@
 #include "GameClient/GameText.h"
 #include "GameNetwork/NetworkDefs.h"
 #include "WWLib/trim.h"
+#include "Common/LanNetplayOptions.h"
 
 
 
@@ -911,9 +912,9 @@ Int parseLanHost(char *args[], int num)
 {
 	if (num > 1)
 	{
-		TheWritableGlobalData->m_lanHarness = TRUE;
-		TheWritableGlobalData->m_lanHost = TRUE;
-		TheWritableGlobalData->m_lanMap = args[1];
+		lanNetplayOptions().m_active = TRUE;
+		lanNetplayOptions().m_host = TRUE;
+		lanNetplayOptions().m_map = args[1];
 		TheWritableGlobalData->m_playIntro = FALSE;
 		TheWritableGlobalData->m_playSizzle = FALSE;
 		return 2;
@@ -925,9 +926,9 @@ Int parseLanJoin(char *args[], int num)
 {
 	if (num > 1)
 	{
-		TheWritableGlobalData->m_lanHarness = TRUE;
-		TheWritableGlobalData->m_lanHost = FALSE;
-		TheWritableGlobalData->m_lanJoinIP = args[1];
+		lanNetplayOptions().m_active = TRUE;
+		lanNetplayOptions().m_host = FALSE;
+		lanNetplayOptions().m_joinIP = args[1];
 		TheWritableGlobalData->m_playIntro = FALSE;
 		TheWritableGlobalData->m_playSizzle = FALSE;
 		return 2;
@@ -935,47 +936,47 @@ Int parseLanJoin(char *args[], int num)
 	return 1;
 }
 
-Int parseLanSlots(char *args[], int num)      { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanSlots); }
-Int parseLanLocalIP(char *args[], int num)    { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanLocalIP); }
-Int parseLanName(char *args[], int num)       { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanName); }
-Int parseLanFast(char *[], int) { TheWritableGlobalData->m_lanFast = TRUE; return 1; }
-Int parseLanHostTemplate(char *args[], int num) { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanHostTemplate); }
-Int parseLanStats(char *args[], int num)      { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanStatsFile); }
+Int parseLanSlots(char *args[], int num)      { return parseLanStringArg(args, num, lanNetplayOptions().m_slots); }
+Int parseLanLocalIP(char *args[], int num)    { return parseLanStringArg(args, num, lanNetplayOptions().m_localIP); }
+Int parseLanName(char *args[], int num)       { return parseLanStringArg(args, num, lanNetplayOptions().m_name); }
+Int parseLanFast(char *[], int) { lanNetplayOptions().m_fast = TRUE; return 1; }
+Int parseLanHostTemplate(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_hostTemplate); }
+Int parseLanStats(char *args[], int num)      { return parseLanStringArg(args, num, lanNetplayOptions().m_statsFile); }
 
 Int parseLanHumans(char *args[], int num)
 {
-	if (num > 1) { TheWritableGlobalData->m_lanHumans = atoi(args[1]); return 2; }
+	if (num > 1) { lanNetplayOptions().m_humans = atoi(args[1]); return 2; }
 	return 1;
 }
 
 Int parseLanMaxMinutes(char *args[], int num)
 {
-	if (num > 1) { TheWritableGlobalData->m_lanMaxMinutes = atoi(args[1]); return 2; }
+	if (num > 1) { lanNetplayOptions().m_maxMinutes = atoi(args[1]); return 2; }
 	return 1;
 }
 
 Int parseLanSeed(char *args[], int num)
 {
-	if (num > 1) { TheWritableGlobalData->m_lanSeed = atoi(args[1]); return 2; }
+	if (num > 1) { lanNetplayOptions().m_seed = atoi(args[1]); return 2; }
 	return 1;
 }
 
 Int parseLanScreenshotSeconds(char *args[], int num)
 {
-	if (num > 1) { TheWritableGlobalData->m_lanScreenshotSeconds = atoi(args[1]); return 2; }
+	if (num > 1) { lanNetplayOptions().m_screenshotSeconds = atoi(args[1]); return 2; }
 	return 1;
 }
 
 Int parseLanCameraSeconds(char *args[], int num)
 {
-	if (num > 1) { TheWritableGlobalData->m_lanCameraSeconds = atoi(args[1]); return 2; }
+	if (num > 1) { lanNetplayOptions().m_cameraSeconds = atoi(args[1]); return 2; }
 	return 1;
 }
 
-Int parseLanCameraLocal(char *[], int) { TheWritableGlobalData->m_lanCameraLocal = TRUE; return 1; }
-Int parseLanBuildSchedule(char *args[], int num) { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanBuildSchedule); }
-Int parseLanCheatSchedule(char *args[], int num) { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanCheatSchedule); }
-Int parseLanAutopilotSchedule(char *args[], int num) { return parseLanStringArg(args, num, TheWritableGlobalData->m_lanAutopilotSchedule); }
+Int parseLanCameraLocal(char *[], int) { lanNetplayOptions().m_cameraLocal = TRUE; return 1; }
+Int parseLanBuildSchedule(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_buildSchedule); }
+Int parseLanCheatSchedule(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_cheatSchedule); }
+Int parseLanAutopilotSchedule(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_autopilotSchedule); }
 
 Int parseCheats(char *args[], int num)
 {
@@ -985,7 +986,7 @@ Int parseCheats(char *args[], int num)
 
 Int parseLanObserver(char *args[], int num)
 {
-	TheWritableGlobalData->m_lanObserver = TRUE;
+	lanNetplayOptions().m_observer = TRUE;
 	return 1;
 }
 

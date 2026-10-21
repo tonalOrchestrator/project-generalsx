@@ -31,6 +31,7 @@
 
 #include "Common/GameMemory.h"
 #include "Common/GlobalData.h"
+#include "Common/LanNetplayOptions.h"
 #include "Common/AISkirmishSimulation.h"
 #include "Common/Player.h"
 #include "Common/PlayerList.h"
@@ -255,7 +256,7 @@ void AISkirmishPlayer::processBaseBuilding()
 #ifdef USE_DOZER
 			// dozer-construct the building
 			bldg = buildStructureWithDozer(bldgPlan, bldgInfo);
-			if (m_autopilotOnly && TheGlobalData->m_lanHarness)
+			if (m_autopilotOnly && lanNetplayOptions().m_active)
 			{
 				const Bool brokeFor = !bldg && m_player->getMoney()->countMoney() < bldgPlan->calcCostToBuild(m_player);
 				if (bldg || !brokeFor || TheGameLogic->getFrame() % 600 == 0)	// waiting for money is normal: log it sparsely
@@ -999,7 +1000,7 @@ void AISkirmishPlayer::update()
 // code runs.
 void AISkirmishPlayer::autopilotExplainStall(BuildListInfo *info)
 {
-	if (!TheGlobalData->m_lanHarness)
+	if (!lanNetplayOptions().m_active)
 		return;
 	const ThingTemplate *plan = TheThingFactory->findTemplate(info->getTemplateName());
 	if (!plan)
@@ -1128,7 +1129,7 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 						m_autopilotPending = advancedEntry;
 						m_autopilotPendingFrame = TheGameLogic->getFrame();
 						m_buildDelay = 0;
-						if (TheGlobalData->m_lanHarness)
+						if (lanNetplayOptions().m_active)
 						{
 							printf("NETPLAY autopilot wallet foundation: %s (frame %u)\n", advanced->getName().str(), TheGameLogic->getFrame());
 							fflush(stdout);
@@ -1254,7 +1255,7 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 		m_autopilotPending = pick;
 		m_autopilotPendingFrame = TheGameLogic->getFrame();
 		m_buildDelay = 0;
-		if (TheGlobalData->m_lanHarness)
+		if (lanNetplayOptions().m_active)
 		{
 			printf("NETPLAY autopilot queues %s cost=%u money=%u (frame %u)\n", pick->getTemplateName().str(), pickCost, money, TheGameLogic->getFrame());
 			fflush(stdout);
@@ -1287,7 +1288,7 @@ void AISkirmishPlayer::autopilotTrainDefenders()
 			++army;
 	static UnsignedInt s_lastTraceFrame = 0;	// logging only
 	Bool trace = FALSE;
-	if (TheGlobalData->m_lanHarness && TheGameLogic->getFrame() >= s_lastTraceFrame + 300)	// every 10 s of game time
+	if (lanNetplayOptions().m_active && TheGameLogic->getFrame() >= s_lastTraceFrame + 300)	// every 10 s of game time
 	{
 		trace = TRUE;
 		s_lastTraceFrame = TheGameLogic->getFrame();
@@ -1337,7 +1338,7 @@ void AISkirmishPlayer::autopilotTrainDefenders()
 			}
 			money = money > bestCost ? money - bestCost : 0;
 			++queuedNow;
-			if (TheGlobalData->m_lanHarness)
+			if (lanNetplayOptions().m_active)
 			{
 				printf("NETPLAY autopilot defender: %s (cost %u) at %s (frame %u)\n", best->getName().str(), bestCost, factory->getTemplate()->getName().str(), TheGameLogic->getFrame());
 				fflush(stdout);
@@ -1404,7 +1405,7 @@ void AISkirmishPlayer::autopilotExplore()
 		&& TheUpgradeCenter->canAffordUpgrade(m_player, captureUpgrade))
 	{
 		buildUpgrade(captureUpgradeName);
-		if (TheGlobalData->m_lanHarness && m_player->hasUpgradeInProduction(captureUpgrade))
+		if (lanNetplayOptions().m_active && m_player->hasUpgradeInProduction(captureUpgrade))
 		{
 			printf("NETPLAY autopilot explore: capture upgrade queued (frame %u)\n", frame);
 			fflush(stdout);
@@ -1412,7 +1413,7 @@ void AISkirmishPlayer::autopilotExplore()
 	}
 
 	static UnsignedInt s_lastStatusFrame = 0;	// logging only
-	if (TheGlobalData->m_lanHarness && frame >= s_lastStatusFrame + 600)
+	if (lanNetplayOptions().m_active && frame >= s_lastStatusFrame + 600)
 	{
 		s_lastStatusFrame = frame;
 		printf("NETPLAY autopilot explore status: %d explorers, capture upgrade %s (frame %u)\n", numExplorers,
@@ -1447,7 +1448,7 @@ void AISkirmishPlayer::autopilotExplore()
 			}
 			if (pick && pu->queueCreateUnit(pick, pu->requestUniqueUnitID()))
 			{
-				if (TheGlobalData->m_lanHarness)
+				if (lanNetplayOptions().m_active)
 				{
 					printf("NETPLAY autopilot explore: training %s (frame %u)\n", pick->getName().str(), frame);
 					fflush(stdout);
@@ -1542,7 +1543,7 @@ void AISkirmishPlayer::autopilotExplore()
 			m_exploreTarget[slot] = hidden->getID();
 			m_exploreOrderFrame[slot] = frame;
 			m_exploreScouting[slot] = TRUE;
-			if (TheGlobalData->m_lanHarness)
+			if (lanNetplayOptions().m_active)
 			{
 				printf("NETPLAY autopilot explore: %s -> scout %s at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
 					hidden->getTemplate()->getName().str(), hidden->getPosition()->x, hidden->getPosition()->y, frame);
@@ -1553,7 +1554,7 @@ void AISkirmishPlayer::autopilotExplore()
 		if (!best)
 		{
 			static UnsignedInt s_lastExploreTrace = 0;	// logging only
-			if (TheGlobalData->m_lanHarness && frame >= s_lastExploreTrace + 600)
+			if (lanNetplayOptions().m_active && frame >= s_lastExploreTrace + 600)
 			{
 				s_lastExploreTrace = frame;
 				printf("NETPLAY autopilot explore: nothing to capture: %d capturable buildings seen (%d not neutral, %d taken/skipped, %d cannot capture [%d special not ready, %d in the shroud], %d unsafe) (frame %u)\n", seen, notNeutral, takenOrSkipped, cannotCapture, notReady, shrouded, unsafe, frame);
@@ -1579,7 +1580,7 @@ void AISkirmishPlayer::autopilotExplore()
 		m_exploreScouting[slot] = FALSE;
 		m_exploreTarget[slot] = best->getID();
 		m_exploreOrderFrame[slot] = frame;
-		if (TheGlobalData->m_lanHarness)
+		if (lanNetplayOptions().m_active)
 		{
 			printf("NETPLAY autopilot explore: %s -> capture %s at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
 				best->getTemplate()->getName().str(), best->getPosition()->x, best->getPosition()->y, frame);
@@ -1638,7 +1639,7 @@ Bool AISkirmishPlayer::autopilotQueueSupplyExpansion(UnsignedInt money)
 {
 	const char *why = nullptr;
 	auto decline = [&](const char *reason) {
-		if (TheGlobalData->m_lanHarness && TheGameLogic->getFrame() % 600 == 0)
+		if (lanNetplayOptions().m_active && TheGameLogic->getFrame() % 600 == 0)
 		{
 			printf("NETPLAY autopilot supply expansion declined: %s (frame %u)\n", reason, TheGameLogic->getFrame());
 			fflush(stdout);
@@ -1712,7 +1713,7 @@ Bool AISkirmishPlayer::autopilotQueueSupplyExpansion(UnsignedInt money)
 	autopilotMarkSupplyEntry(m_autopilotPending, centerTemplate);
 	m_autopilotPendingFrame = TheGameLogic->getFrame();
 	m_buildDelay = 0;
-	if (TheGlobalData->m_lanHarness)
+	if (lanNetplayOptions().m_active)
 	{
 		printf("NETPLAY autopilot supply expansion: %s at (%.0f,%.0f) (frame %u)\n", centerTemplate->getName().str(), pos.x, pos.y, TheGameLogic->getFrame());
 		fflush(stdout);
@@ -1789,7 +1790,7 @@ Bool AISkirmishPlayer::autopilotQueueMissingPrerequisite(const ThingTemplate *pl
 				m_autopilotPending = existing;
 				m_autopilotPendingFrame = TheGameLogic->getFrame();
 				m_buildDelay = 0;
-				if (TheGlobalData->m_lanHarness)
+				if (lanNetplayOptions().m_active)
 				{
 					printf("NETPLAY autopilot queues prerequisite %s for %s (list entry, frame %u)\n", need->getName().str(), plan->getName().str(), TheGameLogic->getFrame());
 					fflush(stdout);
@@ -1814,7 +1815,7 @@ Bool AISkirmishPlayer::autopilotQueueMissingPrerequisite(const ThingTemplate *pl
 			autopilotMarkSupplyEntry(m_autopilotPending, need);
 			m_autopilotPendingFrame = TheGameLogic->getFrame();
 			m_buildDelay = 0;
-			if (TheGlobalData->m_lanHarness)
+			if (lanNetplayOptions().m_active)
 			{
 				printf("NETPLAY autopilot queues prerequisite %s for %s (frame %u)\n", need->getName().str(), plan->getName().str(), TheGameLogic->getFrame());
 				fflush(stdout);

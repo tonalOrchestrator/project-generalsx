@@ -24,6 +24,7 @@
 
 #include "Common/GameEngine.h"
 #include "Common/GlobalData.h"
+#include "Common/LanNetplayOptions.h"
 #include "Common/MessageStream.h"
 #include "Common/Player.h"
 #include "Common/PlayerList.h"
@@ -360,7 +361,7 @@ void AISkirmishSimulation::dumpStats(const AsciiString& mapName, Int seed, Bool 
 void AISkirmishSimulation::updateWatchCamera()
 {
 	// GeneralsX @feature Claude 20/10/2026 Shared with the LAN netplay harness windowed mode.
-	if ((!TheGlobalData->m_aiSkirmish && !TheGlobalData->m_lanHarness) || TheGlobalData->m_headless)
+	if ((!TheGlobalData->m_aiSkirmish && !lanNetplayOptions().m_active) || TheGlobalData->m_headless)
 		return;
 	if (!TheGameLogic || !TheGameLogic->isInGame() || !TheTacticalView || !TheTerrainLogic || !ThePlayerList)
 		return;
@@ -379,7 +380,7 @@ void AISkirmishSimulation::updateWatchCamera()
 
 	// Optional periodic in-engine screenshot (evidence / timelapse). Taken from the logic update like the
 	// PrintScreen meta-event path, so it captures the last presented frame.
-	const Int shotSeconds = TheGlobalData->m_aiSkirmish ? TheGlobalData->m_aiSkirmishScreenshotSeconds : TheGlobalData->m_lanScreenshotSeconds;
+	const Int shotSeconds = TheGlobalData->m_aiSkirmish ? TheGlobalData->m_aiSkirmishScreenshotSeconds : lanNetplayOptions().m_screenshotSeconds;
 	const UnsignedInt shotInterval = (UnsignedInt)shotSeconds * LOGICFRAMES_PER_SECOND;
 	if (shotInterval != 0 && frame >= 2 * LOGICFRAMES_PER_SECOND && frame % shotInterval == 0 && TheDisplay)
 	{
@@ -388,7 +389,7 @@ void AISkirmishSimulation::updateWatchCamera()
 		fflush(stdout);
 	}
 
-	const Int hopSeconds = TheGlobalData->m_aiSkirmish ? TheGlobalData->m_aiSkirmishCameraSeconds : TheGlobalData->m_lanCameraSeconds;
+	const Int hopSeconds = TheGlobalData->m_aiSkirmish ? TheGlobalData->m_aiSkirmishCameraSeconds : lanNetplayOptions().m_cameraSeconds;
 	const UnsignedInt hopInterval = (UnsignedInt)hopSeconds * LOGICFRAMES_PER_SECOND;
 
 	if (frame < 2)
@@ -409,13 +410,13 @@ void AISkirmishSimulation::updateWatchCamera()
 	Player* ais[MAX_PLAYER_COUNT];
 	Int numAI = 0;
 	// GeneralsX @feature Claude 20/10/2026 -lanCameraLocal: look at the local player's own base (a demo recording follows the human).
-	if (TheGlobalData->m_lanHarness && TheGlobalData->m_lanCameraLocal)
+	if (lanNetplayOptions().m_active && lanNetplayOptions().m_cameraLocal)
 	{
 		Player* local = ThePlayerList->getLocalPlayer();
 		if (local && !local->isPlayerObserver() && local->getMpStartIndex() >= 0)
 			ais[numAI++] = local;
 	}
-	for (Int i = 0; i < ThePlayerList->getPlayerCount() && numAI < MAX_PLAYER_COUNT && !(TheGlobalData->m_lanHarness && TheGlobalData->m_lanCameraLocal); ++i)
+	for (Int i = 0; i < ThePlayerList->getPlayerCount() && numAI < MAX_PLAYER_COUNT && !(lanNetplayOptions().m_active && lanNetplayOptions().m_cameraLocal); ++i)
 	{
 		Player* p = ThePlayerList->getNthPlayer(i);
 		// isSkirmishAIPlayer excludes the civilian/neutral computer players that share start index 0
@@ -492,7 +493,7 @@ void AISkirmishSimulation::aiLog(const Player* player, const char* fmt, ...)
 //-------------------------------------------------------------------------------------------------
 void AISkirmishSimulation::perFrame()
 {
-	if (!TheGlobalData || (!TheGlobalData->m_aiSkirmish && !TheGlobalData->m_lanHarness))
+	if (!TheGlobalData || (!TheGlobalData->m_aiSkirmish && !lanNetplayOptions().m_active))
 		return;
 
 	updateWatchCamera();

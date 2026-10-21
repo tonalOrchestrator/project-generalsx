@@ -33,6 +33,7 @@
 #include "Common/ReplaySimulation.h"
 #include "Common/AISkirmishSimulation.h"
 #include "Common/LanNetplayHarness.h"
+#include "Common/LanNetplayOptions.h"
 
 
 /**
@@ -56,7 +57,7 @@ Int GameMain()
 		// GeneralsX @feature Claude 30/09/2026 AI-vs-AI skirmish runner
 		exitcode = AISkirmishSimulation::run();
 	}
-	else if (TheGlobalData->m_lanHarness)
+	else if (lanNetplayOptions().m_active)
 	{
 		// GeneralsX @feature Claude 20/10/2026 Headless LAN netplay harness
 		exitcode = LanNetplayHarness::run();

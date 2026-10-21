@@ -373,27 +373,7 @@ public:
 	Int m_aiSkirmishLog;				///< per-AI decision log level (0 = off, 1 = builds/units/upgrades/teams + minute status)
 	AsciiString m_aiSkirmishLogFile;	///< also append the AI log to this file
 	// GeneralsX @feature Claude 20/10/2026 Headless LAN netplay harness (-lanhost / -lanjoin). See LanNetplayHarness.
-	Bool m_lanHarness;					///< run the scripted LAN host/join flow instead of the shell
-	Bool m_lanHost;						///< host the game (otherwise join m_lanJoinIP)
-	AsciiString m_lanJoinIP;			///< host address to join (dotted quad)
-	AsciiString m_lanLocalIP;			///< force the local interface address (empty = first non-loopback)
-	AsciiString m_lanMap;				///< host only: map key or display-name substring
-	AsciiString m_lanSlots;				///< host only: AI slots after the humans, e.g. "H,H" (E/M/H, optional ":Template")
-	AsciiString m_lanName;				///< local player name
-	Bool m_lanFast;						///< GeneralsX: skip the network frame pacing (faster than real time; solo test runs)
-	AsciiString m_lanHostTemplate;		///< GeneralsX: faction template for the host's own slot (empty = random)
-	AsciiString m_lanStatsFile;			///< if set, JSON stats are also written here
-	Int m_lanHumans;					///< host only: number of human machines (including the host) to wait for
-	Bool m_lanObserver;					///< the human machines observe instead of playing
-	Int m_lanMaxMinutes;				///< safety cap in game minutes (0 = none)
-	Int m_lanSeed;						///< host only: explicit game seed (-1 = clock)
-	Int m_lanScreenshotSeconds;			///< windowed: in-engine PNG screenshot every N game seconds (0 = off)
-	Int m_lanCameraSeconds;				///< windowed: seconds between camera hops across AI bases (0 = only at start)
 	Bool m_allowCheats;					///< GeneralsX: -cheats, enables the money / general-point cheat hotkeys (must be set on every machine)
-	Bool m_lanCameraLocal;				///< GeneralsX: the watch camera stays on the local player's base (demo recordings)
-	AsciiString m_lanBuildSchedule;		///< GeneralsX: "sec:barracks,...": the local player orders a structure by hand (select dozer + construct)
-	AsciiString m_lanCheatSchedule;		///< GeneralsX: "sec:money:points,...": send cheat gifts (needs -cheats on every machine)
-	AsciiString m_lanAutopilotSchedule;	///< "sec:level,sec:level": send autopilot level changes (0-3) at those game seconds
 	Int m_simulateReplayJobs; ///< Maximum number of processes to use for simulation, or SIMULATE_REPLAYS_SEQUENTIAL for sequential simulation
 
 	Int m_maxParticleCount;						///< maximum number of particles that can exist

@@ -41,6 +41,7 @@
 #include "GameLogic/GameLogic.h"
 #include "GameNetwork/GameSpyOverlay.h"
 #include "GameNetwork/GameSpy/PeerDefsImplementation.h"
+#include "Common/LanNetplayOptions.h"
 
 // PUBLIC DATA ////////////////////////////////////////////////////////////////////////////////////
 Shell *TheShell = nullptr;  ///< the shell singleton definition
@@ -492,7 +493,7 @@ void Shell::showShell( Bool runInit )
 {
 	DEBUG_LOG(("Shell:showShell() - %s (%s)", TheGlobalData->m_initialFile.str(), (top())?top()->getFilename().str():"no top screen"));
 
-	if(!TheGlobalData->m_initialFile.isEmpty() || !TheGlobalData->m_simulateReplays.empty() || TheGlobalData->m_aiSkirmish || TheGlobalData->m_lanHarness)
+	if(!TheGlobalData->m_initialFile.isEmpty() || !TheGlobalData->m_simulateReplays.empty() || TheGlobalData->m_aiSkirmish || lanNetplayOptions().m_active)
 	{
 		return;
 	}
@@ -554,7 +555,7 @@ void Shell::showShell( Bool runInit )
 void Shell::showShellMap(Bool useShellMap )
 {
 	// we don't want any of this to show if we're loading straight into a file
-	if (TheGlobalData->m_initialFile.isNotEmpty() || !TheGameLogic || !TheGlobalData->m_simulateReplays.empty() || TheGlobalData->m_aiSkirmish || TheGlobalData->m_lanHarness)
+	if (TheGlobalData->m_initialFile.isNotEmpty() || !TheGameLogic || !TheGlobalData->m_simulateReplays.empty() || TheGlobalData->m_aiSkirmish || lanNetplayOptions().m_active)
 	{
 		return;
 	}

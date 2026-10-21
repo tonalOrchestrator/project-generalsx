@@ -34,6 +34,7 @@
 #include "Common/GameState.h"
 #include "Common/Registry.h"
 #include "Common/GlobalData.h"
+#include "Common/LanNetplayOptions.h"
 #include "Common/QuotedPrintable.h"
 #include "Common/UserPreferences.h"
 #include "GameNetwork/LANAPI.h"
@@ -507,7 +508,7 @@ void LANAPI::handleRequestJoin( LANMessage *msg, UnsignedInt senderIP )
 			PRINTF_IP_AS_4_INTS(senderIP), PRINTF_IP_AS_4_INTS(responseIP)); */
 	}
 	// GeneralsX @feature Claude 20/10/2026 Say why a join was denied (harness runs): the joiner only learns "failed".
-	if (TheGlobalData->m_lanHarness)
+	if (lanNetplayOptions().m_active)
 	{
 		printf("NETPLAY host join request from %d.%d.%d.%d -> %s (reason code %d)\n", PRINTF_IP_AS_4_INTS(senderIP),
 			reply.messageType == LANMessage::MSG_JOIN_DENY ? "DENIED" : "accepted", reply.messageType == LANMessage::MSG_JOIN_DENY ? (int)reply.GameNotJoined.reason : 0);

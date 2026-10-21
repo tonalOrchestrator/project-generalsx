@@ -51,6 +51,7 @@
 #include "GameLogic/ScriptEngine.h"
 #include "Common/Recorder.h"
 #include "GameClient/MessageBox.h"
+#include "Common/LanNetplayOptions.h"
 
 
 #if defined(DEBUG_CRC) && !RETAIL_COMPATIBLE_NETWORKING
@@ -798,7 +799,7 @@ void Network::endOfGameCheck() {
 Bool Network::timeForNewFrame() {
 	// GeneralsX @feature Claude 20/10/2026 -lanFast: run frames as fast as the CPU allows (test runs only). Pacing is only
 	// a wall-clock wait, so this changes how long a game takes, not what happens in it.
-	if (TheGlobalData->m_lanFast)
+	if (lanNetplayOptions().m_fast)
 		return TRUE;
 	// GeneralsX @bugfix GitHubCopilot 27/04/2026 Keep network frame pacing in nanoseconds on Linux
 	int64_t curTime;

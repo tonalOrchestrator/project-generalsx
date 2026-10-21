@@ -25,6 +25,7 @@
 #include "Common/AISkirmishSimulation.h"
 #include "Common/GameEngine.h"
 #include "Common/GlobalData.h"
+#include "Common/LanNetplayOptions.h"
 #include "Common/MessageStream.h"
 #include "Common/Player.h"
 #include "Common/PlayerList.h"
@@ -57,6 +58,12 @@
 static UnsignedInt nowMs()
 {
 	return GetTickCount();
+}
+
+LanNetplayOptions& lanNetplayOptions()
+{
+	static LanNetplayOptions s_options;
+	return s_options;
 }
 
 // A human ordering a structure by hand, the way the UI does it: select the dozer, then construct. 'kind' is the structure type
@@ -153,7 +160,7 @@ static void log(const char* fmt, ...)
 //-------------------------------------------------------------------------------------------------
 Bool LanNetplayHarness::isActive()
 {
-	return TheGlobalData && TheGlobalData->m_lanHarness;
+	return lanNetplayOptions().m_active;
 }
 
 void LanNetplayHarness::onEvent(const char* what)
@@ -230,18 +237,18 @@ static Bool configureHostGame(LANGameInfo* g, const AsciiString& mapName)
 	g->getSlot(0)->setMapAvailability(TRUE);
 
 	const Int mapPlayers = md->m_numPlayers;
-	const Int humans = TheGlobalData->m_lanHumans > 0 ? TheGlobalData->m_lanHumans : 1;
+	const Int humans = lanNetplayOptions().m_humans > 0 ? lanNetplayOptions().m_humans : 1;
 
 	// Slot 0: the host machine.
 	LANGameSlot* host = g->getLANSlot(0);
 	Int hostTemplate = PLAYERTEMPLATE_RANDOM;
-	if (TheGlobalData->m_lanHostTemplate.isNotEmpty())
+	if (lanNetplayOptions().m_hostTemplate.isNotEmpty())
 	{
-		hostTemplate = ThePlayerTemplateStore->getTemplateNumByName(TheGlobalData->m_lanHostTemplate);
+		hostTemplate = ThePlayerTemplateStore->getTemplateNumByName(lanNetplayOptions().m_hostTemplate);
 		if (hostTemplate < 0)
 			hostTemplate = PLAYERTEMPLATE_RANDOM;
 	}
-	host->setPlayerTemplate(TheGlobalData->m_lanObserver ? PLAYERTEMPLATE_OBSERVER : hostTemplate);
+	host->setPlayerTemplate(lanNetplayOptions().m_observer ? PLAYERTEMPLATE_OBSERVER : hostTemplate);
 	host->setColor(-1);
 	host->setStartPos(-1);
 	host->setTeamNumber(-1);
@@ -252,7 +259,7 @@ static Bool configureHostGame(LANGameInfo* g, const AsciiString& mapName)
 		g->getLANSlot(slotNum)->setState(SLOT_OPEN);
 
 	// AI opponents.
-	AsciiString spec = TheGlobalData->m_lanSlots;
+	AsciiString spec = lanNetplayOptions().m_slots;
 	AsciiString token;
 	Int aiCount = 0;
 	while (spec.nextToken(&token, ",") && slotNum < MAX_SLOTS)
@@ -278,13 +285,13 @@ static Bool configureHostGame(LANGameInfo* g, const AsciiString& mapName)
 		g->getLANSlot(slotNum)->setState(SLOT_CLOSED);
 
 	Int seed = (Int)GetTickCount();
-	if (TheGlobalData->m_lanSeed >= 0)
-		seed = TheGlobalData->m_lanSeed;
+	if (lanNetplayOptions().m_seed >= 0)
+		seed = lanNetplayOptions().m_seed;
 	g->setSeed(seed);
 
 	log("host configured map=\"%s\" mapPlayers=%d humans=%d ai=%d observer=%d seed=%d", mapName.str(), mapPlayers, humans, aiCount,
-		TheGlobalData->m_lanObserver ? 1 : 0, seed);
-	if (humans + aiCount > mapPlayers && !TheGlobalData->m_lanObserver)
+		lanNetplayOptions().m_observer ? 1 : 0, seed);
+	if (humans + aiCount > mapPlayers && !lanNetplayOptions().m_observer)
 		log("warning: humans+ai (%d) exceeds the map's %d start positions", humans + aiCount, mapPlayers);
 	return TRUE;
 }
@@ -292,17 +299,17 @@ static Bool configureHostGame(LANGameInfo* g, const AsciiString& mapName)
 //-------------------------------------------------------------------------------------------------
 int LanNetplayHarness::run()
 {
-	const Bool host = TheGlobalData->m_lanHost;
+	const Bool host = lanNetplayOptions().m_host;
 	const Bool headless = TheGlobalData->m_headless;
 	const UnsignedInt startMs = nowMs();
 
 	AsciiString mapName;
 	if (host)
 	{
-		mapName = AISkirmishSimulation::resolveMapName(TheGlobalData->m_lanMap);
+		mapName = AISkirmishSimulation::resolveMapName(lanNetplayOptions().m_map);
 		if (mapName.isEmpty())
 		{
-			log("error map \"%s\" not found", TheGlobalData->m_lanMap.str());
+			log("error map \"%s\" not found", lanNetplayOptions().m_map.str());
 			return 1;
 		}
 	}
@@ -316,7 +323,7 @@ int LanNetplayHarness::run()
 	TheLAN = NEW LANAPI();
 	TheLAN->init();
 
-	UnsignedInt localIP = TheGlobalData->m_lanLocalIP.isNotEmpty() ? parseDottedQuad(TheGlobalData->m_lanLocalIP.str()) : pickLocalIP();
+	UnsignedInt localIP = lanNetplayOptions().m_localIP.isNotEmpty() ? parseDottedQuad(lanNetplayOptions().m_localIP.str()) : pickLocalIP();
 	if (localIP == 0)
 	{
 		log("error no usable local IPv4 address (use -lanIP)");
@@ -326,12 +333,12 @@ int LanNetplayHarness::run()
 	TheLAN->RequestLobbyLeave(TRUE);
 
 	UnicodeString name;
-	name.translate(TheGlobalData->m_lanName);
+	name.translate(lanNetplayOptions().m_name);
 	name.truncateTo(g_lanPlayerNameLength);
 	TheLAN->RequestSetName(name);
 
 	log("role=%s local=%d.%d.%d.%d name=%s headless=%d", host ? "host" : "join", PRINTF_IP_AS_4_INTS(localIP),
-		TheGlobalData->m_lanName.str(), headless ? 1 : 0);
+		lanNetplayOptions().m_name.str(), headless ? 1 : 0);
 
 	TheMapCache->updateCache();
 
@@ -357,7 +364,7 @@ int LanNetplayHarness::run()
 	Int numBuildSteps = 0;
 	Int nextBuildStep = 0;
 	{
-		AsciiString spec = TheGlobalData->m_lanBuildSchedule;
+		AsciiString spec = lanNetplayOptions().m_buildSchedule;
 		AsciiString token;
 		while (spec.nextToken(&token, ",") && numBuildSteps < 16)
 		{
@@ -375,7 +382,7 @@ int LanNetplayHarness::run()
 	Int numCheatSteps = 0;
 	Int nextCheatStep = 0;
 	{
-		AsciiString spec = TheGlobalData->m_lanCheatSchedule;
+		AsciiString spec = lanNetplayOptions().m_cheatSchedule;
 		AsciiString token;
 		while (spec.nextToken(&token, ",") && numCheatSteps < 16)
 		{
@@ -393,7 +400,7 @@ int LanNetplayHarness::run()
 	Int numAutopilotSteps = 0;
 	Int nextAutopilotStep = 0;
 	{
-		AsciiString spec = TheGlobalData->m_lanAutopilotSchedule;
+		AsciiString spec = lanNetplayOptions().m_autopilotSchedule;
 		AsciiString token;
 		while (spec.nextToken(&token, ",") && numAutopilotSteps < 16)
 		{
@@ -407,7 +414,7 @@ int LanNetplayHarness::run()
 		}
 	}
 	const UnsignedInt lobbyTimeoutMs = 120000;
-	const UnsignedInt maxFrames = (UnsignedInt)TheGlobalData->m_lanMaxMinutes * 60u * LOGICFRAMES_PER_SECOND;
+	const UnsignedInt maxFrames = (UnsignedInt)lanNetplayOptions().m_maxMinutes * 60u * LOGICFRAMES_PER_SECOND;
 
 	for (;;)
 	{
@@ -478,7 +485,7 @@ int LanNetplayHarness::run()
 					seed = g->getSeed();
 					g->resetAccepted();
 					TheLAN->RequestGameOptions(GenerateGameOptionsString(), TRUE);
-					log("host lobby ready, waiting for %d human machine(s)", TheGlobalData->m_lanHumans);
+					log("host lobby ready, waiting for %d human machine(s)", lanNetplayOptions().m_humans);
 					phase = PH_LOBBY;
 					phaseSince = t;
 				}
@@ -493,7 +500,7 @@ int LanNetplayHarness::run()
 					log("error host game vanished");
 					return 2;
 				}
-				if (countHumans(g) >= TheGlobalData->m_lanHumans && allHumansHaveMap(g))
+				if (countHumans(g) >= lanNetplayOptions().m_humans && allHumansHaveMap(g))
 				{
 					if (allHumansAccepted(g))
 					{
@@ -524,10 +531,10 @@ int LanNetplayHarness::run()
 
 			case PH_JOIN:
 			{
-				UnsignedInt ip = parseDottedQuad(TheGlobalData->m_lanJoinIP.str());
+				UnsignedInt ip = parseDottedQuad(lanNetplayOptions().m_joinIP.str());
 				if (ip == 0)
 				{
-					log("error bad -lanjoin address \"%s\"", TheGlobalData->m_lanJoinIP.str());
+					log("error bad -lanjoin address \"%s\"", lanNetplayOptions().m_joinIP.str());
 					return 1;
 				}
 				log("joining %d.%d.%d.%d", PRINTF_IP_AS_4_INTS(ip));
@@ -550,7 +557,7 @@ int LanNetplayHarness::run()
 				else if (t - lastResend > 6000)
 				{
 					// the join request or reply was lost (or the host was not up yet): ask again
-					UnsignedInt ip = parseDottedQuad(TheGlobalData->m_lanJoinIP.str());
+					UnsignedInt ip = parseDottedQuad(lanNetplayOptions().m_joinIP.str());
 					TheLAN->RequestGameJoinDirectConnect(ip);
 					lastResend = t;
 				}
@@ -571,7 +578,7 @@ int LanNetplayHarness::run()
 				if (!joinOptionsSent)
 				{
 					AsciiString o;
-					o.format("PlayerTemplate=%d", TheGlobalData->m_lanObserver ? (Int)PLAYERTEMPLATE_OBSERVER : (Int)PLAYERTEMPLATE_RANDOM);
+					o.format("PlayerTemplate=%d", lanNetplayOptions().m_observer ? (Int)PLAYERTEMPLATE_OBSERVER : (Int)PLAYERTEMPLATE_RANDOM);
 					TheLAN->RequestGameOptions(o, TRUE);
 					o.format("Color=%d", -1);
 					TheLAN->RequestGameOptions(o, TRUE);
@@ -753,9 +760,9 @@ int LanNetplayHarness::run()
 	{
 		printf("NETPLAY_RESULT %s\n", json.str());
 		fflush(stdout);
-		if (TheGlobalData->m_lanStatsFile.isNotEmpty())
+		if (lanNetplayOptions().m_statsFile.isNotEmpty())
 		{
-			FILE* f = fopen(TheGlobalData->m_lanStatsFile.str(), "w");
+			FILE* f = fopen(lanNetplayOptions().m_statsFile.str(), "w");
 			if (f)
 			{
 				fprintf(f, "%s\n", json.str());
