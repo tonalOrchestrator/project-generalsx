@@ -339,7 +339,13 @@ void StdLocalFileSystem::getFileListInDirectory(const AsciiString& currentDirect
 			std::string filenameStr = iter->path().filename().string();
 			if(iter->is_directory() &&
 				(strcmp(filenameStr.c_str(), ".") != 0 && strcmp(filenameStr.c_str(), "..") != 0)) {
-				AsciiString tempsearchstr(filenameStr.c_str());
+				// GeneralsX @bugfix Claude 15/08/2026 currentDirectory must accumulate the path across
+				// recursive calls, not be replaced by the bare child name - otherwise a repeated
+				// directory name at different depths (e.g. retail ZH's Data/Data/ layout) recurses
+				// on identical arguments forever and overflows the stack.
+				AsciiString tempsearchstr = currentDirectory;
+				tempsearchstr.concat(filenameStr.c_str());
+				tempsearchstr.concat("/");
 
 				// recursively add files in subdirectories if required.
 				getFileListInDirectory(tempsearchstr, originalDirectory, searchName, filenameList, searchSubdirectories);
