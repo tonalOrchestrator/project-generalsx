@@ -74,3 +74,19 @@ is alive, the faction really was the one requested, placements did not fail, the
 base grew. Logs and `summary.json` land in `logs/autopilot-scenarios/<timestamp>/`. Extra engine flags: `-lanHostTemplate
 <Faction>` (the host's faction, e.g. `FactionAmericaAirForceGeneral`), `-lanFast`, `-lanCheatSchedule "sec:money:points,..."` (with `-cheats`), `-lanBuildSchedule "sec:barracks,..."` (the local player orders a
 structure by hand), `-lanCameraLocal` (camera stays on the local base). `tools/netplay/make_demo.sh` builds the Autopilot demo video.
+
+## Challenge maps and single-player maps (no network)
+
+```bash
+cd ~/GeneralsX/GeneralsZH
+LD_LIBRARY_PATH=$PWD ./GeneralsXZH -headless -file 'Maps\GC_TankGeneral.map' -soloAutopilot "5:5" -soloMinutes 12 \
+    -soloTemplate FactionChinaInfantryGeneral
+```
+
+- `-file Maps\<Name>.map` (short form; the engine expands it), `-soloAutopilot "sec:level,..."` turns the human's Autopilot on at those game
+  seconds, `-soloMinutes` caps the run (default 10), `-soloTemplate` picks the human's faction (default: the general whose campaign
+  starts on that map). Challenge maps: `GC_AirGeneral GC_ChemGeneral GC_ChinaBoss GC_DemolitionGeneral GC_LaserGeneral GC_NukeGeneral
+  GC_Stealth GC_SuperWeaponsGeneral GC_TankGeneral`.
+- Prints `AISKIRMISH_RESULT {json}` (per-player stats) and the usual `NETPLAY autopilot ...` traces. If the map's own script ends the game
+  first, the last snapshot (every 5 game seconds) is printed and the run says so.
+- GC_Nuke and GC_Stealth end within seconds and GC_ChinaBoss after 85 s with Autopilot on; not yet understood (map scripts).

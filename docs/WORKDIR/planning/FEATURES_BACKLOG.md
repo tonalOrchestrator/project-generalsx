@@ -77,7 +77,28 @@ and ~$95-120k earned for 11 of 12 factions (Normal earns ~$25-31k there). On the
 so level 5 behaves like Normal. Hotkey cycle is now easy / normal / hard / wallet / explore.
 Diagnosed with traces: first "not neutral" (the relationship toward an unowned building is not NEUTRAL: test the owner instead), then
 "special not ready" (the upgrade), then "in the shroud" (scouting). Built for Challenge mode, which has many neutral buildings; not yet
-tried on a Challenge map (the harness cannot start one: `-file` does not launch maps in this build).
+tried on a Challenge map when this was written; see "Challenge maps from the harness" below.
+
+### Challenge maps from the harness - done (2026-10-21)
+`-file Maps\\<Name>.map -soloAutopilot "5:5" -soloMinutes 12 [-soloTemplate FactionChinaInfantryGeneral]` runs a single-player map headless with the
+human on Autopilot and prints the stats (docs: `tools/netplay/README.md`). `-file` itself was dead in release builds (inside the `RTS_DEBUG` block of
+the command-line table). A Challenge map additionally needs the state the Challenge menu sets up (campaign, `TheChallengeGameInfo`, human slot),
+otherwise the map's `ThePlayer` owns nothing and its lose script fires on frame 0; `setupChallengeForMap` does that.
+Explore + garrison squad as China Infantry General, 12 game-minutes, Normal difficulty (the map can end the game earlier):
+| map | ended | capture / garrison orders | earned | tech captured |
+|---|---|---|---|---|
+| Air General | map, 11:07 | 5 / 3 | $47.7k | 6 |
+| Chem General | map, 11:05 | 0 / 10 | $13.5k | 1 |
+| Demolition General | cap | 4 / 7 | $53.4k | 4 |
+| Laser General | cap | 2 / 7 | $38.3k | 5 |
+| Super Weapons General | map, 6:37 | 2 / 1 | $11.8k | 2 |
+| Tank General | map, 11:37 | 4 / 17 | $15.6k | 3 |
+| China Boss / Nuke General / Stealth | map, 1:25 / 0:07 / 0:07 | - | - | - (map scripts end the game; not investigated) |
+Findings: (1) Challenge maps give their capturable buildings to the *civilian* player (relationship neutral), not the game's neutral player, so Explore
+captured nothing on most maps; it now targets those too (Laser $15k -> $38k, Demolition 0 -> 4 captures, Death Valley identical). (2) Most capturable
+buildings belong to the opposing general (22 of 31 on Chem), which Explore never touches, so income stays modest. (3) The squad does garrison
+(houses, a convenience store, the Palace); on every map some 10 candidate buildings "refuse" (not yet understood; likely the enemy's or already full).
+(4) The human, who only builds and defends, is wiped out by the Challenge AI on most maps after 6-11 game-minutes; that is the Wallet-vs-Hard story again.
 
 ### Defending against a Hard AI (Wallet mode) - improved, not solved
 Goal from Ben: a 1v1 setup that can actually defend against a Hard opponent. Measured solo, headless, 16 game-minute cap, all 12 factions vs one
@@ -178,7 +199,8 @@ money and general's points (frame request + 4) and that without the flag the req
 
 - [x] Explore for China Infantry General: he has no Red Guard (his barracks builds Minigunner, Tank Hunter, Hacker, Black Lotus), so the explorer
       is the Minigunner; fixed, 8 captured and ~$104k earned on Death Valley (was 0 and ~$29k).
-- [ ] Explore: explorers do not run from enemies; try it on a Challenge map by hand.
+- [ ] Explore: explorers do not run from enemies; the Challenge-map runs (headless) are done, a hand-played one is not.
+- [ ] Squad: find out why ~10 nearby garrisonable buildings refuse on every Challenge map; GC_ChinaBoss / GC_Nuke / GC_Stealth end within seconds with Autopilot on.
 
 ### Netplay / determinism
 - [x] Cross-machine check of the placement/economy/cheat changes (Linux + Windows, Autopilot wallet/normal/hard + cheat gifts): in sync.
