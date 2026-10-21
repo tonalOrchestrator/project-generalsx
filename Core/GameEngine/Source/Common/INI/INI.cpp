@@ -467,6 +467,25 @@ UnsignedInt INI::load( AsciiString filename, INILoadType loadType, Xfer *pXfer )
 		fprintf(stderr, "[INI] load - processed total %d lines\n", lineCount);
 		fflush(stderr);
 	}
+	catch (INIException &e)
+	{
+		// GeneralsX @bugfix Claude 16/08/2026 Surface the actual parse failure (line/token) instead
+		// of swallowing it - the generic catch(...) below discarded this diagnostic information.
+		fprintf(stderr, "[INI] ERROR in load('%s') - INIException: %s\n", filename.str(),
+			e.mFailureMessage ? e.mFailureMessage : "(no message)");
+		fflush(stderr);
+		unPrepFile();
+		throw;
+	}
+	catch (std::exception &e)
+	{
+		// GeneralsX @bugfix Claude 16/08/2026 Same as above for non-INIException failures (eg. STL
+		// exceptions thrown by a field parser).
+		fprintf(stderr, "[INI] ERROR in load('%s') - std::exception: %s\n", filename.str(), e.what());
+		fflush(stderr);
+		unPrepFile();
+		throw;
+	}
 	catch (...)
 	{
 		fprintf(stderr, "[INI] ERROR in load('%s') - exception caught\n", filename.str());
