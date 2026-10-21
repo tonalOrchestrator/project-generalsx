@@ -23,8 +23,8 @@ level). It builds your base and economy and never attacks, so it is a helper rat
 - **Explore Mode** sends capture-capable infantry to take neutral buildings (oil derricks, tech buildings) for income. On a map with 30+
   neutral buildings it captured 8 to 14 of them and earned roughly four times the money of plain Autopilot over 12 game-minutes.
 - Under attack, Wallet Mode spends its bank on extra defenses and a few defenders. Measured over 14 game-minutes against one computer
-  opponent: against a Medium AI, plain Autopilot survives in 0 of 12 runs and Wallet Mode in 8 of 12; against a Hard AI nothing survives, but
-  Wallet Mode lasts a little longer.
+  opponent: against a Medium AI, plain Autopilot survives in 0 of 12 runs and Wallet Mode in 12 of 12; against a Hard AI Wallet Mode now
+  lasts about 13 game-minutes instead of 11 (a Hard AI still wins in the end).
 - The switch goes through the network command stream, so every machine flips on the same game frame.
 
 ## Testing tools
