@@ -69,6 +69,7 @@
 #include "GameLogic/Module/AIUpdate.h"
 #include "GameLogic/ExperienceTracker.h"
 #include "GameLogic/GameLogic.h"
+#include "GameLogic/AutopilotProfile.h"
 #include "GameLogic/Module/BodyModule.h"
 #include "GameLogic/Module/ProductionUpdate.h"
 #include "GameLogic/Object.h"
@@ -4341,7 +4342,7 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 				if (msg->getType() == GameMessage::MSG_META_TOGGLE_AUTOPILOT)
 					next = current > 0 ? 0 : s_lastAutopilotLevel;
 				else
-					next = (current == 0 ? s_lastAutopilotLevel : (current % 5) + 1);
+					next = (current == 0 ? s_lastAutopilotLevel : (current % AutopilotProfile::maxLevel()) + 1);
 				if (next > 0)
 					s_lastAutopilotLevel = next;
 				GameMessage *autopilotMsg = TheMessageStream->appendMessage(GameMessage::MSG_SET_AUTOPILOT);

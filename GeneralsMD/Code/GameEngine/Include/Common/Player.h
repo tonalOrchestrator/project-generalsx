@@ -222,6 +222,7 @@ public:
 	void deletePlayerAI();
 // GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
 	Int getAutopilotLevel() const { return m_autopilotLevel; }	///< 0 off, 1 easy, 2 normal, 3 hard
+	void applyAutopilotProfile(Int level);						///< push a level's profile (skill, wallet, explore) into the attached autopilot AI
 	void setAutopilot(Int level);								///< attach/detach build-only skirmish AI to a human player
 
 	UnicodeString getPlayerDisplayName() { return m_playerDisplayName; }

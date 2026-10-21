@@ -53,6 +53,7 @@
 
 #include "GameLogic/AIPathfind.h"
 #include "GameLogic/GameLogic.h"
+#include "GameLogic/AutopilotProfile.h"
 #include "GameLogic/Locomotor.h"
 #include "GameLogic/Object.h"
 #include "GameLogic/ObjectCreationList.h"
@@ -539,8 +540,7 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 				}
 				if (autopilotPlayer == ThePlayerList->getLocalPlayer() && TheInGameUI)
 				{
-					const wchar_t *names[] = { L"Autopilot: OFF", L"Autopilot: ON (Easy)", L"Autopilot: ON (Normal)", L"Autopilot: ON (Hard)", L"Autopilot: WALLET MODE (defend, survive, hoard)", L"Autopilot: EXPLORE (capture neutral buildings for income)" };
-					TheInGameUI->messageNoFormat(UnicodeString(names[level < 0 ? 0 : (level > 5 ? 5 : level)]));
+					TheInGameUI->messageNoFormat(UnicodeString(AutopilotProfile::banner(level)));
 				}
 			}
 			break;

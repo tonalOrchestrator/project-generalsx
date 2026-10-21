@@ -82,6 +82,7 @@
 #include "GameLogic/AI.h"
 #include "GameLogic/AIPathfind.h"
 #include "GameLogic/AISkirmishPlayer.h"
+#include "GameLogic/AutopilotProfile.h"
 #include "GameLogic/ExperienceTracker.h"
 #include "GameLogic/Object.h"
 #include "GameLogic/Scripts.h"
@@ -787,8 +788,20 @@ void Player::deletePlayerAI()
 // adopts the structures the player already owns, then keeps building the rest of its base for them. It never
 // builds army teams and never attacks. Called from the MSG_SET_AUTOPILOT logic command, so it runs on every
 // machine at the same logic frame.
+void Player::applyAutopilotProfile(Int level)
+{
+	const AutopilotProfile *profile = AutopilotProfile::forLevel(level);
+	if (!profile || !m_ai)
+		return;
+	m_ai->setAutopilotWallet(profile->m_wallet);
+	m_ai->setAutopilotExplore(profile->m_explore);
+	m_ai->setAIDifficulty(profile->m_difficulty);
+}
+
 void Player::setAutopilot(Int level)
 {
+	if (level > AutopilotProfile::maxLevel())
+		level = AutopilotProfile::maxLevel();	// an out-of-range request means the highest level
 	if (m_playerType != PLAYER_HUMAN)
 	{
 		if (lanNetplayOptions().m_active)
@@ -819,10 +832,7 @@ void Player::setAutopilot(Int level)
 		m_ai->adoptExistingBase();
 	}
 
-	// Level 4 is Wallet mode: a normal-skill AI that only builds economy and defenses and hoards the rest.
-	m_ai->setAutopilotWallet(level == 4);
-	m_ai->setAutopilotExplore(level == 5);	// level 5: normal skill, plus explorers that capture neutral buildings
-	m_ai->setAIDifficulty(level == 1 ? DIFFICULTY_EASY : ((level == 2 || level == 4 || level == 5) ? DIFFICULTY_NORMAL : DIFFICULTY_HARD));
+	applyAutopilotProfile(level);
 	m_autopilotLevel = level;
 }
 
@@ -4316,9 +4326,7 @@ void Player::xfer( Xfer *xfer )
 			m_ai = newInstance(AISkirmishPlayer)( this );
 			m_canBuildUnits = canBuildUnits;
 			m_ai->setAutopilotOnly(TRUE);
-			m_ai->setAutopilotWallet(savedAutopilotLevel == 4);
-			m_ai->setAutopilotExplore(savedAutopilotLevel == 5);
-			m_ai->setAIDifficulty(savedAutopilotLevel == 1 ? DIFFICULTY_EASY : ((savedAutopilotLevel == 2 || savedAutopilotLevel == 4 || savedAutopilotLevel == 5) ? DIFFICULTY_NORMAL : DIFFICULTY_HARD));
+			applyAutopilotProfile(savedAutopilotLevel);
 			m_autopilotLevel = savedAutopilotLevel;
 		}
 	}

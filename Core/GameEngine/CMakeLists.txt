@@ -104,6 +104,7 @@ set(GAMEENGINE_SRC
     Include/Common/ReplaySimulation.h
     Include/Common/AISkirmishSimulation.h
     Include/Common/LanNetplayHarness.h
+    Include/Common/LanNetplayOptions.h
 #    Include/Common/ResourceGatheringManager.h
 #    Include/Common/Science.h
 #    Include/Common/ScopedMutex.h
