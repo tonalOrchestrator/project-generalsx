@@ -169,15 +169,15 @@ const LocomotorTemplateVector* AIUpdateModuleData::findLocomotorTemplateVector(L
 	}
 
 	LocomotorSetType set = (LocomotorSetType)INI::scanIndexList(ini->getNextToken(), TheLocomotorSetNames);
-	if (!self->m_locomotorTemplates[set].empty())
-	{
-		if (ini->getLoadType() != INI_LOAD_CREATE_OVERRIDES)
-		{
-			DEBUG_CRASH(("re-specifying a LocomotorSet is no longer allowed"));
-			throw INI_INVALID_DATA;
-		}
-	}
-
+	// GeneralsX @bugfix Claude 16/08/2026 A full object redeclaration (same object name, later INI file,
+	// ordinary INI_LOAD_OVERWRITE - eg. a mod replacing a base/expansion unit wholesale) legitimately
+	// re-specifies every field on the object, Locomotor included. Every sibling module type (Draw,
+	// Behavior, ClientUpdate - see ThingTemplate::parseModuleName's clearCopiedFromDefaultEntries)
+	// already tolerates this by clearing old data and rebuilding fresh under plain OVERWRITE, without
+	// requiring INI_LOAD_CREATE_OVERRIDES (which additionally demands the AddModule/override-file
+	// syntax that ordinary object-redeclaration content doesn't use). This guard used to reject the
+	// same pattern for Locomotor specifically, even though the code below unconditionally clears and
+	// rebuilds regardless of load type - removing it just makes Locomotor consistent with its siblings.
 	self->m_locomotorTemplates[set].clear();
 	for (const char* token = ini->getNextToken(); token; token = ini->getNextTokenOrNull())
 	{
