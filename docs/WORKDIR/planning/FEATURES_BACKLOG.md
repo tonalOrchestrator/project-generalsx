@@ -57,6 +57,12 @@ barracks / war factory); idle units defend themselves, nothing ever attacks. Mea
 - vs **Hard**: nothing survives; Normal lasts ~10.5 min on average, Wallet ~11.8 min (was ~10.7 before the under-attack spending).
   Seen before the fix: a player died with $20k+ banked because its dozers were dead and it had no army.
 `autopilot_scenarios.py --enemy E|M|H` runs this comparison (`lost=` column).
+Round two (army cap, queue depth and the defense total all scale with the bank; several defenders per factory per cycle): vs Medium still
+8/12 survive (the four losses now at 8.6, 10.8, 12.8, 13.5 min); vs Hard still nothing survives (9.7-12.6 min, ~11.4 avg), even with 172
+defenders queued across 12 runs. The trace (`autopilot defenders none queued: ...`) shows why more spending does not help: under threat
+the bank is only $600-1,100, because the extra defense structures (~$800 each) take the money before the defender trainer runs, and
+the player has one production building. Beating a Hard AI needs more than reactive spending (tech, more factories, or a human), so
+that is not being chased further.
 Cross-machine: a 12-minute Linux + Windows match vs a Medium AI with both humans in Wallet Mode (real combat, 18 defenders queued on
 each machine) stayed in sync on all 12 per-minute CRCs with identical final stats.
 
@@ -106,7 +112,7 @@ money and general's points (frame request + 4) and that without the flag the req
 ### Autopilot
 - [x] Prerequisite retries: caused by the human-only placement checks above, fixed.
 - [x] Wallet defenses: USA builds a Patriot battery, China speaker towers, GLA tunnel networks (prerequisite defenses once the bank
-      is $3,000 over their cost). [x] Defending units and more defenses under attack (see Wallet Mode under attack). [ ] Defend against Hard: nothing survives it yet.
+      is $3,000 over their cost). [x] Defending units and more defenses under attack (see Wallet Mode under attack). [ ] Defend against Hard: nothing survives it (see Wallet Mode under attack round two); would need tech/more factories, not just spending.
 - [x] Second supply center on GLA factions (fan search around the warehouse).
 - [ ] Replace lost trucks/workers explicitly and scale it with the level (today the AI's gatherer logic does it).
 - [x] Manually built structures count towards the caps (the planner counts what the player owns). A dozer with a build task pending
