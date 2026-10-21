@@ -57,6 +57,8 @@ barracks / war factory); idle units defend themselves, nothing ever attacks. Mea
 - vs **Hard**: nothing survives; Normal lasts ~10.5 min on average, Wallet ~11.8 min (was ~10.7 before the under-attack spending).
   Seen before the fix: a player died with $20k+ banked because its dozers were dead and it had no army.
 `autopilot_scenarios.py --enemy E|M|H` runs this comparison (`lost=` column).
+Cross-machine: a 12-minute Linux + Windows match vs a Medium AI with both humans in Wallet Mode (real combat, 18 defenders queued on
+each machine) stayed in sync on all 12 per-minute CRCs with identical final stats.
 
 ### Autopilot economy and scenario matrix - done
 - Supply centers are placed next to the nearest warehouse with cash (fan search 6-20 cells around it, base side first), the
