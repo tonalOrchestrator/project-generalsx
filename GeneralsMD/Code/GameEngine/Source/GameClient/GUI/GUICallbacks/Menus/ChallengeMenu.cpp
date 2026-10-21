@@ -207,7 +207,21 @@ Bool setupChallengeForMap( const AsciiString& mapName, const AsciiString& player
 	for (Int i = 0; i < NUM_GENERALS; ++i)
 	{
 		TheCampaignManager->setCampaign(generals[i].getCampaign());
-		if (TheCampaignManager->getCurrentMap().compareNoCase(mapName) != 0)
+		// The map may be any mission of the campaign, not only the first one.
+		Campaign *campaign = TheCampaignManager->getCurrentCampaign();
+		Bool found = FALSE;
+		if (campaign)
+		{
+			for (Campaign::MissionListIt it = campaign->m_missions.begin(); it != campaign->m_missions.end() && !found; ++it)
+			{
+				if ((*it)->m_mapName.compareNoCase(mapName) == 0)
+				{
+					TheCampaignManager->setCampaignAndMission(generals[i].getCampaign(), (*it)->m_name);
+					found = TRUE;
+				}
+			}
+		}
+		if (!found)
 			continue;
 
 		AsciiString templateName = playerTemplateName.isEmpty() ? generals[i].getPlayerTemplateName() : playerTemplateName;

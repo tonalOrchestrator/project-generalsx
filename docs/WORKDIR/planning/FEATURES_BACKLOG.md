@@ -93,7 +93,10 @@ Explore + garrison squad as China Infantry General, 12 game-minutes, Normal diff
 | Laser General | cap | 2 / 7 | $38.3k | 5 |
 | Super Weapons General | map, 6:37 | 2 / 1 | $11.8k | 2 |
 | Tank General | map, 11:37 | 4 / 17 | $15.6k | 3 |
-| China Boss / Nuke General / Stealth | map, 1:25 / 0:07 / 0:07 | - | - | - (map scripts end the game; not investigated) |
+| Nuke General | map, 11:08 | n/a | $34.5k | 4 |
+| Stealth | cap | n/a | $35.2k | 3 |
+| China Boss | map, 10:48 | n/a | $17.3k | 1 |
+(Nuke, Stealth and China Boss first ended in seconds because they are not the first mission of any general's campaign, so the Challenge setup was skipped; it now searches every mission.)
 Findings: (1) Challenge maps give their capturable buildings to the *civilian* player (relationship neutral), not the game's neutral player, so Explore
 captured nothing on most maps; it now targets those too (Laser $15k -> $38k, Demolition 0 -> 4 captures, Death Valley identical). (2) Most capturable
 buildings belong to the opposing general (22 of 31 on Chem), which Explore never touches, so income stays modest. (3) The squad does garrison
@@ -200,7 +203,7 @@ money and general's points (frame request + 4) and that without the flag the req
 - [x] Explore for China Infantry General: he has no Red Guard (his barracks builds Minigunner, Tank Hunter, Hacker, Black Lotus), so the explorer
       is the Minigunner; fixed, 8 captured and ~$104k earned on Death Valley (was 0 and ~$29k).
 - [ ] Explore: explorers do not run from enemies; the Challenge-map runs (headless) are done, a hand-played one is not.
-- [ ] Squad: find out why ~10 nearby garrisonable buildings refuse on every Challenge map; GC_ChinaBoss / GC_Nuke / GC_Stealth end within seconds with Autopilot on.
+- [ ] Squad: find out why ~10 nearby garrisonable buildings refuse on every Challenge map.
 
 ### Netplay / determinism
 - [x] Cross-machine check of the placement/economy/cheat changes (Linux + Windows, Autopilot wallet/normal/hard + cheat gifts): in sync.

@@ -89,4 +89,4 @@ LD_LIBRARY_PATH=$PWD ./GeneralsXZH -headless -file 'Maps\GC_TankGeneral.map' -so
   GC_Stealth GC_SuperWeaponsGeneral GC_TankGeneral`.
 - Prints `AISKIRMISH_RESULT {json}` (per-player stats) and the usual `NETPLAY autopilot ...` traces. If the map's own script ends the game
   first, the last snapshot (every 5 game seconds) is printed and the run says so.
-- GC_Nuke and GC_Stealth end within seconds and GC_ChinaBoss after 85 s with Autopilot on; not yet understood (map scripts).
+- The map may be any mission of a general's campaign; the Challenge setup finds it. A non-Challenge map just starts as plain single-player.
