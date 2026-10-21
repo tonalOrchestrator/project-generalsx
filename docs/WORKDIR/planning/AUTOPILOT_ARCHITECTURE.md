@@ -14,6 +14,7 @@ AISkirmishPlayer::attachAutopilot(profile) --> AIAutopilot  (facade: owns the mo
                                                 |-- AutopilotExplorer  capture upgrade, explorers, scouting, blacklist (explore mode)
                                                 |-- AutopilotSquad     tank person + gun person trained and garrisoned in nearby buildings (wallet, explore)
                                                 |-- AutopilotHackers   Hackers trained and sent into the Internet Center (wallet, China)
+                                                |-- AutopilotRepair    an idle dozer repairs the most damaged building (wallet, explore)
                                                 `-- AutopilotLog       harness trace helpers (throttled lines the scenario runner parses)
 ```
 

@@ -31,6 +31,7 @@ struct AutopilotProfile
 	Bool m_explore;				///< capture neutral buildings for income with capture-capable infantry
 	Int m_standingSquad;		///< garrison squad: tank person + gun person kept holed up in buildings near the base (0 = none)
 	Bool m_hackers;				///< train Hackers and hole them up in the Internet Center for income (China)
+	Bool m_repair;				///< send an idle dozer to repair the most damaged building
 
 	/// The profile of a level, or nullptr for 0 (off) and anything out of range.
 	static const AutopilotProfile *forLevel(Int level);

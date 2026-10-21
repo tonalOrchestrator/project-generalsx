@@ -23,11 +23,11 @@
 // GeneralsX @refactor Claude 21/10/2026 Index 0 is "off"; the rows after it are the levels in hotkey-cycle order.
 static const AutopilotProfile s_profiles[] =
 {
-	{ 1, DIFFICULTY_EASY,   FALSE, FALSE, 0, FALSE },	// easy
-	{ 2, DIFFICULTY_NORMAL, FALSE, FALSE, 0, FALSE },	// normal
-	{ 3, DIFFICULTY_HARD,   FALSE, FALSE, 0, FALSE },	// hard
-	{ 4, DIFFICULTY_NORMAL, TRUE,  FALSE, 2, TRUE  },	// wallet: defend, survive, hoard money (+ garrison squad, hackers)
-	{ 5, DIFFICULTY_NORMAL, FALSE, TRUE,  2, FALSE },	// explore: capture neutral buildings for income (+ garrison squad)
+	{ 1, DIFFICULTY_EASY,   FALSE, FALSE, 0, FALSE, FALSE },	// easy
+	{ 2, DIFFICULTY_NORMAL, FALSE, FALSE, 0, FALSE, FALSE },	// normal
+	{ 3, DIFFICULTY_HARD,   FALSE, FALSE, 0, FALSE, FALSE },	// hard
+	{ 4, DIFFICULTY_NORMAL, TRUE,  FALSE, 2, TRUE,  TRUE  },	// wallet: defend, survive, hoard money (+ garrison squad, hackers, repair)
+	{ 5, DIFFICULTY_NORMAL, FALSE, TRUE,  2, FALSE, TRUE  },	// explore: capture neutral buildings for income (+ garrison squad, repair)
 };
 
 static const wchar_t *const s_banners[] =

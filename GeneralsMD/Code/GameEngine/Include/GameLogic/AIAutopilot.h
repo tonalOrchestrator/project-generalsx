@@ -25,6 +25,7 @@
 //   AutopilotExplorer  explore mode: capture upgrade, explorers, scouting
 //   AutopilotSquad     wallet and explore modes: a tank person + a gun person garrisoned in buildings near the base
 //   AutopilotHackers   wallet mode (China): hackers holed up in the Internet Center for income
+//   AutopilotRepair    wallet and explore modes: an idle dozer repairs the most damaged building
 // Applying a different level (setProfile) keeps every module's state; turning the autopilot off deletes this object.
 
 #pragma once
@@ -35,6 +36,7 @@
 #include "GameLogic/AutopilotHackers.h"
 #include "GameLogic/AutopilotPlanner.h"
 #include "GameLogic/AutopilotProfile.h"
+#include "GameLogic/AutopilotRepair.h"
 #include "GameLogic/AutopilotSquad.h"
 
 class AIAutopilot : private AutopilotPlanner::Links, private AutopilotSquad::Links
@@ -70,5 +72,6 @@ private:
 	AutopilotExplorer m_explorer;
 	AutopilotSquad m_squad;
 	AutopilotHackers m_hackers;
+	AutopilotRepair m_repair;
 	AutopilotPlanner m_planner;
 };

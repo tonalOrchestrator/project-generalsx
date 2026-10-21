@@ -91,6 +91,9 @@ Hard AI (median survival; none survived 16 minutes until the extra defenses):
   ~$1,000 defenses; under attack both the USA and GLA had a bank of only $250-600): **13.4 min** (11.3-16.0), one run survived the full 16, ~16 kills /
   44 losses per game, the USA now builds 12-20 extra defenses (was 6-10). Lesson: units and structures draw on one bank, so the one that matters has to
   be protected, and a decline trace (`extra defense declined: ... too dear for a bank of N`) found it in one run.
+- **dozer repair** (`AutopilotRepair`: an idle dozer is sent to the most damaged building below 70% health, wallet and explore): median 13.1 min
+  (11.9-16.0), ~18 kills / 45 losses - **no measurable change in the median** (noise is about +-0.3), a slightly better worst run. Kept because the
+  healing is free and the Medium / matrix / Explore numbers did not move; it is not what decides a Hard game.
 - Against a **Medium** AI: Wallet survivors **12/12** (plain Autopilot 0/12; Wallet was 8/12 this morning).
 Findings that mattered: units die piecemeal (60 losses / 8 kills), the bank sat unspent ($14k at death) and the only defense was the one the build
 list names. Not yet tried: repair of damaged structures, keeping defenders grouped at the defenses, an anti-vehicle mix tuned to the Hard AI's waves.
