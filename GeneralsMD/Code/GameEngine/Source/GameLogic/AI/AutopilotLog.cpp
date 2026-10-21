@@ -27,7 +27,7 @@
 // GeneralsX @refactor Claude 21/10/2026 See AutopilotLog.h.
 Bool AutopilotLog::enabled()
 {
-	return lanNetplayOptions().m_active;
+	return lanNetplayOptions().m_active || lanNetplayOptions().m_soloSchedule.isNotEmpty();
 }
 
 void AutopilotLog::line(const char *format, ...)

@@ -26,6 +26,7 @@
 #include "Common/GlobalData.h"
 #include "Common/LanNetplayOptions.h"
 #include "Common/MessageStream.h"
+#include "Common/NameKeyGenerator.h"
 #include "Common/Player.h"
 #include "Common/PlayerList.h"
 #include "Common/PlayerTemplate.h"
@@ -34,6 +35,7 @@
 #include "GameClient/GameClient.h"
 #include "GameClient/MapUtil.h"
 #include "GameLogic/GameLogic.h"
+#include "GameLogic/Object.h"
 #include "GameLogic/TerrainLogic.h"
 #include "GameClient/View.h"
 #include "GameClient/Display.h"
@@ -46,6 +48,11 @@
 #include "Common/Money.h"
 
 //-------------------------------------------------------------------------------------------------
+// GeneralsX @feature Claude 21/10/2026 Set by perFrame() when the solo run reaches -soloMinutes.
+static Bool s_soloTimedOut = FALSE;
+static AsciiString s_soloLastJson;
+static Bool soloTimedOut() { return s_soloTimedOut; }
+
 static SlotState difficultyCharToSlotState(char c)
 {
 	switch (toupper((unsigned char)c))
@@ -276,6 +283,56 @@ int AISkirmishSimulation::run()
 }
 
 //-------------------------------------------------------------------------------------------------
+// GeneralsX @feature Claude 21/10/2026 Solo map (Challenge mode) with the local player on autopilot.
+// The schedule and the stop are in perFrame(), so the windowed run (normal engine loop) behaves the same.
+int AISkirmishSimulation::runSolo()
+{
+	const UnsignedInt startMs = GetTickCount();
+	printf("AISkirmishSolo: map=\"%s\" schedule=%s minutes=%d headless=%d\n", TheGlobalData->m_initialFile.str(),
+		lanNetplayOptions().m_soloSchedule.str(), lanNetplayOptions().m_soloMaxMinutes, TheGlobalData->m_headless ? 1 : 0);
+	fflush(stdout);
+
+	if (!TheGlobalData->m_headless)
+	{
+		TheGameEngine->execute();
+	}
+	else
+	{
+		Bool started = FALSE;
+		UnsignedInt lastFrame = 0;
+		while (!TheGameEngine->getQuitting())
+		{
+			// -file queued MSG_NEW_GAME on the message stream; the headless loop has to propagate it itself.
+			TheMessageStream->propagateMessages();
+			TheGameClient->updateHeadless();
+			TheGameLogic->UPDATE();
+			if (TheGameLogic->isInGame())
+			{
+				started = TRUE;
+				lastFrame = TheGameLogic->getFrame();
+				// The game clears itself when a script ends it, taking the stats along: keep a snapshot.
+				if (lastFrame % (5u * LOGICFRAMES_PER_SECOND) == 0)
+					s_soloLastJson = buildStatsJson(TheGlobalData->m_initialFile, 0, FALSE, GetTickCount() - startMs);
+			}
+			else if (started)
+			{
+				printf("AISkirmishSolo: the map ended the game at game second %u\n", lastFrame / LOGICFRAMES_PER_SECOND);
+				break;
+			}
+		}
+		if (!soloTimedOut() && s_soloLastJson.isNotEmpty())
+		{
+			printf("AISKIRMISH_RESULT %s\n", s_soloLastJson.str());
+			fflush(stdout);
+			return 0;
+		}
+	}
+
+	dumpStats(TheGlobalData->m_initialFile, 0, soloTimedOut(), GetTickCount() - startMs);
+	return 0;
+}
+
+//-------------------------------------------------------------------------------------------------
 // GeneralsX @refactor Claude 20/10/2026 JSON building split out of dumpStats so the LAN netplay harness reuses it.
 AsciiString AISkirmishSimulation::buildStatsJson(const AsciiString& mapName, Int seed, Bool timedOut, UnsignedInt realTimeMs)
 {
@@ -493,6 +550,82 @@ void AISkirmishSimulation::aiLog(const Player* player, const char* fmt, ...)
 //-------------------------------------------------------------------------------------------------
 void AISkirmishSimulation::perFrame()
 {
+	if (TheGlobalData && !TheGlobalData->m_aiSkirmish && !lanNetplayOptions().m_active && lanNetplayOptions().m_soloSchedule.isNotEmpty())
+	{
+		// -soloAutopilot: apply the schedule to the local player and stop after -soloMinutes.
+		if (!TheGameLogic || !TheGameLogic->isInGame() || !ThePlayerList || TheGameLogic->isInShellGame())
+			return;
+		static Bool s_parsed = FALSE;
+		static UnsignedInt s_frames[16];
+		static Int s_levels[16];
+		static Int s_count = 0;
+		static Int s_next = 0;
+		if (!s_parsed)
+		{
+			s_parsed = TRUE;
+			AsciiString spec = lanNetplayOptions().m_soloSchedule;
+			AsciiString token;
+			while (spec.nextToken(&token, ",") && s_count < 16)
+			{
+				int sec = 0, lvl = 0;
+				if (sscanf(token.str(), "%d:%d", &sec, &lvl) == 2)
+				{
+					s_frames[s_count] = (UnsignedInt)sec * LOGICFRAMES_PER_SECOND;
+					s_levels[s_count] = lvl;
+					++s_count;
+				}
+			}
+		}
+		const UnsignedInt frame = TheGameLogic->getFrame();
+		Player* local = ThePlayerList->getLocalPlayer();
+		static Bool s_rosterShown = FALSE;
+		if (!s_rosterShown && frame >= 2)
+		{
+			s_rosterShown = TRUE;
+			for (Int i = 0; i < ThePlayerList->getPlayerCount(); ++i)
+			{
+				Player* p = ThePlayerList->getNthPlayer(i);
+				if (!p)
+					continue;
+				printf("AISkirmishSolo: player %d name=%s side=%s template=%s type=%s%s money=%u\n", i, p->getPlayerNameKey() != NAMEKEY_INVALID ? TheNameKeyGenerator->keyToName(p->getPlayerNameKey()).str() : "?",
+					p->getSide().str(), p->getPlayerTemplate() ? p->getPlayerTemplate()->getName().str() : "-", p->getPlayerType() == PLAYER_COMPUTER ? "ai" : "human",
+					p == local ? " LOCAL" : "", p->getMoney()->countMoney());
+			}
+			fflush(stdout);
+		}
+		static Int s_tallyAt = 2;
+		if (frame >= (UnsignedInt)s_tallyAt && s_tallyAt <= 60)
+		{
+			s_tallyAt = s_tallyAt == 2 ? 60 : 1000;
+			Int counts[MAX_PLAYER_COUNT] = {};
+			for (Object* o = TheGameLogic->getFirstObject(); o; o = o->getNextObject())
+				if (o->getControllingPlayer() && o->getControllingPlayer()->getPlayerIndex() < MAX_PLAYER_COUNT)
+					++counts[o->getControllingPlayer()->getPlayerIndex()];
+			for (Int i = 0; i < ThePlayerList->getPlayerCount() && i < MAX_PLAYER_COUNT; ++i)
+				printf("AISkirmishSolo: frame %u player %d objects=%d\n", frame, i, counts[i]);
+			fflush(stdout);
+		}
+		while (s_next < s_count && frame >= s_frames[s_next] && local && !local->isPlayerObserver())
+		{
+			// Headless: the message stream does not deliver it in this loop, so put it on the command list like the
+			// replay simulation does. Windowed: the normal stream path (same as the hotkey).
+			GameMessage* msg = TheGlobalData->m_headless ? newInstance(GameMessage)(GameMessage::MSG_SET_AUTOPILOT) : TheMessageStream->appendMessage(GameMessage::MSG_SET_AUTOPILOT);
+			msg->appendIntegerArgument(s_levels[s_next]);
+			if (TheGlobalData->m_headless)
+				TheCommandList->appendMessage(msg);
+			printf("NETPLAY autopilot request level=%d at frame %u (%s)\n", s_levels[s_next], frame, local->getPlayerTemplate() ? local->getPlayerTemplate()->getName().str() : "?");
+			fflush(stdout);
+			++s_next;
+		}
+		const Int maxMinutes = lanNetplayOptions().m_soloMaxMinutes;
+		if (maxMinutes > 0 && frame >= (UnsignedInt)maxMinutes * 60u * LOGICFRAMES_PER_SECOND)
+		{
+			s_soloTimedOut = TRUE;
+			TheGameEngine->setQuitting(TRUE);
+		}
+		return;
+	}
+
 	if (!TheGlobalData || (!TheGlobalData->m_aiSkirmish && !lanNetplayOptions().m_active))
 		return;
 

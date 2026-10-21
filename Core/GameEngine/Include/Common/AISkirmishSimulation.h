@@ -31,6 +31,10 @@ public:
 	// Returns process exit code.
 	static int run();
 
+	// -file <map> -soloAutopilot "sec:level,...": a single-player map (Challenge mode) with the local player on
+	// autopilot. Headless: steps the logic itself, stops after -soloMinutes game minutes and prints the stats.
+	static int runSolo();
+
 	// Windowed (watch) mode only: called every logic frame from GameLogic::update. Puts the
 	// observer camera on the first AI base at game start and hops between AI bases periodically.
 	static void updateWatchCamera();

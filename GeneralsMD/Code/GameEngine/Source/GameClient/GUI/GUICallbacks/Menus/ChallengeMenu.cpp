@@ -193,6 +193,52 @@ void setGeneralCampaign( Int buttonIndex )
 
 
 //-------------------------------------------------------------------------------------------------
+// GeneralsX @feature Claude 21/10/2026 Start a Challenge map named on the command line (-file) the way the
+// menu does: pick the campaign that owns the map, create the challenge game info and fill the human slot.
+// Without this the map's "ThePlayer" owns nothing and its lose script fires on the first frame.
+// playerTemplateName empty = the faction of the general whose map it is.
+//-------------------------------------------------------------------------------------------------
+Bool setupChallengeForMap( const AsciiString& mapName, const AsciiString& playerTemplateName )
+{
+	if (!TheChallengeGenerals || !TheCampaignManager)
+		return FALSE;
+
+	const GeneralPersona* generals = TheChallengeGenerals->getChallengeGenerals();
+	for (Int i = 0; i < NUM_GENERALS; ++i)
+	{
+		TheCampaignManager->setCampaign(generals[i].getCampaign());
+		if (TheCampaignManager->getCurrentMap().compareNoCase(mapName) != 0)
+			continue;
+
+		AsciiString templateName = playerTemplateName.isEmpty() ? generals[i].getPlayerTemplateName() : playerTemplateName;
+		Int templateNum = ThePlayerTemplateStore->getTemplateNumByName(templateName);
+		const PlayerTemplate *playerTemplate = templateNum >= 0 ? ThePlayerTemplateStore->getNthPlayerTemplate(templateNum) : nullptr;
+		if (!playerTemplate)
+			return FALSE;
+
+		if( !TheChallengeGameInfo )
+			TheChallengeGameInfo = NEW SkirmishGameInfo;
+		TheChallengeGameInfo->init();
+		TheChallengeGameInfo->clearSlotList();
+		TheChallengeGameInfo->reset();
+		TheChallengeGameInfo->enterGame();
+
+		TheChallengeGenerals->setCurrentPlayerTemplateNum(templateNum);
+		GameSlot slot;
+		slot.setState(SLOT_PLAYER, playerTemplate->getDisplayName());
+		slot.setPlayerTemplate(templateNum);
+		TheChallengeGameInfo->setSlot(0, slot);
+		TheChallengeGameInfo->setMap(mapName);
+
+		TheCampaignManager->setGameDifficulty(TheChallengeGenerals->getCurrentDifficulty());
+		TheScriptEngine->setGlobalDifficulty(TheChallengeGenerals->getCurrentDifficulty());
+		return TRUE;
+	}
+	return FALSE;
+}
+
+
+//-------------------------------------------------------------------------------------------------
 // set the appropriate bio for the given general and initialize the bio windows
 //-------------------------------------------------------------------------------------------------
 void setGeneralBio( Int buttonIndex )

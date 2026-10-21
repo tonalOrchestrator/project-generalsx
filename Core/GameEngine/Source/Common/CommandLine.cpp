@@ -677,14 +677,6 @@ Int parsePreload( char *args[], int num )
 #endif
 
 
-#if defined(RTS_DEBUG)
-Int parseDisplayDebug(char *args[], int)
-{
-	TheWritableGlobalData->m_displayDebug = TRUE;
-
-	return 1;
-}
-
 Int parseFile(char *args[], int num)
 {
 	if (num > 1)
@@ -695,6 +687,14 @@ Int parseFile(char *args[], int num)
 	return 2;
 }
 
+
+#if defined(RTS_DEBUG)
+Int parseDisplayDebug(char *args[], int)
+{
+	TheWritableGlobalData->m_displayDebug = TRUE;
+
+	return 1;
+}
 
 Int parsePreloadEverything( char *args[], int num )
 {
@@ -942,6 +942,17 @@ Int parseLanName(char *args[], int num)       { return parseLanStringArg(args, n
 Int parseLanFast(char *[], int) { lanNetplayOptions().m_fast = TRUE; return 1; }
 Int parseLanHostTemplate(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_hostTemplate); }
 Int parseLanStats(char *args[], int num)      { return parseLanStringArg(args, num, lanNetplayOptions().m_statsFile); }
+
+// GeneralsX @feature Claude 21/10/2026 Autopilot on a single-player map started with -file (Challenge mode).
+Int parseSoloAutopilot(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_soloSchedule); }
+
+Int parseSoloTemplate(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_soloTemplate); }
+
+Int parseSoloMinutes(char *args[], int num)
+{
+	if (num > 1) { lanNetplayOptions().m_soloMaxMinutes = atoi(args[1]); return 2; }
+	return 1;
+}
 
 Int parseLanHumans(char *args[], int num)
 {
@@ -1363,6 +1374,9 @@ static CommandLineParam paramsForStartup[] =
 	// Combine with -headless to simulate as fast as possible and print AISKIRMISH_RESULT JSON at the end,
 	// or without -headless to watch it as the observer. -seed N makes it reproducible.
 	// GeneralsX @feature Claude 20/10/2026 Headless LAN netplay harness
+	{ "-soloAutopilot", parseSoloAutopilot },
+	{ "-soloMinutes", parseSoloMinutes },
+	{ "-soloTemplate", parseSoloTemplate },
 	{ "-lanhost", parseLanHost },
 	{ "-lanjoin", parseLanJoin },
 	{ "-lanSlots", parseLanSlots },
@@ -1489,6 +1503,8 @@ static CommandLineParam paramsForEngineInit[] =
 	// Number of frames between each CRC that is written to replay files in singleplayer games.
 	{ "-ReplayCRCInterval", parseReplayCRCInterval },
 #endif
+	// GeneralsX @bugfix Claude 21/10/2026 -file was inside the RTS_DEBUG block, so release builds silently ignored it and showed the main menu.
+	{ "-file", parseFile },
 #if defined(RTS_DEBUG)
 	{ "-saveAllStats", parseSaveAllStats },
 	{ "-noDraw", parseNoDraw },
@@ -1514,7 +1530,6 @@ static CommandLineParam paramsForEngineInit[] =
 	{ "-jabber", parseJabber },
 	{ "-munkee", parseMunkee },
 	{ "-displayDebug", parseDisplayDebug },
-	{ "-file", parseFile },
 
 //	{ "-preload", parsePreload },
 

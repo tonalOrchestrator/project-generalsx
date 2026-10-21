@@ -802,7 +802,7 @@ void Player::setAutopilot(Int level)
 		level = AutopilotProfile::maxLevel();	// an out-of-range request means the highest level
 	if (m_playerType != PLAYER_HUMAN)
 	{
-		if (lanNetplayOptions().m_active)
+		if (lanNetplayOptions().m_active || lanNetplayOptions().m_soloSchedule.isNotEmpty())
 		{
 			printf("NETPLAY autopilot ignored: player type %d is not human\n", (int)m_playerType);
 			fflush(stdout);

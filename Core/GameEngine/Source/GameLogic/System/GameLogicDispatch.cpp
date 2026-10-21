@@ -533,7 +533,7 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 			{
 				const Int level = msg->getArgument(0)->integer;
 				autopilotPlayer->setAutopilot(level);
-				if (lanNetplayOptions().m_active)
+				if (lanNetplayOptions().m_active || lanNetplayOptions().m_soloSchedule.isNotEmpty())
 				{
 					printf("NETPLAY autopilot applied player=%d level=%d -> now %d (frame %u)\n", msg->getPlayerIndex(), level, autopilotPlayer->getAutopilotLevel(), getFrame());
 					fflush(stdout);

@@ -33,7 +33,11 @@
 #include "Common/ReplaySimulation.h"
 #include "Common/AISkirmishSimulation.h"
 #include "Common/LanNetplayHarness.h"
+#include "Common/GlobalData.h"
 #include "Common/LanNetplayOptions.h"
+
+// GeneralsX @feature Claude 21/10/2026 defined in ChallengeMenu.cpp
+extern Bool setupChallengeForMap( const AsciiString& mapName, const AsciiString& playerTemplateName );
 
 
 /**
@@ -56,6 +60,14 @@ Int GameMain()
 	{
 		// GeneralsX @feature Claude 30/09/2026 AI-vs-AI skirmish runner
 		exitcode = AISkirmishSimulation::run();
+	}
+	else if (lanNetplayOptions().m_soloSchedule.isNotEmpty() && TheGlobalData->m_initialFile.isNotEmpty())
+	{
+		// GeneralsX @feature Claude 21/10/2026 Autopilot on a single-player map (Challenge mode)
+		// The menu normally prepares the Challenge state (campaign, human slot); do it for the -file map.
+		Bool challenge = setupChallengeForMap(TheGlobalData->m_initialFile, lanNetplayOptions().m_soloTemplate);
+		printf("AISkirmishSolo: challenge setup %s\n", challenge ? "done" : "not a Challenge map, plain single-player start");
+		exitcode = AISkirmishSimulation::runSolo();
 	}
 	else if (lanNetplayOptions().m_active)
 	{
