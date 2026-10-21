@@ -55,6 +55,7 @@
 #include "GameLogic/PartitionManager.h"
 #include "GameLogic/ScriptEngine.h"
 #include "GameLogic/Module/ProductionUpdate.h"
+#include "GameLogic/Module/SupplyWarehouseDockUpdate.h"
 #include "GameClient/TerrainVisual.h"
 
 
@@ -251,6 +252,17 @@ void AISkirmishPlayer::processBaseBuilding()
 #ifdef USE_DOZER
 			// dozer-construct the building
 			bldg = buildStructureWithDozer(bldgPlan, bldgInfo);
+			if (m_autopilotOnly && TheGlobalData->m_lanHarness)
+			{
+				const Bool brokeFor = !bldg && m_player->getMoney()->countMoney() < bldgPlan->calcCostToBuild(m_player);
+				if (bldg || !brokeFor || TheGameLogic->getFrame() % 600 == 0)	// waiting for money is normal: log it sparsely
+				{
+					printf("NETPLAY autopilot place %s priority=%d -> %s (frame %u)\n", bldgPlan->getName().str(), (Int)bldgInfo->isPriorityBuild(), bldg ? "placed" : (brokeFor ? "waiting for money" : "FAILED"), TheGameLogic->getFrame());
+					fflush(stdout);
+				}
+				if (!bldg && !brokeFor)
+					autopilotExplainStall(bldgInfo);
+			}
 			// store the object with the build order
 			if (bldg)
 			{
@@ -977,6 +989,38 @@ void AISkirmishPlayer::update()
 }
 
 // GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
+// GeneralsX @feature Claude 20/10/2026 Autopilot: say why a queued structure was never placed, so a stalled build
+// does not need a debugger session: the dozer, the money, the safety check and both legality checks the placement
+// code runs.
+void AISkirmishPlayer::autopilotExplainStall(BuildListInfo *info)
+{
+	if (!TheGlobalData->m_lanHarness)
+		return;
+	const ThingTemplate *plan = TheThingFactory->findTemplate(info->getTemplateName());
+	if (!plan)
+		return;
+	Object *dozer = findDozer(info->getLocation());
+	Coord3D pos = *info->getLocation();
+	pos.z += TheTerrainLogic->getGroundHeight(pos.x, pos.y);
+	Int canMake = -1, legalEnemy = -1, legalTerrain = -1;
+	if (dozer)
+	{
+		canMake = (Int)TheBuildAssistant->canMakeUnit(dozer, plan);
+		legalEnemy = (Int)TheBuildAssistant->isLocationLegalToBuild(&pos, plan, info->getAngle(), BuildAssistant::NO_ENEMY_OBJECT_OVERLAP, dozer, m_player);
+		legalTerrain = (Int)TheBuildAssistant->isLocationLegalToBuild(&pos, plan, info->getAngle(),
+			BuildAssistant::CLEAR_PATH | BuildAssistant::TERRAIN_RESTRICTIONS | BuildAssistant::NO_OBJECT_OVERLAP, dozer, m_player);
+		TheTerrainVisual->removeAllBibs();	// isLocationLegalToBuild adds bib feedback
+	}
+	printf("NETPLAY autopilot stall %s at (%.0f,%.0f): dozer=%d canMake=%d money=%u cost=%u safe=%d legalEnemy=%d legalTerrain=%d ready=%d (frame %u)\n",
+		info->getTemplateName().str(), pos.x, pos.y, dozer ? (Int)dozer->getID() : -1, canMake,
+		m_player->getMoney()->countMoney(), plan->calcCostToBuild(m_player), (Int)isLocationSafe(info->getLocation(), plan),
+		legalEnemy, legalTerrain, (Int)m_readyToBuildStructure, TheGameLogic->getFrame());
+	printf("NETPLAY autopilot stall entry: priority=%d objectID=%d timestamp=%d rebuilds=%d buildable=%d canBuildBase=%d buildDelay=%d structureTimer=%d underPowered=%d\n",
+		(Int)info->isPriorityBuild(), (Int)info->getObjectID(), (Int)info->getObjectTimestamp(), (Int)info->getNumRebuilds(), (Int)info->isBuildable(),
+		(Int)m_player->getCanBuildBase(), (Int)m_buildDelay, (Int)m_structureTimer, (Int)!m_player->getEnergy()->hasSufficientPower());
+	fflush(stdout);
+}
+
 // GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
 // A computer player gets its build order from the skirmish scripts, which queue structures one at a time through
 // buildSpecificAIBuilding(). A human with autopilot has no such scripts, so this picks the next structure itself:
@@ -989,11 +1033,12 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 	{
 		if (m_autopilotPending->getObjectID() != INVALID_ID)
 			m_autopilotPending = nullptr;	// placed; processBaseBuilding() owns it from here
-		else if (TheGameLogic->getFrame() - m_autopilotPendingFrame < 20 * LOGICFRAMES_PER_SECOND)
+		else if (TheGameLogic->getFrame() - m_autopilotPendingFrame < 40 * LOGICFRAMES_PER_SECOND)
 			return;	// still waiting for a dozer to start it
 		else
 		{
 			// Gave up on it (no legal spot, no money, no dozer): drop the entry for good and plan something else.
+			autopilotExplainStall(m_autopilotPending);
 			m_autopilotPending->clearPriorityBuild();
 			m_autopilotPending->setNumRebuilds(0);
 			m_autopilotPending = nullptr;
@@ -1002,9 +1047,100 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 	if (!m_readyToBuildStructure)
 		return;
 
-	const Int cap = (m_difficulty == DIFFICULTY_EASY) ? 1 : ((m_difficulty == DIFFICULTY_NORMAL) ? 2 : 3);
+	for (BuildListInfo *supplyInfo = m_player->getBuildList(); supplyInfo; supplyInfo = supplyInfo->getNext())
+		if (supplyInfo->isSupplyBuilding())
+			supplyInfo->setDesiredGatherers(autopilotGatherers());	// follows the level if it changes
+
+	// GeneralsX @feature Claude 20/10/2026 Autopilot wallet mode: defend, survive, hoard money.
+	// Wallet mode builds only the economy (supply, cash generators, power) and a few base defenses, and never spends
+	// into the reserve on defenses, so the rest of the money stays in the bank.
+	const Bool wallet = m_autopilotWallet;
+	const Int cap = wallet ? 1 : ((m_difficulty == DIFFICULTY_EASY) ? 1 : ((m_difficulty == DIFFICULTY_NORMAL) ? 2 : 3));
+	const Int walletDefenseCap = 2;			// per defense template
+	const Int walletDefenseTotal = 4;		// all defenses together
+	const UnsignedInt walletReserve = 1500;	// defenses are only started if this much stays in the bank
+	Int defensesBuilt = 0;
+	if (wallet)
+		for (BuildListInfo *d = m_player->getBuildList(); d; d = d->getNext())
+		{
+			const ThingTemplate *dt = TheThingFactory->findTemplate(d->getTemplateName());
+			if (dt && dt->isKindOf(KINDOF_FS_BASE_DEFENSE) && TheGameLogic->findObjectByID(d->getObjectID()))
+				++defensesBuilt;
+		}
 	const Bool underPowered = !m_player->getEnergy()->hasSufficientPower();
 	const UnsignedInt money = m_player->getMoney()->countMoney();
+
+	Bool buildingUp = FALSE;	// wallet phase 1: build the foundation first; hoarding starts after it
+	if (wallet)
+	{
+		// The supply center is not in the faction's build list; production buildings that need it are skipped in wallet
+		// mode, so nothing would ever pull it in. Without income there is nothing to hoard: queue it through the
+		// first list entry that lists it as a prerequisite.
+		Bool hasSupply = FALSE;
+		for (Object *obj = TheGameLogic->getFirstObject(); obj && !hasSupply; obj = obj->getNextObject())
+			if (obj->getControllingPlayer() == m_player && (obj->isKindOf(KINDOF_FS_SUPPLY_CENTER) || obj->isKindOf(KINDOF_FS_SUPPLY_DROPZONE)))
+				hasSupply = TRUE;
+		if (!hasSupply)
+		{
+			for (BuildListInfo *info = m_player->getBuildList(); info; info = info->getNext())
+			{
+				const ThingTemplate *dependent = TheThingFactory->findTemplate(info->getTemplateName());
+				if (dependent && (autopilotQueueMissingPrerequisite(dependent, money, 0, KINDOF_FS_SUPPLY_CENTER)
+					|| autopilotQueueMissingPrerequisite(dependent, money, 0, KINDOF_FS_SUPPLY_DROPZONE)))
+					return;
+			}
+		}
+
+		// Hoarding only pays off once the foundation is up: until the faction's advanced tech building (strategy
+		// center, propaganda center, palace) exists, spend on the way to it, prerequisites and power included.
+		Bool hasAdvanced = FALSE;
+		for (Object *obj = TheGameLogic->getFirstObject(); obj && !hasAdvanced; obj = obj->getNextObject())
+			if (obj->getControllingPlayer() == m_player && obj->isKindOf(KINDOF_FS_ADVANCED_TECH))
+				hasAdvanced = TRUE;
+		BuildListInfo *advancedEntry = nullptr;
+		if (!hasAdvanced)
+			for (BuildListInfo *info = m_player->getBuildList(); info && !advancedEntry; info = info->getNext())
+			{
+				const ThingTemplate *at = TheThingFactory->findTemplate(info->getTemplateName());
+				if (at && at->isKindOf(KINDOF_FS_ADVANCED_TECH) && info->isBuildable() && !TheGameLogic->findObjectByID(info->getObjectID()))
+					advancedEntry = info;
+			}
+		buildingUp = (advancedEntry != nullptr);
+		if (buildingUp && !underPowered)
+		{
+			const ThingTemplate *advanced = TheThingFactory->findTemplate(advancedEntry->getTemplateName());
+			if (Object *advDozer = findDozer(advancedEntry->getLocation()))
+			{
+				const CanMakeType advCanMake = TheBuildAssistant->canMakeUnit(advDozer, advanced);
+				if (advCanMake == CANMAKE_OK)
+				{
+					if (isLocationSafe(advancedEntry->getLocation(), advanced))
+					{
+						advancedEntry->markPriorityBuild();
+						m_autopilotPending = advancedEntry;
+						m_autopilotPendingFrame = TheGameLogic->getFrame();
+						m_buildDelay = 0;
+						if (TheGlobalData->m_lanHarness)
+						{
+							printf("NETPLAY autopilot wallet foundation: %s (frame %u)\n", advanced->getName().str(), TheGameLogic->getFrame());
+							fflush(stdout);
+						}
+						return;
+					}
+				}
+				else if (advCanMake == CANMAKE_NO_PREREQ && autopilotQueueMissingPrerequisite(advanced, money, 0))
+					return;
+			}
+			else
+			{
+				queueDozer();
+				return;
+			}
+		}
+	}
+
+	if (!buildingUp && autopilotQueueSupplyExpansion(money))
+		return;
 
 	// Candidates: entries that are missing, allowed by the level cap and the power rule. Cheapest first, so the basic
 	// economy and production come before tech and superweapons (which are first in some factions' lists).
@@ -1020,20 +1156,29 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 		if (name.isEmpty() || !info->isBuildable())
 			continue;
 		const ThingTemplate *plan = TheThingFactory->findTemplate(name);
-		if (!plan || plan->isKindOf(KINDOF_FS_BASE_DEFENSE))
+		if (!plan)
 			continue;
+		const Bool isDefense = plan->isKindOf(KINDOF_FS_BASE_DEFENSE);
+		if (isDefense && (!wallet || buildingUp))
+			continue;	// wallet defenses start after the foundation is up
 		if (TheGameLogic->findObjectByID(info->getObjectID()))
 			continue;	// this entry is built
 
 		const Bool isPower = plan->isKindOf(KINDOF_FS_POWER) && !plan->isKindOf(KINDOF_CASH_GENERATOR);
 		if (isPower != underPowered)
 			continue;	// short of power: only power plants; otherwise no extra ones
+		const Bool isEconomy = plan->isKindOf(KINDOF_FS_SUPPLY_CENTER) || plan->isKindOf(KINDOF_FS_SUPPLY_DROPZONE)
+			|| plan->isKindOf(KINDOF_CASH_GENERATOR);
+		if (wallet && !isPower && !isEconomy && !isDefense)
+			continue;	// wallet mode: no production, tech or superweapon buildings
+		if (wallet && isDefense && defensesBuilt >= walletDefenseTotal)
+			continue;
 
 		Int have = 0;
 		for (BuildListInfo *other = m_player->getBuildList(); other; other = other->getNext())
 			if (other->getTemplateName() == name && TheGameLogic->findObjectByID(other->getObjectID()))
 				++have;
-		if (!isPower && have >= cap)
+		if (!isPower && have >= (isDefense ? walletDefenseCap : cap))
 			continue;
 
 		if (!dozer)
@@ -1044,6 +1189,8 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 			return;
 		}
 		const UnsignedInt cost = plan->calcCostToBuild(m_player);
+		if (wallet && isDefense && money < cost + walletReserve)
+			continue;	// hoarding: keep the reserve
 		const CanMakeType canMake = TheBuildAssistant->canMakeUnit(dozer, plan);
 		if (canMake == CANMAKE_OK)
 		{
@@ -1053,7 +1200,9 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 				pickCost = cost;
 			}
 		}
-		else if (canMake == CANMAKE_NO_PREREQ && (!blocked || cost < blockedCost))
+		// Wallet defenses that need a prerequisite building (a barracks for the GLA tunnel network, say) are only worth the
+		// extra spend once the bank is comfortably full.
+		else if (canMake == CANMAKE_NO_PREREQ && !(wallet && isDefense && money < cost + walletReserve + 3000) && (!blocked || cost < blockedCost))
 		{
 			blocked = info;
 			blockedCost = cost;
@@ -1081,8 +1230,153 @@ void AISkirmishPlayer::autopilotQueueNextStructure()
 	}
 }
 
+// GeneralsX @feature Claude 20/10/2026 Autopilot: desired supply gatherers per level (Easy 2, Normal 3, Hard 4).
+Int AISkirmishPlayer::autopilotGatherers() const
+{
+	return m_difficulty == DIFFICULTY_EASY ? 2 : (m_difficulty == DIFFICULTY_NORMAL ? 3 : 4);
+}
+
+// Finds a legal spot for a supply center next to 'warehouse': a supply center may not stand too close to a supply source,
+// and the trucks only reach a center within SUPPLY_CENTER_CLOSE_DIST (20 cells) of one, so walk from the warehouse toward
+// the base and take the first spot the placement code accepts. Returns false (and leaves 'out') if there is none.
+Bool AISkirmishPlayer::autopilotFindSupplySpot(const ThingTemplate *need, Object *dozer, const Object *warehouse, Coord3D *out)
+{
+	Coord2D toBase;
+	toBase.x = m_baseCenter.x - warehouse->getPosition()->x;
+	toBase.y = m_baseCenter.y - warehouse->getPosition()->y;
+	toBase.normalize();
+	const Coord3D warehousePos = *warehouse->getPosition();
+	const Real viewAngle = need->getPlacementViewAngle();
+	// Closest spots first; at each distance try the side facing the base, then fan out around the warehouse (the straight
+	// line to the base is often blocked by the warehouse's own supply piles or by terrain).
+	static const Real fan[] = { 0.0f, PI / 4, -PI / 4, PI / 2, -PI / 2, 3 * PI / 4, -3 * PI / 4, PI };
+	Bool found = FALSE;
+	for (Int cells = 6; cells <= 20 && !found; ++cells)
+	{
+		for (Int f = 0; f < (Int)(sizeof(fan) / sizeof(fan[0])) && !found; ++f)
+		{
+			const Real c = WWMath::CosTrig(fan[f]);
+			const Real s = WWMath::SinTrig(fan[f]);
+			Coord3D candidate = warehousePos;
+			candidate.x += (toBase.x * c - toBase.y * s) * cells * PATHFIND_CELL_SIZE_F;
+			candidate.y += (toBase.x * s + toBase.y * c) * cells * PATHFIND_CELL_SIZE_F;
+			candidate.z = TheTerrainLogic->getGroundHeight(candidate.x, candidate.y);
+			if (TheBuildAssistant->isLocationLegalToBuild(&candidate, need, viewAngle, BuildAssistant::NO_ENEMY_OBJECT_OVERLAP, dozer, m_player) == LBC_OK &&
+				TheBuildAssistant->isLocationLegalToBuild(&candidate, need, viewAngle,
+					BuildAssistant::CLEAR_PATH | BuildAssistant::TERRAIN_RESTRICTIONS | BuildAssistant::NO_OBJECT_OVERLAP, dozer, m_player) == LBC_OK)
+			{
+				*out = candidate;
+				found = TRUE;
+			}
+		}
+	}
+	TheTerrainVisual->removeAllBibs();	// isLocationLegalToBuild adds bib feedback
+	return found;
+}
+
+// A second supply center at another warehouse once the first one is running and there is money to spare. The template is
+// whatever supply center the player already owns, so this works for every faction.
+Bool AISkirmishPlayer::autopilotQueueSupplyExpansion(UnsignedInt money)
+{
+	const char *why = nullptr;
+	auto decline = [&](const char *reason) {
+		if (TheGlobalData->m_lanHarness && TheGameLogic->getFrame() % 600 == 0)
+		{
+			printf("NETPLAY autopilot supply expansion declined: %s (frame %u)\n", reason, TheGameLogic->getFrame());
+			fflush(stdout);
+		}
+		return FALSE;
+	};
+	(void)why;
+	const Int centerCap = (m_autopilotWallet || m_difficulty == DIFFICULTY_HARD) ? 2 : 1;
+	const ThingTemplate *centerTemplate = nullptr;
+	Int ownedCenters = 0;
+	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
+	{
+		if (obj->getControllingPlayer() != m_player || !(obj->isKindOf(KINDOF_FS_SUPPLY_CENTER) || obj->isKindOf(KINDOF_FS_SUPPLY_DROPZONE)))
+			continue;
+		++ownedCenters;
+		if (!obj->getStatusBits().test(OBJECT_STATUS_UNDER_CONSTRUCTION))
+			centerTemplate = obj->getTemplate();
+	}
+	if (!centerTemplate)
+		return decline("no finished supply center yet");
+	if (ownedCenters >= centerCap)
+		return decline("at the center cap");
+	if (money < centerTemplate->calcCostToBuild(m_player) + 1500)
+		return decline("not enough money");
+
+	// The nearest warehouse (to the base) that still has cash, is not an enemy's and is not one of our centers' reach.
+	const Real servedRange = 25 * PATHFIND_CELL_SIZE_F;
+	const Object *warehouse = nullptr;
+	Real bestDistSqr = 0;
+	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
+	{
+		if (!obj->isKindOf(KINDOF_STRUCTURE) || !obj->isKindOf(KINDOF_SUPPLY_SOURCE))
+			continue;
+		static const NameKeyType key_warehouseUpdate = NAMEKEY("SupplyWarehouseDockUpdate");
+		SupplyWarehouseDockUpdate *warehouseModule = (SupplyWarehouseDockUpdate*)obj->findUpdateModule( key_warehouseUpdate );
+		if (!warehouseModule || warehouseModule->getBoxesStored() * TheGlobalData->m_baseValuePerSupplyBox <= 0)
+			continue;
+		if (m_player->getRelationship(obj->getTeam()) == ENEMIES)
+			continue;
+		Bool served = FALSE;
+		for (Object *center = TheGameLogic->getFirstObject(); center && !served; center = center->getNextObject())
+			if (center->getControllingPlayer() == m_player && (center->isKindOf(KINDOF_FS_SUPPLY_CENTER) || center->isKindOf(KINDOF_FS_SUPPLY_DROPZONE)))
+			{
+				const Real dx = center->getPosition()->x - obj->getPosition()->x;
+				const Real dy = center->getPosition()->y - obj->getPosition()->y;
+				served = dx * dx + dy * dy < servedRange * servedRange;
+			}
+		if (served)
+			continue;
+		const Real bx = obj->getPosition()->x - m_baseCenter.x;
+		const Real by = obj->getPosition()->y - m_baseCenter.y;
+		const Real distSqr = bx * bx + by * by;
+		if (!warehouse || distSqr < bestDistSqr)
+		{
+			warehouse = obj;
+			bestDistSqr = distSqr;
+		}
+	}
+	if (!warehouse)
+		return decline("no unserved warehouse with cash");
+
+	Object *dozer = findDozer(&m_baseCenter);
+	if (!dozer || TheBuildAssistant->canMakeUnit(dozer, centerTemplate) != CANMAKE_OK)
+		return decline("no dozer or cannot build it");
+	Coord3D pos;
+	if (!autopilotFindSupplySpot(centerTemplate, dozer, warehouse, &pos))
+		return decline("no legal spot near the warehouse");
+
+	m_player->addToPriorityBuildList(centerTemplate->getName(), &pos, centerTemplate->getPlacementViewAngle());
+	m_autopilotPending = m_player->getBuildList();	// the new entry is the list head
+	autopilotMarkSupplyEntry(m_autopilotPending, centerTemplate);
+	m_autopilotPendingFrame = TheGameLogic->getFrame();
+	m_buildDelay = 0;
+	if (TheGlobalData->m_lanHarness)
+	{
+		printf("NETPLAY autopilot supply expansion: %s at (%.0f,%.0f) (frame %u)\n", centerTemplate->getName().str(), pos.x, pos.y, TheGameLogic->getFrame());
+		fflush(stdout);
+	}
+	return TRUE;
+}
+
+// GeneralsX @bugfix Claude 20/10/2026 The AI only sends supply trucks to build-list entries flagged as supply buildings with
+// a desired gatherer count. An entry autopilot adds on its own has neither, so a supply center it built earned nothing.
+void AISkirmishPlayer::autopilotMarkSupplyEntry(BuildListInfo *info, const ThingTemplate *tmpl)
+{
+	if (!info || !tmpl)
+		return;
+	if (tmpl->isKindOf(KINDOF_FS_SUPPLY_CENTER) || tmpl->isKindOf(KINDOF_FS_SUPPLY_DROPZONE))
+	{
+		info->setSupplyBuilding(TRUE);
+		info->setDesiredGatherers(autopilotGatherers());
+	}
+}
+
 // Queues the first prerequisite structure of 'plan' that the player lacks. Returns true if one was queued.
-Bool AISkirmishPlayer::autopilotQueueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth)
+Bool AISkirmishPlayer::autopilotQueueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth, KindOfType onlyKind)
 {
 	if (depth > 4)
 		return FALSE;
@@ -1099,6 +1393,8 @@ Bool AISkirmishPlayer::autopilotQueueMissingPrerequisite(const ThingTemplate *pl
 		{
 			const ThingTemplate *need = prereq->getUnitPrereqTemplate(j);
 			if (!need || !need->isKindOf(KINDOF_STRUCTURE))
+				continue;
+			if (onlyKind != KINDOF_INVALID && !need->isKindOf(onlyKind))
 				continue;
 
 			// Already owned, or already queued/under way (any build-list entry for it that has not failed)?
@@ -1131,6 +1427,7 @@ Bool AISkirmishPlayer::autopilotQueueMissingPrerequisite(const ThingTemplate *pl
 			if (existing)
 			{
 				existing->markPriorityBuild();
+				autopilotMarkSupplyEntry(existing, need);
 				m_autopilotPending = existing;
 				m_autopilotPendingFrame = TheGameLogic->getFrame();
 				m_buildDelay = 0;
@@ -1147,8 +1444,16 @@ Bool AISkirmishPlayer::autopilotQueueMissingPrerequisite(const ThingTemplate *pl
 			Coord3D pos = m_baseCenter;
 			pos.x += WWMath::CosTrig(angle) * (m_baseRadius * 0.8f + 60.0f);
 			pos.y += WWMath::SinTrig(angle) * (m_baseRadius * 0.8f + 60.0f);
+			if (need->isKindOf(KINDOF_FS_SUPPLY_CENTER) || need->isKindOf(KINDOF_FS_SUPPLY_DROPZONE))
+			{
+				// A supply center is only useful next to supplies (the trucks ignore one with none in reach): put it by the
+				// nearest warehouse that still has cash, on the side facing the base, as the AI's own supply placement does.
+				if (const Object *warehouse = findSupplyCenter(1))
+					autopilotFindSupplySpot(need, dozer, warehouse, &pos);
+			}
 			m_player->addToPriorityBuildList(need->getName(), &pos, need->getPlacementViewAngle());
 			m_autopilotPending = m_player->getBuildList();	// the new entry is the list head
+			autopilotMarkSupplyEntry(m_autopilotPending, need);
 			m_autopilotPendingFrame = TheGameLogic->getFrame();
 			m_buildDelay = 0;
 			if (TheGlobalData->m_lanHarness)

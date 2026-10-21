@@ -350,7 +350,8 @@ Object *WorkerAIUpdate::construct( const ThingTemplate *what,
 	{
 
 		// AI has weaker restriction on building
-		Bool dozerIsAI = owningPlayer->getPlayerType() == PLAYER_COMPUTER;
+		// GeneralsX @bugfix Claude 20/10/2026 Same as DozerAIUpdate::construct: autopilot placements are validated by the AI.
+		Bool dozerIsAI = owningPlayer->getPlayerType() == PLAYER_COMPUTER || owningPlayer->getAutopilotLevel() > 0;
 		if( dozerIsAI )
 		{
 

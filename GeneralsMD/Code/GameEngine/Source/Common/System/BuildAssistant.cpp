@@ -349,7 +349,9 @@ Object *BuildAssistant::buildObjectNow( Object *constructorObject, const ThingTe
 	{
 		// totally bogus. We tried to move our units out of the way, but they wouldn't.
 		// Chode-boys.
-		if (owningPlayer->getPlayerType()==PLAYER_HUMAN) {
+		// GeneralsX @bugfix Claude 20/10/2026 A human with autopilot on is driven by the AI, so it gets to cheat too:
+		// otherwise any worker standing on the spot made every autopilot placement fail.
+		if (owningPlayer->getPlayerType()==PLAYER_HUMAN && owningPlayer->getAutopilotLevel() == 0) {
 			return nullptr;	// ai gets to cheat.  jba.
 		}
 	}

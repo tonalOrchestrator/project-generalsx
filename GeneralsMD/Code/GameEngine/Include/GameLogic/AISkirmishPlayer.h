@@ -54,7 +54,12 @@ public:	// AIPlayer interface methods.
 	virtual void newMap() override;											///< New map loaded call.
 
 	virtual void adoptExistingBase() override;
-	Bool autopilotQueueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth);
+	Bool autopilotQueueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth, KindOfType onlyKind = KINDOF_INVALID);
+	Int autopilotGatherers() const;	///< GeneralsX: desired supply gatherers for the current level
+	Bool autopilotFindSupplySpot(const ThingTemplate *need, Object *dozer, const Object *warehouse, Coord3D *out);
+	Bool autopilotQueueSupplyExpansion(UnsignedInt money);	///< GeneralsX: a second supply center at another warehouse
+	void autopilotMarkSupplyEntry(BuildListInfo *info, const ThingTemplate *tmpl);	///< GeneralsX: flag a supply center entry so trucks are sent to it
+	void autopilotExplainStall(BuildListInfo *info);	///< GeneralsX: log why a queued structure was not placed (harness runs only)
 	void autopilotQueueNextStructure();	///< GeneralsX: autopilot's build planner (the skirmish scripts do this for computer players)						///< GeneralsX: claim the human player's existing structures for the build list
 
 	/// Invoked when a unit I am training comes into existence

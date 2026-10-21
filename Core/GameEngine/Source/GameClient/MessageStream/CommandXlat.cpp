@@ -4331,9 +4331,9 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 			Player *localPlayer = ThePlayerList ? ThePlayerList->getLocalPlayer() : nullptr;
 			if (localPlayer && localPlayer->isPlayerActive() && !localPlayer->isPlayerObserver())
 			{
-				// Levels: 1 easy, 2 normal, 3 hard (the skirmish AI skill states), 0 off. The toggle switches
+				// Levels: 1 easy, 2 normal, 3 hard (the skirmish AI skill states), 4 wallet mode, 0 off. The toggle switches
 				// between off and the last level used (normal at first); the cycle key steps easy -> normal ->
-				// hard -> easy. Either goes through the network command stream so every machine flips at the
+				// hard -> wallet -> easy. Either goes through the network command stream so every machine flips at the
 				// same logic frame.
 				static Int s_lastAutopilotLevel = 2;
 				const Int current = localPlayer->getAutopilotLevel();
@@ -4341,7 +4341,7 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 				if (msg->getType() == GameMessage::MSG_META_TOGGLE_AUTOPILOT)
 					next = current > 0 ? 0 : s_lastAutopilotLevel;
 				else
-					next = (current == 0 ? s_lastAutopilotLevel : (current % 3) + 1);
+					next = (current == 0 ? s_lastAutopilotLevel : (current % 4) + 1);
 				if (next > 0)
 					s_lastAutopilotLevel = next;
 				GameMessage *autopilotMsg = TheMessageStream->appendMessage(GameMessage::MSG_SET_AUTOPILOT);

@@ -189,6 +189,9 @@ public: // AIPlayer interface, may be overridden by AISkirmishPlayer.  jba.
 	/// Autopilot (build-only) AIs build the player's base (structures, dozers, supply trucks) but never army teams or attacks.
 	void setAutopilotOnly(Bool assistOnly) { m_autopilotOnly = assistOnly; }
 	Bool isAutopilotOnly() const { return m_autopilotOnly; }
+	/// Wallet mode (autopilot level 4): defend, survive, hoard money. Builds economy and base defenses only.
+	void setAutopilotWallet(Bool wallet) { m_autopilotWallet = wallet; }
+	Bool isAutopilotWallet() const { return m_autopilotWallet; }
 	/// Link the structures the player already owns to this AI's build list so they are not rebuilt.
 	virtual void adoptExistingBase() {}
 
@@ -280,6 +283,7 @@ protected:
 	Int			m_skillsetSelector;
 
 	Bool		m_autopilotOnly;						///< GeneralsX: build-only AI attached to a human player (not saved, not in the CRC)
+	Bool		m_autopilotWallet;						///< GeneralsX: autopilot wallet mode: economy and defenses only, keep a cash reserve
 
 	Coord3D m_baseCenter; // Center of the initial build list of structures.
 	Bool		m_baseCenterSet; // True if baseCenter is valid.

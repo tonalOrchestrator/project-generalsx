@@ -532,8 +532,8 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 				}
 				if (autopilotPlayer == ThePlayerList->getLocalPlayer() && TheInGameUI)
 				{
-					const wchar_t *names[] = { L"Autopilot: OFF", L"Autopilot: ON (Easy)", L"Autopilot: ON (Normal)", L"Autopilot: ON (Hard)" };
-					TheInGameUI->messageNoFormat(UnicodeString(names[level < 0 ? 0 : (level > 3 ? 3 : level)]));
+					const wchar_t *names[] = { L"Autopilot: OFF", L"Autopilot: ON (Easy)", L"Autopilot: ON (Normal)", L"Autopilot: ON (Hard)", L"Autopilot: WALLET MODE (defend, survive, hoard)" };
+					TheInGameUI->messageNoFormat(UnicodeString(names[level < 0 ? 0 : (level > 4 ? 4 : level)]));
 				}
 			}
 			break;

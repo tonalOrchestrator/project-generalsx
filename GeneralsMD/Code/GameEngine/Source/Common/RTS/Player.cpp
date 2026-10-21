@@ -818,7 +818,9 @@ void Player::setAutopilot(Int level)
 		m_ai->adoptExistingBase();
 	}
 
-	m_ai->setAIDifficulty(level == 1 ? DIFFICULTY_EASY : (level == 2 ? DIFFICULTY_NORMAL : DIFFICULTY_HARD));
+	// Level 4 is Wallet mode: a normal-skill AI that only builds economy and defenses and hoards the rest.
+	m_ai->setAutopilotWallet(level == 4);
+	m_ai->setAIDifficulty(level == 1 ? DIFFICULTY_EASY : ((level == 2 || level == 4) ? DIFFICULTY_NORMAL : DIFFICULTY_HARD));
 	m_autopilotLevel = level;
 }
 

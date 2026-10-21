@@ -1671,7 +1671,9 @@ Object *DozerAIUpdate::construct( const ThingTemplate *what,
 	{
 
 		// AI has weaker restriction on building
-		Bool dozerIsAI = owningPlayer->getPlayerType() == PLAYER_COMPUTER;
+		// GeneralsX @bugfix Claude 20/10/2026 A human with autopilot on is placed by the AI, which has already validated
+		// the spot; the human checks (SHROUD_REVEALED among them) made every placement in unexplored ground fail.
+		Bool dozerIsAI = owningPlayer->getPlayerType() == PLAYER_COMPUTER || owningPlayer->getAutopilotLevel() > 0;
 		if( dozerIsAI )
 		{
 
