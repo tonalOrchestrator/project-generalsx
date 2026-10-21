@@ -155,7 +155,7 @@ money and general's points (frame request + 4) and that without the flag the req
 ### Autopilot
 - [x] Prerequisite retries: caused by the human-only placement checks above, fixed.
 - [x] Wallet defenses: USA builds a Patriot battery, China speaker towers, GLA tunnel networks (prerequisite defenses once the bank
-      is $3,000 over their cost). [x] Defending units and more defenses under attack (see Wallet Mode under attack). [~] Defend against Hard: median 11.4 -> 12.9 game-minutes (see "Defending against a Hard AI"); a Hard AI still wins in the end.
+      is $3,000 over their cost). [x] Defending units and more defenses under attack (see Wallet Mode under attack). [~] Defend against Hard: median 11.4 -> 13.4 game-minutes (see "Defending against a Hard AI"); a Hard AI still wins in the end.
 - [x] Second supply center on GLA factions (fan search around the warehouse).
 - [ ] Replace lost trucks/workers explicitly and scale it with the level (today the AI's gatherer logic does it).
 - [x] Manually built structures count towards the caps (the planner counts what the player owns). A dozer with a build task pending
