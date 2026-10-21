@@ -62,6 +62,10 @@ AutopilotDefense::Budget AutopilotDefense::budget(UnsignedInt bank)
 	return b;
 }
 
+// GeneralsX @tweak Claude 21/10/2026 Units never spend the last DEFENSE_FUND of the bank: the base defenses (about $1,000 each) are what held the line
+// against a Hard AI, and the defender trainer, running every two seconds, used to spend the bank down to $300 before the planner could afford one.
+static const UnsignedInt DEFENSE_FUND = 1200;
+
 // Wallet mode under attack: spend the bank on a few defenders. Every so often (called every two seconds) one affordable combat unit
 // is queued at a barracks or war factory, up to a cap on the army; idle units defend themselves, so nothing here ever attacks.
 void AutopilotDefense::trainDefenders()
@@ -108,7 +112,7 @@ void AutopilotDefense::trainDefenders()
 				if (t->isKindOf(KINDOF_STRUCTURE) || !t->isKindOf(KINDOF_CAN_ATTACK) || t->isKindOf(KINDOF_HARVESTER) || t->isKindOf(KINDOF_DOZER))
 					continue;
 				const UnsignedInt cost = t->calcCostToBuild(player);
-				if (cost == 0 || cost + 300 > money || cost > money / 4 + 400 || cost <= bestCost)
+				if (cost == 0 || cost + DEFENSE_FUND > money || cost > money / 4 + 400 || cost <= bestCost)
 					continue;
 				if (TheBuildAssistant->canMakeUnit(factory, t) != CANMAKE_OK)
 					continue;

@@ -87,6 +87,10 @@ Hard AI (median survival; none survived 16 minutes until the extra defenses):
 - **extra defenses beyond the build list** (`AutopilotPlanner::queueExtraDefense`: rotate through the defenses the dozer can build, ring around
   the base, spend a surplus even before an attack): 12.2 min, one run survived all 16; then a lower gate ($5k) and higher caps: **12.9 min**
   (10.9-14.9), ~14 kills per game. The USA still builds only 6-10 (one defense type, cause not yet found); GLA and China 20-30+.
+- **units leave a $1,200 defense fund** (the defender trainer spent the bank down to $300 every two seconds, so the planner could never afford the
+  ~$1,000 defenses; under attack both the USA and GLA had a bank of only $250-600): **13.4 min** (11.3-16.0), one run survived the full 16, ~16 kills /
+  44 losses per game, the USA now builds 12-20 extra defenses (was 6-10). Lesson: units and structures draw on one bank, so the one that matters has to
+  be protected, and a decline trace (`extra defense declined: ... too dear for a bank of N`) found it in one run.
 - Against a **Medium** AI: Wallet survivors **12/12** (plain Autopilot 0/12; Wallet was 8/12 this morning).
 Findings that mattered: units die piecemeal (60 losses / 8 kills), the bank sat unspent ($14k at death) and the only defense was the one the build
 list names. Not yet tried: repair of damaged structures, keeping defenders grouped at the defenses, an anti-vehicle mix tuned to the Hard AI's waves.

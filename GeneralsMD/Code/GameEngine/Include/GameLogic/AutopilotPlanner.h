@@ -90,5 +90,6 @@ private:
 	BuildListInfo *m_pending;			///< build-list entry the planner queued and is waiting on
 	UnsignedInt m_pendingFrame;
 	Int m_ring;							///< next slot on the ring around the base for a prerequisite structure
+	AutopilotLog::Throttle m_extraDefenseTrace;	///< trace throttle (logging only)
 	Int m_defenseRotation = 0;			///< which of the buildable defenses the next extra one is
 };

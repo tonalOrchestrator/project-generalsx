@@ -108,8 +108,13 @@ Bool AutopilotPlanner::queueExtraDefense(const Pass &pass)
 {
 	const Bool threatened = pass.m_defense.m_threatened;
 	const UnsignedInt reserve = threatened ? pass.m_defense.m_reserve : 2500;	// a quiet player only spends a real surplus
+	const Bool trace = threatened && m_extraDefenseTrace.due(TheGameLogic->getFrame(), 600);	// every 20 s of game time while under attack
 	if (pass.m_defensesBuilt >= pass.m_defense.m_totalCap || (!threatened && pass.m_money < 5000))
+	{
+		if (trace)
+			AutopilotLog::line("NETPLAY autopilot extra defense declined: %d defenses at the cap of %d, bank %u (frame %u)\n", pass.m_defensesBuilt, pass.m_defense.m_totalCap, pass.m_money, TheGameLogic->getFrame());
 		return FALSE;
+	}
 
 	Player *player = m_host.player();
 	const Coord3D &baseCenter = m_host.baseCenter();
@@ -123,23 +128,40 @@ Bool AutopilotPlanner::queueExtraDefense(const Pass &pass)
 	// The defenses the dozer can build now and afford, minus kinds already at the per-kind cap.
 	const ThingTemplate *candidates[16];
 	Int numCandidates = 0;
+	Int defenseKinds = 0, tooDear = 0, cannotMake = 0, atKindCap = 0;	// for the trace
 	for (const ThingTemplate *t = TheThingFactory->firstTemplate(); t && numCandidates < 16; t = t->friend_getNextTemplate())
 	{
 		if (!t->isKindOf(KINDOF_FS_BASE_DEFENSE) || t->isKindOf(KINDOF_FS_FAKE))
 			continue;
+		++defenseKinds;
 		const UnsignedInt cost = t->calcCostToBuild(player);
-		if (cost == 0 || cost + reserve > pass.m_money || TheBuildAssistant->canMakeUnit(dozer, t) != CANMAKE_OK)
+		if (cost == 0 || cost + reserve > pass.m_money)
+		{
+			++tooDear;
 			continue;
+		}
+		if (TheBuildAssistant->canMakeUnit(dozer, t) != CANMAKE_OK)
+		{
+			++cannotMake;
+			continue;
+		}
 		Int have = 0;
 		for (BuildListInfo *info = player->getBuildList(); info; info = info->getNext())
 			if (info->getTemplateName() == t->getName() && TheGameLogic->findObjectByID(info->getObjectID()))
 				++have;
 		if (have >= pass.m_defense.m_perTemplateCap)
+		{
+			++atKindCap;
 			continue;
+		}
 		candidates[numCandidates++] = t;
 	}
 	if (numCandidates == 0)
+	{
+		if (trace)
+			AutopilotLog::line("NETPLAY autopilot extra defense declined: %d defense kinds (%d too dear for a bank of %u, %d the dozer cannot build now, %d at the per-kind cap) (frame %u)\n", defenseKinds, tooDear, pass.m_money, cannotMake, atKindCap, TheGameLogic->getFrame());
 		return FALSE;
+	}
 
 	const ThingTemplate *pick = candidates[m_defenseRotation++ % numCandidates];
 	const Int slot = m_ring++;
