@@ -20,6 +20,7 @@
 
 #include "Common/ActionManager.h"
 #include "Common/BuildAssistant.h"
+#include "Common/NameKeyGenerator.h"
 #include "Common/Player.h"
 #include "Common/PlayerList.h"
 #include "Common/SpecialPower.h"
@@ -200,6 +201,8 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 		Object *hidden = nullptr;	// nearest neutral building still in the shroud: somewhere to scout when nothing can be captured yet
 		Real hiddenDistSqr = 0;
 		Int seen = 0, notNeutral = 0, takenOrSkipped = 0, cannotCapture = 0, unsafe = 0, shrouded = 0, notReady = 0;	// for the trace below
+		Player *ownerSeen[6] = {};	// who owns the non-neutral ones (trace only): a Challenge map hands them to a named player
+		Int ownerCount[6] = {};
 		for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
 		{
 			if (!obj->isKindOf(KINDOF_STRUCTURE) || !obj->isKindOf(KINDOF_CAPTURABLE) || obj->isKindOf(KINDOF_REBUILD_HOLE))
@@ -207,9 +210,21 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 			++seen;
 			// Only buildings nobody owns: the game's neutral player (tech buildings, oil derricks, ...). The relationship toward such a
 			// building is not NEUTRAL, so the owner is what is checked; a player's own, allied or enemy buildings are never targets.
-			if (obj->getControllingPlayer() != ThePlayerList->getNeutralPlayer())
+			// GeneralsX @feature Claude 21/10/2026 Challenge maps hand their capturable buildings to the civilian player, whose
+			// relationship toward everyone is neutral, instead of leaving them with the game's neutral player.
+			Player *owner = obj->getControllingPlayer();
+			if (owner != ThePlayerList->getNeutralPlayer() && !(owner && owner != player && player->getRelationship(owner->getDefaultTeam()) == NEUTRAL))
 			{
 				++notNeutral;
+				for (Int o = 0; o < 6; ++o)
+				{
+					if (ownerSeen[o] == obj->getControllingPlayer() || !ownerSeen[o])
+					{
+						ownerSeen[o] = obj->getControllingPlayer();
+						++ownerCount[o];
+						break;
+					}
+				}
 				continue;	// ours, an ally's or an enemy's (never attack an enemy)
 			}
 			Bool taken = FALSE;
@@ -272,7 +287,18 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 		if (!best)
 		{
 			if (m_nothingToCaptureThrottle.due(frame, 600))
-				AutopilotLog::line("NETPLAY autopilot explore: nothing to capture: %d capturable buildings seen (%d not neutral, %d taken/skipped, %d cannot capture [%d special not ready, %d in the shroud], %d unsafe) (frame %u)\n", seen, notNeutral, takenOrSkipped, cannotCapture, notReady, shrouded, unsafe, frame);
+			{
+				AsciiString owners;
+				for (Int o = 0; o < 6 && ownerSeen[o]; ++o)
+				{
+					const Relationship rel = player->getRelationship(ownerSeen[o]->getDefaultTeam());
+					AsciiString one;
+					one.format(" %s(%s,%s)x%d", TheNameKeyGenerator->keyToName(ownerSeen[o]->getPlayerNameKey()).str(), ownerSeen[o]->getPlayerType() == PLAYER_COMPUTER ? "ai" : "human",
+						rel == ENEMIES ? "enemy" : (rel == ALLIES ? "ally" : "neutral"), ownerCount[o]);
+					owners.concat(one);
+				}
+				AutopilotLog::line("NETPLAY autopilot explore: nothing to capture: %d capturable buildings seen (%d not neutral%s, %d taken/skipped, %d cannot capture [%d special not ready, %d in the shroud], %d unsafe) (frame %u)\n", seen, notNeutral, owners.str(), takenOrSkipped, cannotCapture, notReady, shrouded, unsafe, frame);
+			}
 			continue;
 		}
 
