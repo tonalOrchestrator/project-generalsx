@@ -114,7 +114,7 @@ void AutopilotSquad::garrison()
 
 		Object *best = nullptr;
 		Real bestDistSqr = 0;
-		Int withContain = 0, inReach = 0, refused = 0;	// for the trace below
+		Int withContain = 0, inReach = 0, refused = 0, refusedEnemy = 0, refusedFull = 0, refusedShroud = 0;	// for the trace below
 		for (Object *b = TheGameLogic->getFirstObject(); b; b = b->getNextObject())
 		{
 			if (!b->isKindOf(KINDOF_STRUCTURE) || !b->getContain())
@@ -127,6 +127,13 @@ void AutopilotSquad::garrison()
 			if (!TheActionManager->canEnterObject(unit, b, CMD_FROM_AI, CHECK_CAPACITY))
 			{
 				++refused;
+				// Why: an enemy's building, one that is full, or something else (still under construction, wrong unit kind, ...).
+				if (b->getShroudedStatus(m_host.player()->getPlayerIndex()) != OBJECTSHROUD_CLEAR)
+					++refusedShroud;
+				else if (b->getControllingPlayer() && m_host.player()->getRelationship(b->getControllingPlayer()->getDefaultTeam()) == ENEMIES)
+					++refusedEnemy;
+				else if (TheActionManager->canEnterObject(unit, b, CMD_FROM_AI, DONT_CHECK_CAPACITY))
+					++refusedFull;
 				continue;
 			}
 			const Real dx = b->getPosition()->x - unit->getPosition()->x, dy = b->getPosition()->y - unit->getPosition()->y;
@@ -138,8 +145,8 @@ void AutopilotSquad::garrison()
 			}
 		}
 		if (!best && m_traceThrottle.due(TheGameLogic->getFrame(), 600))
-			AutopilotLog::line("NETPLAY autopilot squad: nothing to garrison for %s: %d buildings can hold troops, %d within reach of the base, %d of those refuse (frame %u)\n",
-				unit->getTemplate()->getName().str(), withContain, inReach, refused, TheGameLogic->getFrame());
+			AutopilotLog::line("NETPLAY autopilot squad: nothing to garrison for %s: %d buildings can hold troops, %d within reach of the base, %d of those refuse [%d in the shroud, %d enemy-owned, %d full] (frame %u)\n",
+				unit->getTemplate()->getName().str(), withContain, inReach, refused, refusedShroud, refusedEnemy, refusedFull, TheGameLogic->getFrame());
 		if (best)
 		{
 			ai->aiEnter(best, CMD_FROM_AI);
