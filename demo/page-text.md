@@ -9,9 +9,10 @@ fbraz3/GeneralsX. This fork adds Windows/Linux network play testing and an in-ga
 no game data is included.
 
 ## Same match, two platforms
-A LAN match between a Windows laptop and a Linux desktop stays in lockstep: the game state checksum matched on every game-minute and
-the final per-player statistics were identical on both machines, including with Autopilot switching modes and cheat gifts on both.
-(Screenshots of a two-player match, one per machine, are being added to this folder.)
+`pair-side-by-side.png` (or the two halves, `pair-linux-0200.png` and `pair-windows-0200.png`): one LAN match between a Linux
+desktop and a Windows laptop, each machine controlling its own human player (USA on Linux, GLA on Windows) with Autopilot on, at
+2:00 of game time. Both machines ran the same simulation: the game state checksum matched on every game-minute and the final
+per-player statistics were identical.
 
 ## Autopilot
 A build-only AI you can switch on for yourself in a networked game where you cannot pause (Ctrl+Shift+A; Ctrl+Shift+L cycles the

@@ -7,6 +7,8 @@ contains no game data, only rendered screenshots.
 |---|---|
 | `autopilot-demo.mp4` | 15 s: Autopilot ON, then OFF while a Barracks is ordered by hand, then ON again. Regenerate with `tools/netplay/make_demo.sh`. |
 | `autopilot-demo-poster.png` | A frame to use as the video poster. |
+| `pair-side-by-side.png` | The same LAN match on two machines: Linux (USA) left, Windows (GLA) right, each its own human player on Autopilot, 2:00 game time. |
+| `pair-linux-0200.png`, `pair-windows-0200.png` | The two halves on their own, each labeled. |
 | `page-text.md` | Page-ready copy: what it is, Autopilot and Wallet Mode, the test tools, and the honest limits. |
 
 Raw links (public repo, branch `feat/netplay-autopilot`; swap the branch for `main` once it is merged):
@@ -14,6 +16,7 @@ Raw links (public repo, branch `feat/netplay-autopilot`; swap the branch for `ma
 ```
 https://raw.githubusercontent.com/tonalOrchestrator/project-generalsx/feat/netplay-autopilot/demo/autopilot-demo.mp4
 https://raw.githubusercontent.com/tonalOrchestrator/project-generalsx/feat/netplay-autopilot/demo/autopilot-demo-poster.png
+https://raw.githubusercontent.com/tonalOrchestrator/project-generalsx/feat/netplay-autopilot/demo/pair-side-by-side.png
 https://raw.githubusercontent.com/tonalOrchestrator/project-generalsx/feat/netplay-autopilot/demo/page-text.md
 ```
 
