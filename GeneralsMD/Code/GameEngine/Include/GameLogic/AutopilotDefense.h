@@ -25,6 +25,8 @@
 #include "Common/GameCommon.h"
 #include "GameLogic/AutopilotLog.h"
 
+#include "GameLogic/AutopilotBudget.h"
+
 class AutopilotHost;
 struct AutopilotProfile;
 
@@ -32,15 +34,12 @@ class AutopilotDefense
 {
 public:
 	/// What the structure planner may spend on base defenses right now.
-	struct Budget
-	{
-		Bool m_threatened;				///< enemy units are near the base (always false outside wallet mode)
-		Int m_perTemplateCap;			///< most defenses of one kind
-		Int m_totalCap;					///< most defenses of all kinds together
-		UnsignedInt m_reserve;			///< a defense is only started if this much stays in the bank
-	};
+	typedef AutopilotDefenseBudget Budget;
 
 	AutopilotDefense(AutopilotHost &host, const AutopilotProfile &profile) : m_host(host), m_profile(profile) {}
+
+	/// The planner is saving up for a superweapon: units leave this much in the bank (0 = not saving) once a small army exists.
+	void setSavingTarget(UnsignedInt target) { m_savingTarget = target; }
 
 	/// Wallet mode only: enemy units near the base.
 	Bool isThreatened();
@@ -59,9 +58,12 @@ public:
 	void trainStandingArmy();
 
 private:
+	UnsignedInt fundFor(Int army) const;
+
 	AutopilotHost &m_host;
 	Int m_nextRole = 0;					///< standing army: 0 tank, 1 anti-vehicle infantry, 2 rifle infantry, rotating
 	const AutopilotProfile &m_profile;
+	UnsignedInt m_savingTarget = 0;		///< superweapon price the planner is saving for (0 = not saving)
 	UnsignedInt m_threatUntilFrame = 0;	///< the threat flag stays on until this frame
 	AutopilotLog::Throttle m_traceThrottle;
 	AutopilotLog::Throttle m_armyTrace;	// the standing army has its own, or the defenders line starves it

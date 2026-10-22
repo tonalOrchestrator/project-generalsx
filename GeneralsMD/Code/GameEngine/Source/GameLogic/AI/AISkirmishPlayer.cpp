@@ -1044,7 +1044,7 @@ void AISkirmishPlayer::attachAutopilot(const AutopilotProfile &profile)
 	if (m_autopilot)
 		m_autopilot->setProfile(profile);
 	else
-		m_autopilot = new AIAutopilot(*this, profile);
+		m_autopilot = new AIAutopilot(*this, *this, profile);
 }
 
 //----------------------------------------------------------------------------------------------------------

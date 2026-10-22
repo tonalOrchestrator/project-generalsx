@@ -24,6 +24,7 @@
 #include "GameLogic/Module/BodyModule.h"
 #include "GameLogic/Object.h"
 
+#include "GameLogic/AutopilotTuning.h"
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
 #include "GameLogic/AutopilotProfile.h"
@@ -37,7 +38,7 @@ void AutopilotRepair::update()
 
 	// The most damaged finished building (health below 70%).
 	Object *worst = nullptr;
-	Real worstRatio = 0.7f;
+	Real worstRatio = AutopilotTuning::REPAIR_BELOW_HEALTH;
 	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
 	{
 		if (obj->getControllingPlayer() != player || !obj->isKindOf(KINDOF_STRUCTURE) || obj->getStatusBits().test(OBJECT_STATUS_UNDER_CONSTRUCTION)

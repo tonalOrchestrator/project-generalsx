@@ -27,6 +27,7 @@
 #include "GameLogic/Module/ProductionUpdate.h"
 #include "GameLogic/Object.h"
 
+#include "GameLogic/AutopilotTuning.h"
 #include "GameLogic/AutopilotHackers.h"
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
@@ -78,7 +79,7 @@ void AutopilotHackers::update()
 			}
 			const ThingTemplate *pick = nullptr;
 			for (const ThingTemplate *t = TheThingFactory->firstTemplate(); t && !pick; t = t->friend_getNextTemplate())
-				if (t->isKindOf(KINDOF_INFANTRY) && AutopilotUnits::isHacker(t) && t->calcCostToBuild(player) + 2500 <= money
+				if (t->isKindOf(KINDOF_INFANTRY) && AutopilotUnits::isHacker(t) && t->calcCostToBuild(player) + AutopilotTuning::HACKER_MARGIN <= money
 					&& TheBuildAssistant->canMakeUnit(barracks, t) == CANMAKE_OK)
 					pick = t;
 			if (!pick)

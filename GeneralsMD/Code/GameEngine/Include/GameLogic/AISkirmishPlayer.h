@@ -41,7 +41,7 @@ class SpecialPowerTemplate;
  * The computer-controlled opponent.
  */
 // GeneralsX @refactor Claude 21/10/2026 Also the AutopilotHost of the autopilot attached to a human player (see AIAutopilot).
-class AISkirmishPlayer : public AIPlayer, private AutopilotHost
+class AISkirmishPlayer : public AIPlayer, private AutopilotHost, private AutopilotDriver
 {
 	MEMORY_POOL_GLUE_WITH_USERLOOKUP_CREATE( AISkirmishPlayer, "AISkirmishPlayer"  )
 
@@ -126,7 +126,6 @@ private:
 	virtual Player *player() const override { return m_player; }
 	virtual const Coord3D &baseCenter() const override { return m_baseCenter; }
 	virtual Real baseRadius() const override { return m_baseRadius; }
-	virtual GameDifficulty difficulty() const override { return m_difficulty; }
 	virtual Object *findDozerNear(const Coord3D *pos) override { return findDozer(pos); }
 	virtual void requestDozer() override { queueDozer(); }
 	virtual Bool isSafeToBuildAt(const Coord3D *pos, const ThingTemplate *tmpl) override { return isLocationSafe(pos, tmpl); }

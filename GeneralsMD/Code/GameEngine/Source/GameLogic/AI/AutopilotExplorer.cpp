@@ -36,24 +36,32 @@
 #include "GameLogic/Module/SpecialPowerModule.h"
 #include "GameLogic/Object.h"
 
+#include "GameLogic/AutopilotTuning.h"
 #include "GameLogic/AutopilotExplorer.h"
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
 #include "GameLogic/AutopilotProfile.h"
 #include "GameLogic/AutopilotUnits.h"
 
+// GeneralsX @refactor Claude 22/10/2026 One definition of the roster for isExplorer() and update().
+Int AutopilotExplorer::explorerRoster(Object **out) const
+{
+	Int count = 0;
+	for (Object *obj = TheGameLogic->getFirstObject(); obj && count < EXPLORER_ROSTER; obj = obj->getNextObject())
+		if (obj->getControllingPlayer() == m_host.player() && !obj->isKindOf(KINDOF_STRUCTURE) && obj->hasSpecialPower(SPECIAL_INFANTRY_CAPTURE_BUILDING))
+			out[count++] = obj;	// the first EXPLORER_ROSTER capture-capable units are the explorers; any others belong to the garrison squad
+	return count;
+}
+
 Bool AutopilotExplorer::isExplorer(const Object *unit) const
 {
 	if (!m_profile.m_explore)
 		return FALSE;
-	Int seen = 0;
-	for (Object *obj = TheGameLogic->getFirstObject(); obj && seen < EXPLORER_ROSTER; obj = obj->getNextObject())
-		if (obj->getControllingPlayer() == m_host.player() && !obj->isKindOf(KINDOF_STRUCTURE) && obj->hasSpecialPower(SPECIAL_INFANTRY_CAPTURE_BUILDING))
-		{
-			if (obj == unit)
-				return TRUE;
-			++seen;
-		}
+	Object *explorers[MAX_EXPLORERS];
+	const Int count = explorerRoster(explorers);
+	for (Int i = 0; i < count; ++i)
+		if (explorers[i] == unit)
+			return TRUE;
 	return FALSE;
 }
 
@@ -127,14 +135,10 @@ void AutopilotExplorer::update()
 		return;
 	Player *player = m_host.player();
 	const UnsignedInt frame = TheGameLogic->getFrame();
-	const Int wantedExplorers = EXPLORER_ROSTER;
 
 	// The explorers we have, and forget errands whose explorer is idle again (done, or failed).
 	Object *explorers[MAX_EXPLORERS];
-	Int numExplorers = 0;
-	for (Object *obj = TheGameLogic->getFirstObject(); obj && numExplorers < wantedExplorers; obj = obj->getNextObject())
-		if (obj->getControllingPlayer() == player && !obj->isKindOf(KINDOF_STRUCTURE) && obj->hasSpecialPower(SPECIAL_INFANTRY_CAPTURE_BUILDING))
-			explorers[numExplorers++] = obj;	// the first EXPLORER_ROSTER capture-capable units are the explorers; any others belong to the garrison squad
+	const Int numExplorers = explorerRoster(explorers);
 
 	forgetFinishedErrands(frame);
 
@@ -155,7 +159,7 @@ void AutopilotExplorer::update()
 			!captureUpgrade ? "unknown" : (player->hasUpgradeComplete(captureUpgrade) ? "done" : (player->hasUpgradeInProduction(captureUpgrade) ? "in production" : "not started")), frame);
 
 	// Train one when short.
-	if (numExplorers < wantedExplorers)
+	if (numExplorers < EXPLORER_ROSTER)
 		trainExplorer(frame);
 
 	sendIdleExplorers(explorers, numExplorers, frame);
@@ -183,7 +187,7 @@ void AutopilotExplorer::forgetFinishedErrands(UnsignedInt frame)
 				if (m_blacklist[b] == INVALID_ID || m_blacklistUntil[b] <= frame)
 				{
 					m_blacklist[b] = m_target[e];
-					m_blacklistUntil[b] = frame + 300 * LOGICFRAMES_PER_SECOND;
+					m_blacklistUntil[b] = frame + AutopilotTuning::CAPTURE_BLACKLIST_SECONDS * LOGICFRAMES_PER_SECOND;
 					break;
 				}
 		}
@@ -212,7 +216,7 @@ void AutopilotExplorer::trainExplorer(UnsignedInt frame)
 				continue;
 			if (!AutopilotUnits::isCaptureCapableInfantry(t))
 				continue;
-			if (t->calcCostToBuild(player) + 500 > money || TheBuildAssistant->canMakeUnit(barracks, t) != CANMAKE_OK)
+			if (t->calcCostToBuild(player) + AutopilotTuning::EXPLORER_UNIT_MARGIN > money || TheBuildAssistant->canMakeUnit(barracks, t) != CANMAKE_OK)
 				continue;
 			pick = t;
 			break;

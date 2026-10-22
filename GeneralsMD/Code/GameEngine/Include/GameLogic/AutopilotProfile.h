@@ -33,7 +33,8 @@ enum AutopilotModuleBit
 	AM_SQUAD         = 1 << 3,	///< garrison squad in nearby buildings
 	AM_HACKERS       = 1 << 4,	///< China: Hackers in the Internet Center
 	AM_REPAIR        = 1 << 5,	///< an idle dozer repairs the most damaged building
-	AM_ALL           = (1 << 6) - 1
+	AM_SUPERWEAPONS  = 1 << 6,	///< fire ready superweapons / area powers at the best visible enemy structures
+	AM_ALL           = (1 << 7) - 1
 };
 static const UnsignedInt AUTOPILOT_MODULES_DEFAULT = 0xFFFFFFFFu;	///< "no override": the level's own set
 
@@ -47,6 +48,7 @@ struct AutopilotProfile
 	Bool m_hackers;				///< train Hackers and hole them up in the Internet Center for income (China)
 	Bool m_repair;				///< send an idle dozer to repair the most damaged building
 	Bool m_defenseUnits;		///< keep a standing mixed force at the base (see AutopilotDefense::trainStandingArmy)
+	Bool m_superweapons;		///< fire ready superweapons at the best visible enemy structures (AutopilotSuperweapons)
 
 	/// The AM_* bits this profile has on.
 	UnsignedInt modules() const;

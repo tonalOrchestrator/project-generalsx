@@ -30,6 +30,7 @@
 #include "GameLogic/TerrainLogic.h"
 #include "GameClient/TerrainVisual.h"
 
+#include "GameLogic/AutopilotTuning.h"
 #include "GameLogic/AutopilotEconomy.h"
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
@@ -38,7 +39,7 @@
 // GeneralsX @feature Claude 20/10/2026 Autopilot: desired supply gatherers per level (Easy 2, Normal 3, Hard 4).
 Int AutopilotEconomy::desiredGatherers() const
 {
-	const GameDifficulty difficulty = m_host.difficulty();
+	const GameDifficulty difficulty = m_profile.m_difficulty;
 	return difficulty == DIFFICULTY_EASY ? 2 : (difficulty == DIFFICULTY_NORMAL ? 3 : 4);
 }
 
@@ -93,7 +94,7 @@ BuildListInfo *AutopilotEconomy::queueSupplyExpansion(UnsignedInt money)
 			AutopilotLog::line("NETPLAY autopilot supply expansion declined: %s (frame %u)\n", reason, TheGameLogic->getFrame());
 		return nullptr;
 	};
-	const Int centerCap = (m_profile.m_wallet || m_host.difficulty() == DIFFICULTY_HARD) ? 2 : 1;
+	const Int centerCap = (m_profile.m_wallet || m_profile.m_difficulty == DIFFICULTY_HARD) ? 2 : 1;
 	const ThingTemplate *centerTemplate = nullptr;
 	Int ownedCenters = 0;
 	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
@@ -108,7 +109,7 @@ BuildListInfo *AutopilotEconomy::queueSupplyExpansion(UnsignedInt money)
 		return decline("no finished supply center yet");
 	if (ownedCenters >= centerCap)
 		return decline("at the center cap");
-	if (money < centerTemplate->calcCostToBuild(player) + 1500)
+	if (money < centerTemplate->calcCostToBuild(player) + AutopilotTuning::SECOND_CENTER_MARGIN)
 		return decline("not enough money");
 
 	// The nearest warehouse (to the base) that still has cash, is not an enemy's and is not one of our centers' reach.

@@ -30,6 +30,8 @@
 #include "GameLogic/TerrainLogic.h"
 #include "GameClient/TerrainVisual.h"
 
+#include "GameLogic/AutopilotTuning.h"
+#include "GameLogic/AutopilotUnits.h"
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
 #include "GameLogic/AutopilotPlanner.h"
@@ -63,7 +65,7 @@ void AutopilotPlanner::update()
 	// into the reserve on defenses, so the rest of the money stays in the bank.
 	Pass pass;
 	pass.m_wallet = m_profile.m_wallet;
-	const GameDifficulty difficulty = m_host.difficulty();
+	const GameDifficulty difficulty = m_profile.m_difficulty;
 	pass.m_cap = pass.m_wallet ? 1 : ((difficulty == DIFFICULTY_EASY) ? 1 : ((difficulty == DIFFICULTY_NORMAL) ? 2 : 3));
 	pass.m_money = player->getMoney()->countMoney();
 	pass.m_defense = m_links.defenseBudget(pass.m_money);	// under threat (enemy units near the base) the bank is there to be spent
@@ -76,6 +78,14 @@ void AutopilotPlanner::update()
 				++pass.m_defensesBuilt;
 		}
 	pass.m_underPowered = !player->getEnergy()->hasSufficientPower();
+	if (m_profile.m_superweapons && !pass.m_underPowered && player->getEnergy()->getEnergySupplyRatio() < AutopilotTuning::SUPERWEAPON_POWER_HEADROOM)
+	{
+		// GeneralsX @feature Claude 22/10/2026 A superweapon is disabled the moment the base is short of power, and a plant at a time never catches up:
+		// with one standing, keep some power in hand.
+		for (Object *obj = TheGameLogic->getFirstObject(); obj && !pass.m_underPowered; obj = obj->getNextObject())
+			if (obj->getControllingPlayer() == player && obj->isKindOf(KINDOF_FS_SUPERWEAPON) && obj->isKindOf(KINDOF_STRUCTURE) && !obj->isEffectivelyDead())
+				pass.m_underPowered = TRUE;
+	}
 	pass.m_buildingUp = FALSE;
 
 	if (pass.m_wallet)
@@ -95,10 +105,127 @@ void AutopilotPlanner::update()
 		}
 	}
 
+	if (m_profile.m_superweapons && !pass.m_buildingUp)
+	{
+		if (queueSuperweaponStructure(pass))
+			return;
+	}
+	else if (m_saving)
+	{
+		m_saving = FALSE;	// the module was switched off, or the foundation needs building again
+		m_links.setSavingTarget(0);
+	}
+
 	if (pass.m_wallet && !pass.m_buildingUp && queueExtraDefense(pass))
 		return;
 
 	queueCheapestCandidate(pass);
+}
+
+// GeneralsX @feature Claude 22/10/2026 Most factions' build lists hold no superweapon structure (or only one the planner never reaches while it is spending on
+// defenses), so a hoarder adds its own: the cheapest superweapon structure the dozer can build, once the bank covers its cost plus the defense fund and a
+// cushion, or the prerequisite building it is waiting for. One at a time, up to the per-kind cap; the game's own limit still applies.
+Bool AutopilotPlanner::queueSuperweaponStructure(const Pass &pass)
+{
+	Player *player = m_host.player();
+	const UnsignedInt frame = TheGameLogic->getFrame();
+	const Coord3D &baseCenter = m_host.baseCenter();
+	Object *dozer = m_host.findDozerNear(&baseCenter);
+	if (!dozer)
+		return FALSE;
+
+	// The cheapest superweapon structure this side can build (now, or once a prerequisite stands), whatever the bank holds.
+	const ThingTemplate *pick = nullptr;
+	UnsignedInt pickCost = 0;
+	const ThingTemplate *blocked = nullptr;
+	UnsignedInt blockedCost = 0;
+	for (const ThingTemplate *t = TheThingFactory->firstTemplate(); t; t = t->friend_getNextTemplate())
+	{
+		if (!t->isKindOf(KINDOF_FS_SUPERWEAPON) || !t->isKindOf(KINDOF_STRUCTURE) || !AutopilotUnits::isSuperweaponStructure(t))
+			continue;
+		const UnsignedInt cost = t->calcCostToBuild(player);
+		if (cost == 0)
+			continue;
+		const CanMakeType canMake = TheBuildAssistant->canMakeUnit(dozer, t);
+		if (canMake == CANMAKE_OK)
+		{
+			if (!pick || cost < pickCost)
+			{
+				pick = t;
+				pickCost = cost;
+			}
+		}
+		else if (canMake == CANMAKE_NO_PREREQ && t->getDefaultOwningSide() == player->getSide() && (!blocked || cost < blockedCost))
+		{
+			blocked = t;
+			blockedCost = cost;
+		}
+	}
+
+	if (!pick && !blocked)
+		return FALSE;
+	if (pass.m_underPowered)
+		return FALSE;	// a superweapon is disabled without power: the power plants (the candidate pass) come first, and no further one is added until the base has enough
+	const ThingTemplate *want = pick ? pick : blocked;
+
+	// How many of it the player owns or already has queued.
+	Int have = 0;
+	Bool allReady = TRUE;	// every one owned so far is finished and not disabled
+	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
+		if (obj->getControllingPlayer() == player && obj->getTemplate()->isEquivalentTo(want))
+		{
+			++have;
+			if (obj->isDisabled() || obj->getStatusBits().test(OBJECT_STATUS_UNDER_CONSTRUCTION))
+				allReady = FALSE;
+		}
+	if (have > 0 && !allReady)
+		return FALSE;	// the next one waits until the last is up and powered (three at once starved the base of power and every one was disabled)
+	for (BuildListInfo *info = player->getBuildList(); info; info = info->getNext())
+		if (info->getTemplateName() == want->getName() && info->getObjectID() == INVALID_ID && info->isPriorityBuild())
+			return FALSE;	// one is already waiting for a dozer
+	if (have >= AutopilotTuning::SUPERWEAPON_STRUCTURE_CAP)
+	{
+		m_saving = FALSE;
+		return FALSE;
+	}
+
+	// A structure that waits on a prerequisite building (a strategy center, say) needs the bank to cover that too.
+	const UnsignedInt price = (pick ? pickCost : blockedCost) + AutopilotTuning::SUPERWEAPON_BUILD_MARGIN + (pick ? 0 : AutopilotTuning::SUPERWEAPON_PREREQ_ALLOWANCE);
+	if (pass.m_money < price)
+	{
+		// Save for it: once a few defenses stand, no further defenses (and fewer units) until the price is in the bank. A target that stays out of
+		// reach for too long is given up for a while so the base is not starved.
+		if (m_saving && frame - m_savingSinceFrame > (UnsignedInt)(AutopilotTuning::SUPERWEAPON_SAVE_MAX_SECONDS * LOGICFRAMES_PER_SECOND))
+		{
+			m_saving = FALSE;
+			m_savingCooldownUntil = frame + AutopilotTuning::SUPERWEAPON_SAVE_COOLDOWN_SECONDS * LOGICFRAMES_PER_SECOND;
+			AutopilotLog::line("NETPLAY autopilot superweapon saving gave up: %s costs %u, bank %u (frame %u)\n", want->getName().str(), price, pass.m_money, frame);
+		}
+		else if (!m_saving && frame >= m_savingCooldownUntil && pass.m_defensesBuilt >= AutopilotTuning::SUPERWEAPON_SAVE_AFTER_DEFENSES)
+		{
+			m_saving = TRUE;
+			m_savingSinceFrame = frame;
+			AutopilotLog::line("NETPLAY autopilot superweapon saving for %s: price %u, bank %u (frame %u)\n", want->getName().str(), price, pass.m_money, frame);
+			AutopilotLog::feed(player, "Saving up for %s", AutopilotLog::niceName(want).str());
+		}
+		m_links.setSavingTarget(m_saving ? price : 0);
+		return FALSE;
+	}
+
+	m_saving = FALSE;
+	m_links.setSavingTarget(0);
+	if (!pick)
+		return queueMissingPrerequisite(blocked, pass.m_money, 0);
+	const Real angle = (Real)(m_ring++ % 8) * (PI / 4);
+	const Real radius = m_host.baseRadius() * 0.5f;	// well inside the defenses
+	Coord3D pos = baseCenter;
+	pos.x += WWMath::CosTrig(angle) * radius;
+	pos.y += WWMath::SinTrig(angle) * radius;
+	player->addToPriorityBuildList(pick->getName(), &pos, pick->getPlacementViewAngle());
+	track(player->getBuildList());	// the new entry is the list head
+	AutopilotLog::line("NETPLAY autopilot superweapon structure: %s at (%.0f,%.0f), %d owned (frame %u)\n", pick->getName().str(), pos.x, pos.y, have, frame);
+	AutopilotLog::feed(player, "Building a superweapon: %s", AutopilotLog::niceName(pick).str());
+	return TRUE;
 }
 
 // GeneralsX @feature Claude 21/10/2026 The faction's build list holds only one or two base defenses, so a wallet player under attack (or sitting on a
@@ -107,9 +234,11 @@ void AutopilotPlanner::update()
 Bool AutopilotPlanner::queueExtraDefense(const Pass &pass)
 {
 	const Bool threatened = pass.m_defense.m_threatened;
-	const UnsignedInt reserve = threatened ? pass.m_defense.m_reserve : 2500;	// a quiet player only spends a real surplus
+	if (m_saving)
+		return FALSE;	// the bank is being saved for a superweapon
+	const UnsignedInt reserve = threatened ? pass.m_defense.m_reserve : AutopilotTuning::QUIET_EXTRA_DEFENSE_RESERVE;	// a quiet player only spends a real surplus
 	const Bool trace = threatened && m_extraDefenseTrace.due(TheGameLogic->getFrame(), 600);	// every 20 s of game time while under attack
-	if (pass.m_defensesBuilt >= pass.m_defense.m_totalCap || (!threatened && pass.m_money < 5000))
+	if (pass.m_defensesBuilt >= pass.m_defense.m_totalCap || (!threatened && pass.m_money < AutopilotTuning::QUIET_EXTRA_DEFENSE_MIN_BANK))
 	{
 		if (trace)
 			AutopilotLog::line("NETPLAY autopilot extra defense declined: %d defenses at the cap of %d, bank %u (frame %u)\n", pass.m_defensesBuilt, pass.m_defense.m_totalCap, pass.m_money, TheGameLogic->getFrame());
@@ -166,7 +295,7 @@ Bool AutopilotPlanner::queueExtraDefense(const Pass &pass)
 	const ThingTemplate *pick = candidates[m_defenseRotation++ % numCandidates];
 	const Int slot = m_ring++;
 	const Real angle = (Real)(slot % 8) * (PI / 4);
-	const Real radius = m_host.baseRadius() * 0.8f + 120.0f + (Real)((slot / 8) % 3) * 90.0f;	// ring outwards as the inner positions fill
+	const Real radius = m_host.baseRadius() * AutopilotTuning::DEFENSE_RING_RADIUS_FACTOR + AutopilotTuning::DEFENSE_RING_RADIUS_BASE + (Real)((slot / 8) % 3) * AutopilotTuning::DEFENSE_RING_RADIUS_STEP;	// ring outwards as the inner positions fill
 	Coord3D pos = baseCenter;
 	pos.x += WWMath::CosTrig(angle) * radius;
 	pos.y += WWMath::SinTrig(angle) * radius;
@@ -274,6 +403,47 @@ Bool AutopilotPlanner::queueFoundation(Pass &pass)
 	return FALSE;
 }
 
+// GeneralsX @feature Claude 22/10/2026 The build list holds a fixed number of power plants, and once they all stand a base that is still short of power (a
+// superweapon draws a lot, and a disabled one never charges) would wait for nothing. Add a plant of the faction's own kind on the ring around the base.
+Bool AutopilotPlanner::queueExtraPowerPlant(UnsignedInt money)
+{
+	Player *player = m_host.player();
+	for (BuildListInfo *info = player->getBuildList(); info; info = info->getNext())
+		if (info->getObjectID() == INVALID_ID && info->isPriorityBuild())
+			return FALSE;	// something is already waiting for a dozer
+	const Coord3D &baseCenter = m_host.baseCenter();
+	Object *dozer = m_host.findDozerNear(&baseCenter);
+	if (!dozer)
+		return FALSE;
+	const ThingTemplate *pick = nullptr;
+	UnsignedInt pickCost = 0;
+	for (const ThingTemplate *t = TheThingFactory->firstTemplate(); t; t = t->friend_getNextTemplate())
+	{
+		if (!t->isKindOf(KINDOF_FS_POWER) || t->isKindOf(KINDOF_CASH_GENERATOR) || !t->isKindOf(KINDOF_STRUCTURE) || t->getDefaultOwningSide() != player->getSide())
+			continue;
+		const UnsignedInt cost = t->calcCostToBuild(player);
+		if (cost == 0 || cost > money || TheBuildAssistant->canMakeUnit(dozer, t) != CANMAKE_OK)
+			continue;
+		if (!pick || cost < pickCost)
+		{
+			pick = t;
+			pickCost = cost;
+		}
+	}
+	if (!pick)
+		return FALSE;
+	const Real angle = (Real)(m_ring++ % 8) * (PI / 4);
+	const Real radius = m_host.baseRadius() * 0.6f;
+	Coord3D pos = baseCenter;
+	pos.x += WWMath::CosTrig(angle) * radius;
+	pos.y += WWMath::SinTrig(angle) * radius;
+	player->addToPriorityBuildList(pick->getName(), &pos, pick->getPlacementViewAngle());
+	track(player->getBuildList());
+	AutopilotLog::line("NETPLAY autopilot extra power plant: %s at (%.0f,%.0f), bank %u (frame %u)\n", pick->getName().str(), pos.x, pos.y, money, TheGameLogic->getFrame());
+	AutopilotLog::feed(player, "Extra power plant: %s", AutopilotLog::niceName(pick).str());
+	return TRUE;
+}
+
 // Candidates: entries that are missing, allowed by the level cap and the power rule. Cheapest first, so the basic
 // economy and production come before tech and superweapons (which are first in some factions' lists).
 void AutopilotPlanner::queueCheapestCandidate(const Pass &pass)
@@ -324,8 +494,8 @@ void AutopilotPlanner::queueCheapestCandidate(const Pass &pass)
 		if (!plan)
 			continue;
 		const Bool isDefense = plan->isKindOf(KINDOF_FS_BASE_DEFENSE);
-		if (isDefense && (!wallet || buildingUp))
-			continue;	// wallet defenses start after the foundation is up
+		if (isDefense && (!wallet || buildingUp || m_saving))
+			continue;	// wallet defenses start after the foundation is up (and wait while the bank is saved for a superweapon)
 		if (TheGameLogic->findObjectByID(info->getObjectID()))
 			continue;	// this entry is built
 
@@ -336,8 +506,13 @@ void AutopilotPlanner::queueCheapestCandidate(const Pass &pass)
 			|| plan->isKindOf(KINDOF_CASH_GENERATOR) || (m_profile.m_hackers && plan->isKindOf(KINDOF_FS_INTERNET_CENTER))
 			|| ((m_profile.m_hackers || m_profile.m_standingSquad > 0 || m_profile.m_defenseUnits) && plan->isKindOf(KINDOF_FS_BARRACKS))	// where hackers and the squad are trained
 			|| (m_profile.m_defenseUnits && plan->isKindOf(KINDOF_FS_WARFACTORY));	// and the standing army's tanks
-		if (wallet && !isPower && !isEconomy && !isDefense)
-			continue;	// wallet mode: no production, tech or superweapon buildings
+		// GeneralsX @feature Claude 22/10/2026 A player with the superweapons module hoards them: once the foundation is up and the bank has a comfortable
+		// surplus (and no attack is going on) the faction's superweapon structure is built, up to the game's own limit.
+		const Bool isSuperweapon = m_profile.m_superweapons && plan->isKindOf(KINDOF_FS_SUPERWEAPON);
+		if (wallet && !isPower && !isEconomy && !isDefense && !isSuperweapon)
+			continue;	// wallet mode: no production or tech buildings (superweapons only with that module)
+		if (isSuperweapon && buildingUp)
+			continue;
 		if (wallet && isDefense && pass.m_defensesBuilt >= pass.m_defense.m_totalCap)
 			continue;
 
@@ -345,7 +520,7 @@ void AutopilotPlanner::queueCheapestCandidate(const Pass &pass)
 		for (Int o = 0; o < numOwned; ++o)
 			if (ownedNames[o] == name)
 				have = ownedCounts[o];
-		if (!isPower && have >= (isDefense ? pass.m_defense.m_perTemplateCap : pass.m_cap))
+		if (!isPower && have >= (isDefense ? pass.m_defense.m_perTemplateCap : (isSuperweapon ? AutopilotTuning::SUPERWEAPON_STRUCTURE_CAP : pass.m_cap)))
 			continue;
 
 		if (!dozer)
@@ -358,6 +533,8 @@ void AutopilotPlanner::queueCheapestCandidate(const Pass &pass)
 		const UnsignedInt cost = plan->calcCostToBuild(player);
 		if (wallet && isDefense && money < cost + walletReserve)
 			continue;	// hoarding: keep the reserve
+		if (isSuperweapon && money < cost + AutopilotTuning::SUPERWEAPON_BUILD_MARGIN)
+			continue;	// the defense fund and a cushion stay in the bank
 		const CanMakeType canMake = TheBuildAssistant->canMakeUnit(dozer, plan);
 		if (canMake == CANMAKE_OK)
 		{
@@ -369,7 +546,7 @@ void AutopilotPlanner::queueCheapestCandidate(const Pass &pass)
 		}
 		// Wallet defenses that need a prerequisite building (a barracks for the GLA tunnel network, say) are only worth the
 		// extra spend once the bank is comfortably full.
-		else if (canMake == CANMAKE_NO_PREREQ && !(wallet && isDefense && money < cost + walletReserve + (threatened ? 0 : 3000)) && (!blocked || cost < blockedCost))
+		else if (canMake == CANMAKE_NO_PREREQ && !(wallet && isDefense && money < cost + walletReserve + (threatened ? 0 : AutopilotTuning::QUIET_PREREQ_DEFENSE_MARGIN)) && (!blocked || cost < blockedCost))
 		{
 			blocked = info;
 			blockedCost = cost;
@@ -382,6 +559,9 @@ void AutopilotPlanner::queueCheapestCandidate(const Pass &pass)
 		if (plan && queueMissingPrerequisite(plan, money, 0))
 			return;
 	}
+
+	if (!pick && !blocked && pass.m_underPowered && m_profile.m_superweapons && queueExtraPowerPlant(money))
+		return;
 
 	if (pick)
 	{

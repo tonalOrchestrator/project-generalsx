@@ -23,12 +23,12 @@
 // GeneralsX @refactor Claude 21/10/2026 Index 0 is "off"; the rows after it are the levels in hotkey-cycle order.
 static const AutopilotProfile s_profiles[] =
 {
-	{ 1, DIFFICULTY_EASY,   FALSE, FALSE, 0, FALSE, FALSE, FALSE },	// easy
-	{ 2, DIFFICULTY_NORMAL, FALSE, FALSE, 0, FALSE, FALSE, FALSE },	// normal
-	{ 3, DIFFICULTY_HARD,   FALSE, FALSE, 0, FALSE, FALSE, FALSE },	// hard
-	{ 4, DIFFICULTY_NORMAL, TRUE,  FALSE, 2, TRUE,  TRUE, FALSE },	// wallet: defend, survive, hoard money (+ garrison squad, hackers, repair)
-	{ 5, DIFFICULTY_NORMAL, FALSE, TRUE,  2, FALSE, TRUE, FALSE },	// explore: capture neutral buildings for income (+ garrison squad, repair)
-	{ 6, DIFFICULTY_NORMAL, TRUE,  TRUE,  2, TRUE,  TRUE,  FALSE },	// fortress: wallet + explore (captured income feeds the defense spending)
+	{ 1, DIFFICULTY_EASY,   FALSE, FALSE, 0, FALSE, FALSE, FALSE, FALSE },	// easy
+	{ 2, DIFFICULTY_NORMAL, FALSE, FALSE, 0, FALSE, FALSE, FALSE, FALSE },	// normal
+	{ 3, DIFFICULTY_HARD,   FALSE, FALSE, 0, FALSE, FALSE, FALSE, FALSE },	// hard
+	{ 4, DIFFICULTY_NORMAL, TRUE,  FALSE, 2, TRUE,  TRUE, FALSE, TRUE },	// wallet: defend, survive, hoard money (+ garrison squad, hackers, repair)
+	{ 5, DIFFICULTY_NORMAL, FALSE, TRUE,  2, FALSE, TRUE, FALSE, FALSE },	// explore: capture neutral buildings for income (+ garrison squad, repair)
+	{ 6, DIFFICULTY_NORMAL, TRUE,  TRUE,  2, TRUE,  TRUE,  FALSE, TRUE },	// fortress: wallet + explore (captured income feeds the defense spending)
 };
 
 static const wchar_t *const s_banners[] =
@@ -60,7 +60,7 @@ const wchar_t *AutopilotProfile::banner(Int level)
 UnsignedInt AutopilotProfile::modules() const
 {
 	return (m_wallet ? AM_WALLET : 0) | (m_defenseUnits ? AM_DEFENSE_UNITS : 0) | (m_explore ? AM_EXPLORE : 0)
-		| (m_standingSquad > 0 ? AM_SQUAD : 0) | (m_hackers ? AM_HACKERS : 0) | (m_repair ? AM_REPAIR : 0);
+		| (m_standingSquad > 0 ? AM_SQUAD : 0) | (m_hackers ? AM_HACKERS : 0) | (m_repair ? AM_REPAIR : 0) | (m_superweapons ? AM_SUPERWEAPONS : 0);
 }
 
 AutopilotProfile AutopilotProfile::withModules(UnsignedInt mask) const
@@ -74,6 +74,7 @@ AutopilotProfile AutopilotProfile::withModules(UnsignedInt mask) const
 	p.m_standingSquad = (mask & AM_SQUAD) ? (m_standingSquad > 0 ? m_standingSquad : 2) : 0;
 	p.m_hackers = (mask & AM_HACKERS) != 0;
 	p.m_repair = (mask & AM_REPAIR) != 0;
+	p.m_superweapons = (mask & AM_SUPERWEAPONS) != 0;
 	return p;
 }
 
@@ -82,7 +83,7 @@ void AutopilotProfile::moduleList(UnsignedInt mask, wchar_t *out, Int outSize)
 	static const struct { UnsignedInt bit; const wchar_t *name; } names[] =
 	{
 		{ AM_WALLET, L"wallet" }, { AM_DEFENSE_UNITS, L"defense units" }, { AM_EXPLORE, L"explore" },
-		{ AM_SQUAD, L"squad" }, { AM_HACKERS, L"hackers" }, { AM_REPAIR, L"repair" },
+		{ AM_SQUAD, L"squad" }, { AM_HACKERS, L"hackers" }, { AM_REPAIR, L"repair" }, { AM_SUPERWEAPONS, L"superweapons" },
 	};
 	out[0] = 0;
 	Int len = 0;

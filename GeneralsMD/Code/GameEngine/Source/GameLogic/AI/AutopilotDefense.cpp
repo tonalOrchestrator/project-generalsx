@@ -26,6 +26,7 @@
 #include "GameLogic/Module/ProductionUpdate.h"
 #include "GameLogic/Object.h"
 
+#include "GameLogic/AutopilotTuning.h"
 #include "GameLogic/AutopilotDefense.h"
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
@@ -49,7 +50,7 @@ Bool AutopilotDefense::underThreat()
 {
 	const UnsignedInt frame = TheGameLogic->getFrame();
 	if (isThreatened())
-		m_threatUntilFrame = frame + 90 * LOGICFRAMES_PER_SECOND;
+		m_threatUntilFrame = frame + AutopilotTuning::THREAT_MEMORY_SECONDS * LOGICFRAMES_PER_SECOND;
 	return frame < m_threatUntilFrame;
 }
 
@@ -57,15 +58,22 @@ AutopilotDefense::Budget AutopilotDefense::budget(UnsignedInt bank)
 {
 	Budget b;
 	b.m_threatened = m_profile.m_wallet && underThreat();
-	b.m_perTemplateCap = b.m_threatened ? 16 : 3;
-	b.m_totalCap = b.m_threatened ? 24 + (Int)(bank / 2000 < 24 ? bank / 2000 : 24) : 6;
-	b.m_reserve = b.m_threatened ? 200 : 1500;
+	b.m_perTemplateCap = b.m_threatened ? AutopilotTuning::THREATENED_PER_KIND_CAP : AutopilotTuning::QUIET_PER_KIND_CAP;
+	b.m_totalCap = b.m_threatened ? AutopilotTuning::THREATENED_TOTAL_CAP_BASE + (Int)(bank / AutopilotTuning::DEFENSE_CAP_BANK_STEP < AutopilotTuning::THREATENED_TOTAL_CAP_BONUS_MAX ? bank / AutopilotTuning::DEFENSE_CAP_BANK_STEP : AutopilotTuning::THREATENED_TOTAL_CAP_BONUS_MAX) : AutopilotTuning::QUIET_TOTAL_CAP;
+	b.m_reserve = b.m_threatened ? AutopilotTuning::THREATENED_RESERVE : AutopilotTuning::QUIET_RESERVE;
 	return b;
 }
 
 // GeneralsX @tweak Claude 21/10/2026 Units never spend the last DEFENSE_FUND of the bank: the base defenses (about $1,000 each) are what held the line
 // against a Hard AI, and the defender trainer, running every two seconds, used to spend the bank down to $300 before the planner could afford one.
-static const UnsignedInt DEFENSE_FUND = 1200;
+static const UnsignedInt DEFENSE_FUND = AutopilotTuning::DEFENSE_FUND;
+
+// GeneralsX @feature Claude 22/10/2026 What units must leave in the bank: the defense fund, or the superweapon price while the planner is saving for one
+// (and a small army already stands).
+UnsignedInt AutopilotDefense::fundFor(Int army) const
+{
+	return (m_savingTarget > DEFENSE_FUND && army >= AutopilotTuning::SUPERWEAPON_SAVE_MIN_ARMY) ? m_savingTarget : DEFENSE_FUND;
+}
 
 // Wallet mode under attack: spend the bank on a few defenders. Every so often (called every two seconds) one affordable combat unit
 // is queued at a barracks or war factory, up to a cap on the army; idle units defend themselves, so nothing here ever attacks.
@@ -75,7 +83,7 @@ void AutopilotDefense::trainDefenders()
 		return;
 	Player *player = m_host.player();
 	UnsignedInt money = player->getMoney()->countMoney();
-	const Int armyCap = 16 + (Int)(money / 1500 < 40 ? money / 1500 : 40);	// a fuller bank buys a bigger defending army
+	const Int armyCap = AutopilotTuning::ARMY_CAP_BASE + (Int)(money / AutopilotTuning::ARMY_BANK_STEP < AutopilotTuning::ARMY_CAP_BONUS_MAX ? money / AutopilotTuning::ARMY_BANK_STEP : AutopilotTuning::ARMY_CAP_BONUS_MAX);	// a fuller bank buys a bigger defending army
 	Int army = 0;
 	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
 		if (obj->getControllingPlayer() == player && !obj->isKindOf(KINDOF_STRUCTURE) && obj->isKindOf(KINDOF_CAN_ATTACK)
@@ -113,7 +121,7 @@ void AutopilotDefense::trainDefenders()
 				if (t->isKindOf(KINDOF_STRUCTURE) || !t->isKindOf(KINDOF_CAN_ATTACK) || t->isKindOf(KINDOF_HARVESTER) || t->isKindOf(KINDOF_DOZER))
 					continue;
 				const UnsignedInt cost = t->calcCostToBuild(player);
-				if (cost == 0 || cost + DEFENSE_FUND > money || cost > money / 4 + 400 || cost <= bestCost)
+				if (cost == 0 || cost + fundFor(army + queuedNow) > money || cost > money / 4 + 400 || cost <= bestCost)
 					continue;
 				if (TheBuildAssistant->canMakeUnit(factory, t) != CANMAKE_OK)
 					continue;
@@ -145,7 +153,7 @@ void AutopilotDefense::trainStandingArmy()
 		return;
 	Player *player = m_host.player();
 	const UnsignedInt money = player->getMoney()->countMoney();
-	const Int target = 6 + (Int)(money / 2000 < 14 ? money / 2000 : 14);
+	const Int target = AutopilotTuning::STANDING_ARMY_BASE + (Int)(money / AutopilotTuning::STANDING_ARMY_BANK_STEP < AutopilotTuning::STANDING_ARMY_BONUS_MAX ? money / AutopilotTuning::STANDING_ARMY_BANK_STEP : AutopilotTuning::STANDING_ARMY_BONUS_MAX);
 	Int army = 0;
 	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
 		if (obj->getControllingPlayer() == player && !obj->isKindOf(KINDOF_STRUCTURE) && obj->isKindOf(KINDOF_CAN_ATTACK)
@@ -188,7 +196,7 @@ void AutopilotDefense::trainStandingArmy()
 				if (!fits)
 					continue;
 				const UnsignedInt cost = t->calcCostToBuild(player);
-				if (cost == 0 || cost + DEFENSE_FUND > money || cost > money / 3 + 300 || cost <= pickCost || TheBuildAssistant->canMakeUnit(factory, t) != CANMAKE_OK)
+				if (cost == 0 || cost + fundFor(army) > money || cost > money / 3 + AutopilotTuning::DEFENSE_UNIT_COST_SLACK || cost <= pickCost || TheBuildAssistant->canMakeUnit(factory, t) != CANMAKE_OK)
 					continue;
 				pick = t;
 				pickCost = cost;

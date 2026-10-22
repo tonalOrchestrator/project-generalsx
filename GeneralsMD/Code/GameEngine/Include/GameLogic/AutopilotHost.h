@@ -36,7 +36,6 @@ public:
 	virtual Player *player() const = 0;
 	virtual const Coord3D &baseCenter() const = 0;	///< center of the player's build list
 	virtual Real baseRadius() const = 0;
-	virtual GameDifficulty difficulty() const = 0;	///< the AI skill state the autopilot level borrowed (build caps, gatherers)
 
 	// ---- the AI player's builders and queries ----
 	virtual Object *findDozerNear(const Coord3D *pos) = 0;
@@ -51,6 +50,14 @@ public:
 	virtual Int structureTimerFrames() const = 0;	///< (trace only)
 	virtual void kickBuildTimer() = 0;				///< let the base-building pass look at the build list again right away
 
+protected:
+	~AutopilotHost() = default;	// never deleted through this interface
+};
+
+// GeneralsX @refactor Claude 22/10/2026 What only the AIAutopilot facade drives (the per-frame loop), kept apart from what the modules may ask.
+class AutopilotDriver
+{
+public:
 	// ---- the production side the autopilot lets the AI player keep running ----
 	virtual void runBaseBuilding() = 0;				///< place queued structures, finish ready/queued teams (dozers, trucks)
 	virtual Bool tickTeamTimer() = 0;				///< count the team timer down one frame; true once it ran out
@@ -58,5 +65,5 @@ public:
 	virtual void restartTeamTimer(Int frames) = 0;
 
 protected:
-	~AutopilotHost() = default;	// never deleted through this interface
+	~AutopilotDriver() = default;
 };

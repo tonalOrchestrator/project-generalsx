@@ -77,7 +77,8 @@ void RadiusDecalTemplate::createRadiusDecal(const Coord3D& pos, Real radius, con
 		decalInfo.m_sizeX = radius*2;									// world space dimensions
 		decalInfo.m_sizeY = radius*2;									// world space dimensions
 
-		result.m_decal = TheProjectedShadowManager->addDecal(&decalInfo);
+		// GeneralsX @bugfix Claude 22/10/2026 A headless run (no renderer, so no shadow manager) crashed here on the first power that draws a target decal.
+		result.m_decal = TheProjectedShadowManager ? TheProjectedShadowManager->addDecal(&decalInfo) : nullptr;
 		if (result.m_decal)
 		{
 			result.m_decal->setAngle(0.0f);
@@ -85,7 +86,7 @@ void RadiusDecalTemplate::createRadiusDecal(const Coord3D& pos, Real radius, con
 			result.m_decal->setPosition(pos.x, pos.y, pos.z);
 			result.m_template = this;
 		}
-		else
+		else if (TheProjectedShadowManager)
 		{
 			DEBUG_CRASH(("Unable to add decal %s",decalInfo.m_ShadowName));
 		}

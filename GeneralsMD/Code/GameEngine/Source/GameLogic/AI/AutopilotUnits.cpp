@@ -34,16 +34,17 @@ static Bool nameContainsAny(const ThingTemplate *t, const char *const *names, In
 
 #define NAME_LIST_ANY(t, list) nameContainsAny((t), (list), (Int)(sizeof(list) / sizeof((list)[0])))
 
+// GeneralsX @refactor Claude 22/10/2026 The basic rifleman of each faction is also the unit that carries the capture special power: one list.
+static const char *const s_basicRiflemen[] = { "ranger", "redguard", "rebel", "minigunner" };
+
 Bool AutopilotUnits::isCaptureCapableInfantry(const ThingTemplate *t)
 {
-	static const char *const names[] = { "ranger", "redguard", "rebel", "minigunner" };
-	return NAME_LIST_ANY(t, names);
+	return NAME_LIST_ANY(t, s_basicRiflemen);
 }
 
 Bool AutopilotUnits::isRifleInfantry(const ThingTemplate *t)
 {
-	static const char *const names[] = { "ranger", "redguard", "rebel", "minigunner" };
-	return NAME_LIST_ANY(t, names);
+	return NAME_LIST_ANY(t, s_basicRiflemen);
 }
 
 Bool AutopilotUnits::isAntiVehicleInfantry(const ThingTemplate *t)
@@ -55,5 +56,11 @@ Bool AutopilotUnits::isAntiVehicleInfantry(const ThingTemplate *t)
 Bool AutopilotUnits::isHacker(const ThingTemplate *t)
 {
 	static const char *const names[] = { "hacker" };
+	return NAME_LIST_ANY(t, names);
+}
+
+Bool AutopilotUnits::isSuperweaponStructure(const ThingTemplate *t)
+{
+	static const char *const names[] = { "particlecannon", "uplink", "nuclearmissile", "scudstorm" };
 	return NAME_LIST_ANY(t, names);
 }

@@ -38,6 +38,10 @@ namespace AutopilotUnits
 	/// The "tank person" of a squad: Tank Hunter, Missile Defender, the GLA RPG trooper (Tunnel Defender).
 	Bool isAntiVehicleInfantry(const ThingTemplate *t);
 
+	/// A structure whose special power is an area superweapon the autopilot knows how to fire: Particle Cannon / Uplink, Nuclear (Neutron) Missile,
+	/// Scud Storm. Some structures are flagged as superweapons without carrying one (the Laser General's laser cannon is a turret).
+	Bool isSuperweaponStructure(const ThingTemplate *t);
+
 	/// China's Hacker: hacks the Internet for cash, faster inside an Internet Center (not the Black Lotus).
 	Bool isHacker(const ThingTemplate *t);
 }

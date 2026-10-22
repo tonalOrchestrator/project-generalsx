@@ -26,7 +26,7 @@
 
 #include "Common/GameCommon.h"
 #include "Common/KindOf.h"
-#include "GameLogic/AutopilotDefense.h"
+#include "GameLogic/AutopilotBudget.h"
 
 class AutopilotHost;
 class BuildListInfo;
@@ -42,7 +42,8 @@ public:
 	class Links
 	{
 	public:
-		virtual AutopilotDefense::Budget defenseBudget(UnsignedInt bank) = 0;
+		virtual AutopilotDefenseBudget defenseBudget(UnsignedInt bank) = 0;
+		virtual void setSavingTarget(UnsignedInt target) = 0;	///< units leave this much in the bank (0 = stop saving)
 		virtual Int desiredGatherers() const = 0;
 		virtual BuildListInfo *queueSupplyExpansion(UnsignedInt money) = 0;
 		virtual void markSupplyEntry(BuildListInfo *info, const ThingTemplate *tmpl) = 0;
@@ -70,7 +71,7 @@ private:
 		Bool m_buildingUp;							///< wallet phase 1: build the foundation first; hoarding starts after it
 		UnsignedInt m_money;
 		Int m_cap;									///< most of one structure the level builds
-		AutopilotDefense::Budget m_defense;
+		AutopilotDefenseBudget m_defense;
 		Int m_defensesBuilt;
 	};
 
@@ -78,6 +79,11 @@ private:
 	void track(BuildListInfo *info);
 	Bool queueSupplyCenterForIncome(UnsignedInt money);
 	Bool queueFoundation(Pass &pass);
+	Bool queueExtraPowerPlant(UnsignedInt money);			///< superweapons module: a power plant beyond the build list when the base is short of power
+	Bool queueSuperweaponStructure(const Pass &pass);
+	Bool m_saving = FALSE;					///< saving for a superweapon: no further defenses are queued
+	UnsignedInt m_savingSinceFrame = 0;
+	UnsignedInt m_savingCooldownUntil = 0;	///< superweapons module: the faction's superweapon structure (or its prerequisite) when the bank covers it
 	Bool queueExtraDefense(const Pass &pass);	///< wallet: more base defenses than the build list holds, on a ring around the base
 	void queueCheapestCandidate(const Pass &pass);
 	Bool queueMissingPrerequisite(const ThingTemplate *plan, UnsignedInt money, Int depth, KindOfType onlyKind = KINDOF_INVALID);
@@ -90,6 +96,7 @@ private:
 	BuildListInfo *m_pending;			///< build-list entry the planner queued and is waiting on
 	UnsignedInt m_pendingFrame;
 	Int m_ring;							///< next slot on the ring around the base for a prerequisite structure
-	AutopilotLog::Throttle m_extraDefenseTrace;	///< trace throttle (logging only)
+	AutopilotLog::Throttle m_extraDefenseTrace;
+	AutopilotLog::Throttle m_superweaponTrace;	///< trace throttle (logging only)
 	Int m_defenseRotation = 0;			///< which of the buildable defenses the next extra one is
 };

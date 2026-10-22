@@ -45,6 +45,8 @@ public:
 private:
 	enum { MAX_EXPLORERS = 8, BLACKLIST_SIZE = 16, SCOUT_TRACKED = 32, MAX_SCOUTS_PER_BUILDING = 3, EXPLORER_ROSTER = 2 };
 
+	/// Fills 'out' with the explorers (the first EXPLORER_ROSTER capture-capable units, in object-list order); returns how many.
+	Int explorerRoster(Object **out) const;
 	void forgetFinishedErrands(UnsignedInt frame);
 	void trainExplorer(UnsignedInt frame);
 	void sendIdleExplorers(Object *const *explorers, Int numExplorers, UnsignedInt frame);

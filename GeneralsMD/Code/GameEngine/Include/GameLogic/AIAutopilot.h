@@ -33,16 +33,18 @@
 #include "GameLogic/AutopilotDefense.h"
 #include "GameLogic/AutopilotEconomy.h"
 #include "GameLogic/AutopilotExplorer.h"
+#include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotHackers.h"
 #include "GameLogic/AutopilotPlanner.h"
 #include "GameLogic/AutopilotProfile.h"
 #include "GameLogic/AutopilotRepair.h"
 #include "GameLogic/AutopilotSquad.h"
+#include "GameLogic/AutopilotSuperweapons.h"
 
 class AIAutopilot : private AutopilotPlanner::Links, private AutopilotSquad::Links
 {
 public:
-	AIAutopilot(AutopilotHost &host, const AutopilotProfile &profile);
+	AIAutopilot(AutopilotHost &host, AutopilotDriver &driver, const AutopilotProfile &profile);
 
 	/// Switch level in place (the hotkey cycle): the modules read the new profile from now on.
 	void setProfile(const AutopilotProfile &profile) { m_profile = profile; }
@@ -57,6 +59,7 @@ public:
 private:
 	// AutopilotPlanner::Links: the planner's view of the sibling modules
 	virtual AutopilotDefense::Budget defenseBudget(UnsignedInt bank) override { return m_defense.budget(bank); }
+	virtual void setSavingTarget(UnsignedInt target) override { m_defense.setSavingTarget(target); }
 	virtual Int desiredGatherers() const override { return m_economy.desiredGatherers(); }
 	virtual BuildListInfo *queueSupplyExpansion(UnsignedInt money) override { return m_economy.queueSupplyExpansion(money); }
 	virtual void markSupplyEntry(BuildListInfo *info, const ThingTemplate *tmpl) override { m_economy.markSupplyEntry(info, tmpl); }
@@ -66,6 +69,7 @@ private:
 	virtual Bool isExplorer(const Object *unit) const override { return m_explorer.isExplorer(unit); }
 
 	AutopilotHost &m_host;
+	AutopilotDriver &m_driver;
 	AutopilotProfile m_profile;	// declared before the modules: they hold a reference to it
 	AutopilotEconomy m_economy;
 	AutopilotDefense m_defense;
@@ -73,5 +77,6 @@ private:
 	AutopilotSquad m_squad;
 	AutopilotHackers m_hackers;
 	AutopilotRepair m_repair;
+	AutopilotSuperweapons m_superweapons;
 	AutopilotPlanner m_planner;
 };

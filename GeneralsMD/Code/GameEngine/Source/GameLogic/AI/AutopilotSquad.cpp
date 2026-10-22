@@ -29,6 +29,7 @@
 #include "GameLogic/Module/ProductionUpdate.h"
 #include "GameLogic/Object.h"
 
+#include "GameLogic/AutopilotTuning.h"
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
 #include "GameLogic/AutopilotProfile.h"
@@ -82,7 +83,7 @@ void AutopilotSquad::train()
 				if (!(wantAntiVehicle ? AutopilotUnits::isAntiVehicleInfantry(t) : AutopilotUnits::isRifleInfantry(t)) || !t->isKindOf(KINDOF_INFANTRY))
 					continue;
 				const UnsignedInt cost = t->calcCostToBuild(player);
-				if (cost == 0 || cost + 1500 > money || cost <= pickCost || TheBuildAssistant->canMakeUnit(barracks, t) != CANMAKE_OK)
+				if (cost == 0 || cost + AutopilotTuning::SQUAD_UNIT_MARGIN > money || cost <= pickCost || TheBuildAssistant->canMakeUnit(barracks, t) != CANMAKE_OK)
 					continue;
 				pick = t;
 				pickCost = cost;
@@ -102,7 +103,7 @@ void AutopilotSquad::train()
 void AutopilotSquad::garrison()
 {
 	const Coord3D &center = m_host.baseCenter();
-	const Real reach = m_host.baseRadius() + 1500.0f;	// neutral buildings are rarely right at the base: about a quarter of a typical map
+	const Real reach = m_host.baseRadius() + AutopilotTuning::SQUAD_REACH_BEYOND_BASE;	// neutral buildings are rarely right at the base: about a quarter of a typical map
 	Int orders = 0;
 	for (Object *unit = TheGameLogic->getFirstObject(); unit && orders < 3; unit = unit->getNextObject())
 	{
