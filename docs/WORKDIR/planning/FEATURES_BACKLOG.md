@@ -129,6 +129,16 @@ Challenge maps (China Infantry General, 15-minute cap): Fortress reaches the cap
 falls at 8:25 and Super Weapons General at 5:50. Wallet alone averaged 11.4 minutes and Explore alone 12.2 on the same maps. Linux + Windows match vs Hard,
 10 minutes: in sync. Lesson: the earlier "more spending does not help" finding was about a bank with no income; the income, not the army, was missing.
 
+### Results recovered after the 2026-10-21 shutdown (from the interrupted Challenge-map session)
+Two experiments finished just before the computer went to sleep and were never written down; their raw logs survived in `logs/autopilot-scenarios/`:
+- **Fortress + Defense Units vs a Hard AI**, Death Valley, 16-minute cap, 12 factions (run 20261021-202256): **10/12 survive**, the same as Fortress alone,
+  so the Defense Units module adds nothing on top of Fortress there. The two that fell: plain China (14.0 min) and China Tank General (13.5 min).
+- **Wallet on Golden Oasis** (run 20261021-204242, 11 of 12 runs: the shutdown cut the last one): 1/11 survive the cap, median 13.9 min. A baseline for
+  comparing Fortress on a second map; the Fortress run for that comparison never happened.
+Open question that session was on: why Fortress still ends early on the **Super Weapons General** (about 5:50) and **China Boss** Challenge maps (see
+the Challenge section above and `docs/DEV_BLOG`); it was using `-soloSnapshot` to see what attacks. Resume point: re-run the Golden Oasis comparison, then
+look at the Super Weapons General run with the snapshot.
+
 ### Defending against a Hard AI (Wallet mode) - improved, not solved
 Goal from Ben: a 1v1 setup that can actually defend against a Hard opponent. Measured solo, headless, 16 game-minute cap, all 12 factions vs one
 Hard AI (median survival; none survived 16 minutes until the extra defenses):
@@ -239,7 +249,12 @@ money and general's points (frame request + 4) and that without the flag the req
 - [x] Commands from a human player across machines: `-lanBuildSchedule` sends a real select + construct command; each machine's
       human ordered a barracks by hand (Autopilot off at 100 s, on again at 190 s) in a Linux + Windows match: in sync on all 6
       per-minute CRCs, identical final stats. Note: with Autopilot on, a human's build click is placed with the AI's relaxed rules.
-- [ ] Windows exe packaged for a remote friend (exe + DLLs + launcher .bat, no game data), shared by drive link.
+- [~] Windows package for a remote friend: BUILT, NOT SHARED (Ben: "distribution later"). `~/generalsx-friend-package/GeneralsX-Windows-474f8fb017.zip` (3.4 MB):
+      GeneralsXZH.exe, mss32.dll / binkw32.dll (this project's stubs), Play-GeneralsX.bat, README.txt, LICENSE.txt, and Microsoft's msvcp140.dll,
+      vcruntime140.dll, msvcp140_atomic_wait.dll (the exe imports them; a PC without Visual Studio would not start it otherwise; app-local copies are
+      allowed). No game data (checked: no .big/.ini/.w3d/.wav/.bik inside). It is the 2026-10-21 12:56 build (`474f8fb01`), BEFORE Defense Units,
+      Fortress and the activity feed: rebuild from `495819555` or newer before sending. Never started on a clean PC; the internet-play steps (Tailscale +
+      Direct Connect) are untested. Sharing it (Drive or otherwise) needs Ben's explicit OK.
 - [x] Retail compatibility, answer: `RETAIL_COMPATIBLE_CRC` is `(0)` by default (`Core/GameEngine/Include/Common/GameDefines.h`), so
       neither the Linux nor the Windows build is expected to be CRC-compatible with retail Zero Hour 1.04 and a match against the
       original game would desync or be refused. Linux <-> Windows builds of THIS fork agree with each other (every match above).
