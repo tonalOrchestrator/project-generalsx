@@ -23,9 +23,25 @@
 #pragma once
 
 #include "Common/GameCommon.h"
+#include "Common/AsciiString.h"
+
+class Player;
+class ThingTemplate;
 
 namespace AutopilotLog
 {
+	/// Activity feed for the human: one plain sentence about what Autopilot just did, shown on screen (the message line that also shows the
+	/// Autopilot banner) and printed to the console as "AUTOPILOT: ...". Only for the player this machine controls; it never touches the
+	/// simulation, so it is safe on every machine. Silent in a headless harness run (the NETPLAY trace lines cover that).
+#if defined(__GNUC__)
+	void feed(const Player *player, const char *format, ...) __attribute__((format(printf, 2, 3)));
+#else
+	void feed(const Player *player, const char *format, ...);
+#endif
+
+	/// The player-facing name of a unit or building (display name, falling back to the template name).
+	AsciiString niceName(const ThingTemplate *tmpl);
+
 	/// True in a LAN netplay harness run, the only time the autopilot prints anything.
 	Bool enabled();
 

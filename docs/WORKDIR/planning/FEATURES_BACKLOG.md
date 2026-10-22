@@ -98,7 +98,7 @@ Explore + garrison squad as China Infantry General, 12 game-minutes, Normal diff
 | China Boss | map, 10:48 | n/a | $17.3k | 1 |
 (Nuke, Stealth and China Boss first ended in seconds because they are not the first mission of any general's campaign, so the Challenge setup was skipped; it now searches every mission.)
 Findings: (1) Challenge maps give their capturable buildings to the *civilian* player (relationship neutral), not the game's neutral player, so Explore
-captured nothing on most maps; it now targets those too (Laser $15k -> $38k, Demolition 0 -> 4 captures, Death Valley identical). (2) Most capturable
+captured nothing on most maps; it now targets those too (Laser $15k -> $24-38k, Demolition 0 -> 4-5 captures). CORRECTION: the first note here said Death Valley stayed identical, but that run used a stale installed binary (`autopilot_scenarios.py` runs the copy in `~/GeneralsX/GeneralsZH`, so copy the build there first). Measured properly, targeting civilian tech buildings cost Death Valley Explore income 11% (1.232M -> 1.107M summed over 12 factions) because the two explorers chased platforms and pads and re-scouted ones they could never reveal. Fixed in part: three scouting tries per building, and income buildings (oil derricks and refineries) are preferred (a non-income building must be a quarter as far away): 1.168M, 5% below the old baseline, accepted for the Challenge gain. (2) Most capturable
 buildings belong to the opposing general (22 of 31 on Chem), which Explore never touches, so income stays modest. (3) The squad does garrison
 (houses, a convenience store, the Palace); on every map some 10 candidate buildings "refuse": the trace now says why, and on Tank General 8 of 10 are still in the shroud (none enemy-owned or full). The squad now scouts them first (walks to the nearest shrouded one, then enters next cycle): Tank General $15.6k -> $20.5k earned, 13 scouting walks; Wallet vs Medium survival stays 12/12; Linux + Windows Wallet match in sync.
 (4) The human, who only builds and defends, is wiped out by the Challenge AI on most maps after 6-11 game-minutes; that is the Wallet-vs-Hard story again.
@@ -207,6 +207,7 @@ money and general's points (frame request + 4) and that without the flag the req
 
 - [x] Explore for China Infantry General: he has no Red Guard (his barracks builds Minigunner, Tank Hunter, Hacker, Black Lotus), so the explorer
       is the Minigunner; fixed, 8 captured and ~$104k earned on Death Valley (was 0 and ~$29k).
+- [x] Activity feed: `AutopilotLog::feed` prints "Sending a Mini-Gunner to capture the Oil Derrick" style lines to the console (`AUTOPILOT: ...`) and the in-game message line, for the local player only (capture, scout, garrison, next structure, extra defense).
 - [ ] Explore: explorers do not run from enemies; the Challenge-map runs (headless) are done, a hand-played one is not.
 - [x] Squad scouts shrouded garrison buildings before ordering entry.
 

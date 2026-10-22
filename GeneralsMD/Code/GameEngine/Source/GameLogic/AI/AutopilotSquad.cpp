@@ -160,6 +160,7 @@ void AutopilotSquad::garrison()
 			ai->aiMoveToPosition(hidden->getPosition(), CMD_FROM_AI);
 			++orders;
 			AutopilotLog::line("NETPLAY autopilot squad: %s -> scout %s (frame %u)\n", unit->getTemplate()->getName().str(), hidden->getTemplate()->getName().str(), TheGameLogic->getFrame());
+			AutopilotLog::feed(m_host.player(), "Squad: sending a %s to scout the %s", AutopilotLog::niceName(unit->getTemplate()).str(), AutopilotLog::niceName(hidden->getTemplate()).str());
 			continue;
 		}
 		if (!best && m_traceThrottle.due(TheGameLogic->getFrame(), 600))
@@ -170,6 +171,7 @@ void AutopilotSquad::garrison()
 			ai->aiEnter(best, CMD_FROM_AI);
 			++orders;
 			AutopilotLog::line("NETPLAY autopilot squad: %s -> garrison %s (frame %u)\n", unit->getTemplate()->getName().str(), best->getTemplate()->getName().str(), TheGameLogic->getFrame());
+			AutopilotLog::feed(m_host.player(), "Squad: a %s is garrisoning the %s", AutopilotLog::niceName(unit->getTemplate()).str(), AutopilotLog::niceName(best->getTemplate()).str());
 		}
 	}
 }

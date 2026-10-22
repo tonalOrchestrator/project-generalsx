@@ -20,8 +20,13 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
+#include "Common/GlobalData.h"
 #include "Common/LanNetplayOptions.h"
+#include "Common/PlayerList.h"
+#include "Common/ThingTemplate.h"
+#include "GameClient/InGameUI.h"
 #include "GameLogic/AutopilotLog.h"
 
 // GeneralsX @refactor Claude 21/10/2026 See AutopilotLog.h.
@@ -52,4 +57,35 @@ Bool AutopilotLog::Throttle::due(UnsignedInt frame, UnsignedInt interval)
 		return FALSE;
 	m_lastFrame = frame;
 	return TRUE;
+}
+
+AsciiString AutopilotLog::niceName(const ThingTemplate *tmpl)
+{
+	if (!tmpl)
+		return AsciiString("?");
+	AsciiString name;
+	name.translate(tmpl->getDisplayName());
+	// Some display names carry their tooltip: "Oil Derrick -- Capture to receive additional funds".
+	if (const char *dash = strstr(name.str(), " -- "))
+		name.truncateTo((Int)(dash - name.str()));
+	return name.isEmpty() ? tmpl->getName() : name;
+}
+
+void AutopilotLog::feed(const Player *player, const char *format, ...)
+{
+	if (!player || !ThePlayerList || player != ThePlayerList->getLocalPlayer())
+		return;
+	char text[256];
+	va_list args;
+	va_start(args, format);
+	vsnprintf(text, sizeof(text), format, args);
+	va_end(args);
+	printf("AUTOPILOT: %s\n", text);
+	fflush(stdout);
+	if (TheInGameUI && TheGlobalData && !TheGlobalData->m_headless)
+	{
+		UnicodeString line;
+		line.translate(AsciiString(text));
+		TheInGameUI->messageNoFormat(line);
+	}
 }

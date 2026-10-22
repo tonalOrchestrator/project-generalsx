@@ -43,7 +43,7 @@ public:
 	Bool isExplorer(const Object *unit) const;
 
 private:
-	enum { MAX_EXPLORERS = 8, BLACKLIST_SIZE = 16, EXPLORER_ROSTER = 2 };
+	enum { MAX_EXPLORERS = 8, BLACKLIST_SIZE = 16, SCOUT_TRACKED = 32, MAX_SCOUTS_PER_BUILDING = 3, EXPLORER_ROSTER = 2 };
 
 	void forgetFinishedErrands(UnsignedInt frame);
 	void trainExplorer(UnsignedInt frame);
@@ -57,6 +57,10 @@ private:
 	Bool m_scouting[MAX_EXPLORERS];					///< the errand is a walk to reveal the building, not a capture yet
 	ObjectID m_blacklist[BLACKLIST_SIZE];			///< targets an explorer failed to capture (unreachable ...), skipped until the frame below
 	UnsignedInt m_blacklistUntil[BLACKLIST_SIZE];
+	Int scoutsOf(ObjectID id) const;	///< how many times an explorer was already sent to scout this building
+	void noteScout(ObjectID id);
+	ObjectID m_scoutedId[SCOUT_TRACKED];	///< buildings an explorer was sent to scout, and how many times (a walk that never reveals one must stop)
+	Int m_scoutedCount[SCOUT_TRACKED];
 
 	AutopilotLog::Throttle m_statusThrottle;		///< trace only
 	AutopilotLog::Throttle m_nothingToCaptureThrottle;

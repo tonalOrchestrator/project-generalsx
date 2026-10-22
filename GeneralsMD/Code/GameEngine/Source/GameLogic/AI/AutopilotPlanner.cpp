@@ -173,6 +173,7 @@ Bool AutopilotPlanner::queueExtraDefense(const Pass &pass)
 	player->addToPriorityBuildList(pick->getName(), &pos, pick->getPlacementViewAngle());
 	track(player->getBuildList());	// the new entry is the list head
 	AutopilotLog::line("NETPLAY autopilot extra defense: %s at (%.0f,%.0f), %d defenses so far (frame %u)\n", pick->getName().str(), pos.x, pos.y, pass.m_defensesBuilt, TheGameLogic->getFrame());
+	AutopilotLog::feed(m_host.player(), "Building an extra defense: %s", AutopilotLog::niceName(pick).str());
 	return TRUE;
 }
 
@@ -386,6 +387,7 @@ void AutopilotPlanner::queueCheapestCandidate(const Pass &pass)
 		pick->markPriorityBuild();
 		track(pick);
 		AutopilotLog::line("NETPLAY autopilot queues %s cost=%u money=%u (frame %u)\n", pick->getTemplateName().str(), pickCost, money, TheGameLogic->getFrame());
+		AutopilotLog::feed(m_host.player(), "Next structure: %s ($%u)", AutopilotLog::niceName(TheThingFactory->findTemplate(pick->getTemplateName())).str(), pickCost);
 	}
 }
 

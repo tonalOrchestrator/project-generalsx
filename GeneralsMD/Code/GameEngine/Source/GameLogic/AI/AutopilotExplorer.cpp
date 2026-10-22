@@ -18,6 +18,8 @@
 
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
+#include <string.h>
+
 #include "Common/ActionManager.h"
 #include "Common/BuildAssistant.h"
 #include "Common/NameKeyGenerator.h"
@@ -55,6 +57,15 @@ Bool AutopilotExplorer::isExplorer(const Object *unit) const
 	return FALSE;
 }
 
+// GeneralsX @tweak Claude 21/10/2026 Explorers are few, so they go for buildings that pay first: with the civilian-owned tech buildings
+// of Challenge maps (platforms, pads, repair bays) counted as targets, Death Valley income fell 11% until income buildings were preferred.
+// A non-income building has to be less than half as far away to win. Recognised by name, like the unit roles.
+static Real targetWeight(const Object *obj)
+{
+	const char *name = obj->getTemplate()->getName().str();
+	return (strstr(name, "OilDerrick") || strstr(name, "OilRefinery")) ? 1.0f : 16.0f;
+}
+
 AutopilotExplorer::AutopilotExplorer(AutopilotHost &host, const AutopilotProfile &profile)
 	: m_host(host), m_profile(profile)
 {
@@ -68,6 +79,41 @@ AutopilotExplorer::AutopilotExplorer(AutopilotHost &host, const AutopilotProfile
 	{
 		m_blacklist[b] = INVALID_ID;
 		m_blacklistUntil[b] = 0;
+	}
+	for (Int i = 0; i < SCOUT_TRACKED; ++i)
+	{
+		m_scoutedId[i] = INVALID_ID;
+		m_scoutedCount[i] = 0;
+	}
+}
+
+// GeneralsX @tweak Claude 21/10/2026 A civilian-owned tech building an explorer can walk to but never reveals (a platform behind a cliff) was
+// scouted again every two seconds. Three tries per building, then it is left alone.
+Int AutopilotExplorer::scoutsOf(ObjectID id) const
+{
+	for (Int i = 0; i < SCOUT_TRACKED; ++i)
+		if (m_scoutedId[i] == id)
+			return m_scoutedCount[i];
+	return 0;
+}
+
+void AutopilotExplorer::noteScout(ObjectID id)
+{
+	Int free = -1;
+	for (Int i = 0; i < SCOUT_TRACKED; ++i)
+	{
+		if (m_scoutedId[i] == id)
+		{
+			++m_scoutedCount[i];
+			return;
+		}
+		if (m_scoutedId[i] == INVALID_ID && free < 0)
+			free = i;
+	}
+	if (free >= 0)
+	{
+		m_scoutedId[free] = id;
+		m_scoutedCount[free] = 1;
 	}
 }
 
@@ -246,14 +292,15 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 				else if (obj->getShroudedStatus(player->getPlayerIndex()) != OBJECTSHROUD_CLEAR)
 				{
 					++shrouded;
-					if (m_host.isSafeToBuildAt(obj->getPosition(), obj->getTemplate()))
+					if (scoutsOf(obj->getID()) < MAX_SCOUTS_PER_BUILDING && m_host.isSafeToBuildAt(obj->getPosition(), obj->getTemplate()))
 					{
 						const Real hx = obj->getPosition()->x - explorer->getPosition()->x;
 						const Real hy = obj->getPosition()->y - explorer->getPosition()->y;
-						if (!hidden || hx * hx + hy * hy < hiddenDistSqr)
+						const Real hd = (hx * hx + hy * hy) * targetWeight(obj);
+						if (!hidden || hd < hiddenDistSqr)
 						{
 							hidden = obj;
-							hiddenDistSqr = hx * hx + hy * hy;
+							hiddenDistSqr = hd;
 						}
 					}
 				}
@@ -266,7 +313,7 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 			}
 			const Real dx = obj->getPosition()->x - explorer->getPosition()->x;
 			const Real dy = obj->getPosition()->y - explorer->getPosition()->y;
-			const Real distSqr = dx * dx + dy * dy;
+			const Real distSqr = (dx * dx + dy * dy) * targetWeight(obj);
 			if (!best || distSqr < bestDistSqr)
 			{
 				best = obj;
@@ -280,8 +327,10 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 			m_explorer[slot] = explorer->getID();
 			m_target[slot] = hidden->getID();
 			m_scouting[slot] = TRUE;
-			AutopilotLog::line("NETPLAY autopilot explore: %s -> scout %s at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
-				hidden->getTemplate()->getName().str(), hidden->getPosition()->x, hidden->getPosition()->y, frame);
+			noteScout(hidden->getID());
+			AutopilotLog::line("NETPLAY autopilot explore: %s -> scout %s [owner %s] at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
+				hidden->getTemplate()->getName().str(), hidden->getControllingPlayer() ? hidden->getControllingPlayer()->getSide().str() : "none", hidden->getPosition()->x, hidden->getPosition()->y, frame);
+			AutopilotLog::feed(m_host.player(), "Scouting the %s to reveal it for capture", AutopilotLog::niceName(hidden->getTemplate()).str());
 			continue;
 		}
 		if (!best)
@@ -320,5 +369,6 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 		m_target[slot] = best->getID();
 		AutopilotLog::line("NETPLAY autopilot explore: %s -> capture %s at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
 			best->getTemplate()->getName().str(), best->getPosition()->x, best->getPosition()->y, frame);
+		AutopilotLog::feed(m_host.player(), "Sending a %s to capture the %s", AutopilotLog::niceName(explorer->getTemplate()).str(), AutopilotLog::niceName(best->getTemplate()).str());
 	}
 }
