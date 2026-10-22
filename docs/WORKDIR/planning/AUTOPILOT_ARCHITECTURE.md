@@ -15,10 +15,13 @@ AISkirmishPlayer::attachAutopilot(profile) --> AIAutopilot  (facade: owns the mo
                                                 |-- AutopilotSquad     tank person + gun person trained and garrisoned in nearby buildings (wallet, explore)
                                                 |-- AutopilotHackers   Hackers trained and sent into the Internet Center (wallet, China)
                                                 |-- AutopilotRepair    an idle dozer repairs the most damaged building (wallet, explore)
+                                                |-- AutopilotSuperweapons  wallet/fortress: fire ready area powers at the best SEEN enemy structures (never near own/allied ones, never an unbought science)
                                                 |-- AutopilotSnapshot  read-only JSON of what the player can see (input for an outside planner)
                                                 `-- AutopilotLog       harness trace helpers (throttled lines the scenario runner parses)
 ```
 
+- `AutopilotTuning.h` holds every tuning number (money margins, defense caps, ring radii, superweapon saving) by name; `AutopilotBudget.h` the defense budget the planner reads.
+- `AutopilotHost` (what modules may ask) and `AutopilotDriver` (what only the `AIAutopilot` facade drives: base-building pass, team timer) are separate interfaces; `AISkirmishPlayer` implements both.
 - `AutopilotUnits` names the unit roles (capture-capable, rifle, anti-vehicle, hacker) in one place; a template cannot report what a unit can
   do, so roles are recognised by the unit name inside the template name.
 - `AutopilotHost` is everything the modules may ask of the AI player (player, base center, dozer, safe-to-build, supply warehouse, build

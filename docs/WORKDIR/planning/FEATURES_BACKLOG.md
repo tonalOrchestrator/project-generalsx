@@ -135,9 +135,44 @@ Two experiments finished just before the computer went to sleep and were never w
   so the Defense Units module adds nothing on top of Fortress there. The two that fell: plain China (14.0 min) and China Tank General (13.5 min).
 - **Wallet on Golden Oasis** (run 20261021-204242, 11 of 12 runs: the shutdown cut the last one): 1/11 survive the cap, median 13.9 min. A baseline for
   comparing Fortress on a second map; the Fortress run for that comparison never happened.
+- **Golden Oasis, Wallet vs Fortress, complete 12-faction runs vs a Hard AI, 16-minute cap (2026-10-22, runs 20261022-105618 / 20261022-110045):**
+  Wallet 1/12 survive (GLA Stealth General only), median 14.2 min (10.2-16.0), $332k earned in total, 35 tech buildings captured;
+  **Fortress 0/12 survive, median 13.6 min (11.3-15.8), $324k earned, 37 captured**. Unlike Death Valley (10/12), Explore adds no income on Golden Oasis
+  (the capturable buildings are tents that give no cash), so Fortress is equal to Wallet there, slightly worse within noise. Failed placements are
+  high on GLA and China (up to 80, GLA Demolition Fortress): a cheap thing to look at next, since lost placement attempts waste the defense fund.
+- **Super Weapons General under `-soloSnapshot 30` (Fortress, China Infantry General, 2026-10-22):** the run ends at exactly 10500 frames (350 s) with the player
+  *not* defeated (`endFrame` 0): the map's own mission script ends it once the command center is gone (its HP falls steadily from 174 s, 30% -> 4%, while the
+  repair module keeps trying; the last structure is a Gattling Cannon at 330 s). Attackers seen in the snapshots: a Particle Uplink Cannon firing from 30 s
+  (`ParticleUplinkCannonTrailRemnant`, a `RadiationFieldMedium` object over the base), 2 Avenger tanks with laser turrets, 3 Comanches, 4 Rangers, 4 Missile
+  Defenders, sentry/spy drones, an Aurora bomber at 270 s. So it is a scripted superweapon + air + armor rush at a base of a command center and a dozer, not a
+  planner gap. The idle bank is not a missing rule either: Gattling Cannon / Bunker wait on the supply center (itself waiting on the power plant), which
+  unlocks them at frame 1500 (50 s) - an experiment that queued the missing prerequisite of the cheapest blocked defense never fired and was reverted.
+  Turning on every module (mask 63: Defense Units, squad, hackers, repair) also ends at 350 s with 14 kills. Conclusion: not worth tuning Fortress for this map;
+  China Boss, same method (Fortress, 15-minute cap): falls at 8:25 (505 s; again `endFrame` 0, the map ends it when the base is gone). The boss keeps a standing
+  army in view from the first minute (about 40 Tank Hunters, 21 Rangers, 21 Hackers, 12 Dragon tanks early, then 20 / 11 / 4 tunnel defenders / 3 Overlords) and
+  rocket buggies late; the player's economy stays under $1.7k (bank $550-1,700 from 2:00 on), spending on a barracks, war factory, Propaganda Center, four Speaker
+  Towers and one or two Bunkers. Not a planner gap: an AI with a hundred-unit army against a 1v1 Wallet economy. Both maps say the same thing - Fortress is
+  built for Hard-AI skirmish pressure and holds 7 of 9 Challenge maps; these two are scripted overkill. Neither is worth more tuning.
 Open question that session was on: why Fortress still ends early on the **Super Weapons General** (about 5:50) and **China Boss** Challenge maps (see
 the Challenge section above and `docs/DEV_BLOG`); it was using `-soloSnapshot` to see what attacks. Resume point: re-run the Golden Oasis comparison, then
 look at the Super Weapons General run with the snapshot.
+
+### Superweapons module (AM_SUPERWEAPONS, on in Wallet and Fortress) - done (2026-10-22), a win
+Philosophy (Ben): defend, hoard cash by generating revenue, hoard superweapons if not limited; the only offense is firing them. `AutopilotSuperweapons` fires each
+ready area power (Particle Uplink Cannon, Nuke / Neutron Missile, Scud Storm, strikes) at the spot where the enemy structures the player has SEEN (shroud respected,
+fogged counts) are worth most, never with own/allied structures in range, only above a minimum value, never a general's power whose science is not bought.
+The planner side: after 4 defenses stand it SAVES for the cheapest superweapon (plus its prerequisite building): no further defenses, units leave the price in
+the bank once 8 exist, with a 300 s give-up and 120 s cooldown; then it adds its own structure entry (most build lists have none), one at a time and only when
+the last is finished and powered. Findings that mattered: (1) a superweapon is disabled while the base is short of power: it adds extra power plants
+(`queueExtraPowerPlant`) and keeps 25% headroom while one stands (USA Particle Cannons sat disabled for a whole game before); (2) a 16-minute game ends before the
+first Scud Storm / Neutron Missile has charged (about 10 minutes) - firings need 25-30 minute games, which only Fortress survives vs Medium; (3) headless runs
+crashed in `RadiusDecalTemplate::createRadiusDecal` (null shadow manager), now guarded.
+Measured: Fortress vs Hard, Death Valley, 16 min, 12 factions: **module on 12/12 survive, 273 kills, $1.18M earned; module off (mask 61) 10/12, 197 kills,
+$1.04M**. 30-minute Fortress vs Medium: GLA 9-12 Scud launches, China Nuke General 3 Neutron Missiles, USA Super Weapon General 12 Particle Cannon shots.
+Standard matrix (levels 1-6, 8 min): levels 1, 2, 3, 5 identical to the pre-change baseline; only Wallet (11 rows) and Fortress (10) differ.
+Open: USA Laser General finds no buildable superweapon structure (no 'saving' line at all); Wallet alone (no captured income) falls to a Medium AI within 30 min
+so it rarely reaches a firing; firing at the same spot twice in a row on China (re-targets before the first blast registers); a general's power bought via
+sciences (A-10, artillery) is supported but nothing buys the science yet (a separate decision); Windows build not yet rebuilt/synced with this.
 
 ### Defending against a Hard AI (Wallet mode) - improved, not solved
 Goal from Ben: a 1v1 setup that can actually defend against a Hard opponent. Measured solo, headless, 16 game-minute cap, all 12 factions vs one
