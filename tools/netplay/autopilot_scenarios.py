@@ -12,7 +12,7 @@ Checks per scenario: the player is alive, the run finished, few failed placement
 started, and the base grew. Logs and summary.json go to logs/autopilot-scenarios/<timestamp>/.
 Exit status is the number of failed scenarios.
 """
-import argparse, json, os, re, subprocess, sys, time
+import argparse, hashlib, json, os, re, subprocess, sys, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -68,6 +68,11 @@ def analyse(log, level, minutes, faction):
                 res["first_income_s"] = d["gameSeconds"]
             if line.startswith("NETPLAY_RESULT "):
                 res["finished"] = True
+    # Digest of every autopilot trace line (they carry game frames, never wall-clock): two runs of a pure refactor must match exactly, which
+    # catches re-ordered orders that identical totals would hide.
+    trace = [ln for ln in text.splitlines() if ln.startswith("NETPLAY autopilot ")]
+    res["trace_lines"] = len(trace)
+    res["trace_digest"] = hashlib.sha1("\n".join(trace).encode()).hexdigest()[:16]
     res["supply_placed"] = bool(re.search(r"place \S*(Supply|Stash|DropZone|Dropzone)\S* priority=1 -> placed", text))
     problems = []
     if res["template"] != faction:

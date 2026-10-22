@@ -3,7 +3,7 @@
 
 usage: compare_summaries.py <before-dir> <after-dir>   (each a logs/autopilot-scenarios/<timestamp> directory)
 
-Prints one line per scenario that differs (earned, spent, buildings, lost, units, alive) and a totals line.
+Prints one line per scenario that differs (earned, spent, buildings, lost, units, alive, trace_digest) and a totals line.
 Exit code 0 when every scenario is identical (a pure refactor must give this), 1 otherwise.
 The runner uses the INSTALLED binary: copy the build to ~/GeneralsX/GeneralsZH/ before each run or the comparison proves nothing.
 """
@@ -11,7 +11,7 @@ import json
 import sys
 from pathlib import Path
 
-KEYS = ("earned", "spent", "buildings", "lost", "units", "alive")
+KEYS = ("earned", "spent", "buildings", "lost", "units", "alive", "trace_digest")
 
 
 def load(d):
