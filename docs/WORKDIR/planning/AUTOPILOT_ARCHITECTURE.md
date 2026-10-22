@@ -15,6 +15,7 @@ AISkirmishPlayer::attachAutopilot(profile) --> AIAutopilot  (facade: owns the mo
                                                 |-- AutopilotSquad     tank person + gun person trained and garrisoned in nearby buildings (wallet, explore)
                                                 |-- AutopilotHackers   Hackers trained and sent into the Internet Center (wallet, China)
                                                 |-- AutopilotRepair    an idle dozer repairs the most damaged building (wallet, explore)
+                                                |-- AutopilotSnapshot  read-only JSON of what the player can see (input for an outside planner)
                                                 `-- AutopilotLog       harness trace helpers (throttled lines the scenario runner parses)
 ```
 
@@ -41,4 +42,4 @@ Keep a `summary.json` of each from before the change and compare the tuple (name
 Gameplay changes are judged the same way (survival against `--enemy M|H`, captures and income on Death Valley), then a Linux + Windows
 `tools/netplay/run-netplay.sh --fast` match confirms the machines still agree on every checksum.
 
-Related: `FEATURES_BACKLOG.md` (what each level does, measured results and open items), `tools/netplay/README.md` (the tooling).
+Related: `AUTOPILOT_DIRECTIVES.md` (design for steering the modules with directives; `AutopilotSnapshot` already reports what the player can see), `FEATURES_BACKLOG.md` (what each level does, measured results and open items), `tools/netplay/README.md` (the tooling).

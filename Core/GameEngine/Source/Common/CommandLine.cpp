@@ -948,6 +948,12 @@ Int parseSoloAutopilot(char *args[], int num) { return parseLanStringArg(args, n
 
 Int parseSoloTemplate(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_soloTemplate); }
 
+Int parseSoloSnapshot(char *args[], int num)
+{
+	if (num > 1) { lanNetplayOptions().m_soloSnapshotSeconds = atoi(args[1]); return 2; }
+	return 1;
+}
+
 Int parseSoloMinutes(char *args[], int num)
 {
 	if (num > 1) { lanNetplayOptions().m_soloMaxMinutes = atoi(args[1]); return 2; }
@@ -1376,6 +1382,7 @@ static CommandLineParam paramsForStartup[] =
 	// GeneralsX @feature Claude 20/10/2026 Headless LAN netplay harness
 	{ "-soloAutopilot", parseSoloAutopilot },
 	{ "-soloMinutes", parseSoloMinutes },
+	{ "-soloSnapshot", parseSoloSnapshot },
 	{ "-soloTemplate", parseSoloTemplate },
 	{ "-lanhost", parseLanHost },
 	{ "-lanjoin", parseLanJoin },

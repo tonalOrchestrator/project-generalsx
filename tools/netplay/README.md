@@ -90,3 +90,4 @@ LD_LIBRARY_PATH=$PWD ./GeneralsXZH -headless -file 'Maps\GC_TankGeneral.map' -so
 - Prints `AISKIRMISH_RESULT {json}` (per-player stats) and the usual `NETPLAY autopilot ...` traces. If the map's own script ends the game
   first, the last snapshot (every 5 game seconds) is printed and the run says so.
 - The map may be any mission of a general's campaign; the Challenge setup finds it. A non-Challenge map just starts as plain single-player.
+- `-soloSnapshot <seconds>` prints `AUTOPILOT_SNAPSHOT {json}` every N game seconds: what the local player can see (fog respected), see `docs/WORKDIR/planning/AUTOPILOT_DIRECTIVES.md`.

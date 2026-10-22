@@ -35,6 +35,7 @@
 #include "GameClient/GameClient.h"
 #include "GameClient/MapUtil.h"
 #include "GameLogic/GameLogic.h"
+#include "GameLogic/AutopilotSnapshot.h"
 #include "GameLogic/Object.h"
 #include "GameLogic/TerrainLogic.h"
 #include "GameClient/View.h"
@@ -616,6 +617,12 @@ void AISkirmishSimulation::perFrame()
 			printf("NETPLAY autopilot request level=%d at frame %u (%s)\n", s_levels[s_next], frame, local->getPlayerTemplate() ? local->getPlayerTemplate()->getName().str() : "?");
 			fflush(stdout);
 			++s_next;
+		}
+		const Int snapEvery = lanNetplayOptions().m_soloSnapshotSeconds;
+		if (snapEvery > 0 && local && frame != 0 && frame % ((UnsignedInt)snapEvery * LOGICFRAMES_PER_SECOND) == 0)
+		{
+			printf("AUTOPILOT_SNAPSHOT %s\n", AutopilotSnapshot::json(local).str());
+			fflush(stdout);
 		}
 		const Int maxMinutes = lanNetplayOptions().m_soloMaxMinutes;
 		if (maxMinutes > 0 && frame >= (UnsignedInt)maxMinutes * 60u * LOGICFRAMES_PER_SECOND)

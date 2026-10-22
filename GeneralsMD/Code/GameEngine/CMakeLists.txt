@@ -244,6 +244,7 @@ set(GAMEENGINE_SRC
     Include/GameLogic/AutopilotHackers.h
     Include/GameLogic/AutopilotProfile.h
     Include/GameLogic/AutopilotRepair.h
+    Include/GameLogic/AutopilotSnapshot.h
     Include/GameLogic/AutopilotSquad.h
     Include/GameLogic/AutopilotUnits.h
     Include/GameLogic/AIStateMachine.h
@@ -852,6 +853,7 @@ set(GAMEENGINE_SRC
     Source/GameLogic/AI/AutopilotHackers.cpp
     Source/GameLogic/AI/AutopilotProfile.cpp
     Source/GameLogic/AI/AutopilotRepair.cpp
+    Source/GameLogic/AI/AutopilotSnapshot.cpp
     Source/GameLogic/AI/AutopilotSquad.cpp
     Source/GameLogic/AI/AutopilotUnits.cpp
     Source/GameLogic/AI/AIStates.cpp

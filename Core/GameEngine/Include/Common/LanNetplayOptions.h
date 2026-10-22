@@ -47,6 +47,7 @@ struct LanNetplayOptions
 	AsciiString m_cheatSchedule;			///< "sec:money:points,...": send cheat gifts (needs -cheats on every machine)
 	AsciiString m_soloSchedule;				///< -file map: "sec:level,...": autopilot changes for the local player of a single-player map (Challenge mode); see AISkirmishSimulation::runSolo
 	AsciiString m_soloTemplate;				///< -file Challenge map: the human's faction template (empty = the general whose map it is)
+	Int m_soloSnapshotSeconds = 0;			///< -file map: print AUTOPILOT_SNAPSHOT (what the local player can see, JSON) every N game seconds (0 = off)
 	Int m_soloMaxMinutes = 10;				///< -file map with -soloAutopilot: stop after this many game minutes and print the stats
 	AsciiString m_buildSchedule;			///< "sec:barracks,...": the local player orders a structure by hand (select dozer + construct)
 };
