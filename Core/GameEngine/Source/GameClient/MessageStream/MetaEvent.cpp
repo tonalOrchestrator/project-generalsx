@@ -189,6 +189,7 @@ static const LookupListRec GameMessageMetaTypeNames[] =
 	{ "TOGGLE_FAST_FORWARD_REPLAY",								GameMessage::MSG_META_TOGGLE_FAST_FORWARD_REPLAY },
 	{ "TOGGLE_PAUSE",															GameMessage::MSG_META_TOGGLE_PAUSE },
 	{ "TOGGLE_PAUSE_ALT",													GameMessage::MSG_META_TOGGLE_PAUSE_ALT },
+	{ "TOGGLE_AUTOPILOT_DEFENSE_UNITS",						GameMessage::MSG_META_TOGGLE_AUTOPILOT_DEFENSE_UNITS },
 	{ "TOGGLE_AUTOPILOT",													GameMessage::MSG_META_TOGGLE_AUTOPILOT },
 	{ "CYCLE_AUTOPILOT_LEVEL",										GameMessage::MSG_META_CYCLE_AUTOPILOT_LEVEL },
 	{ "CHEAT_MONEY",															GameMessage::MSG_META_CHEAT_MONEY },
@@ -845,6 +846,16 @@ void MetaMap::generateMetaMap()
 		if (map->m_key == MK_NONE)
 		{
 			map->m_key = MK_A;
+			map->m_transition = DOWN;
+			map->m_modState = SHIFT_CTRL;
+			map->m_usableIn = COMMANDUSABLE_GAME;
+		}
+	}
+	{
+		MetaMapRec *map = getMetaMapRec(GameMessage::MSG_META_TOGGLE_AUTOPILOT_DEFENSE_UNITS);
+		if (map->m_key == MK_NONE)
+		{
+			map->m_key = MK_D;
 			map->m_transition = DOWN;
 			map->m_modState = SHIFT_CTRL;
 			map->m_usableIn = COMMANDUSABLE_GAME;

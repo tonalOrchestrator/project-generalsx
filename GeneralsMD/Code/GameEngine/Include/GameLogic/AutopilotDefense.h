@@ -54,9 +54,15 @@ public:
 	/// Wallet mode under attack: queue combat units at barracks / war factories, up to a cap on the army. Called every two seconds.
 	void trainDefenders();
 
+	/// Defense Units module: keep a standing mixed force at the base (tank, anti-tank infantry, rifle infantry in turn), sized by the bank, without
+	/// ever touching the defense fund. Called every two seconds; nothing here attacks.
+	void trainStandingArmy();
+
 private:
 	AutopilotHost &m_host;
+	Int m_nextRole = 0;					///< standing army: 0 tank, 1 anti-vehicle infantry, 2 rifle infantry, rotating
 	const AutopilotProfile &m_profile;
 	UnsignedInt m_threatUntilFrame = 0;	///< the threat flag stays on until this frame
 	AutopilotLog::Throttle m_traceThrottle;
+	AutopilotLog::Throttle m_armyTrace;	// the standing army has its own, or the defenders line starves it
 };

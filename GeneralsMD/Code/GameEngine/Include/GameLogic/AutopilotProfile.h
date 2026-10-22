@@ -23,6 +23,20 @@
 
 #include "Common/GameCommon.h"
 
+/// GeneralsX @feature Claude 21/10/2026 The switchable parts of an autopilot, one bit each. A level starts with a default set of them
+/// (AutopilotProfile::modules()); the player can then turn single ones on or off (MSG_SET_AUTOPILOT's second argument).
+enum AutopilotModuleBit
+{
+	AM_WALLET        = 1 << 0,	///< foundation first, base defenses, defenders under attack, hoard money
+	AM_DEFENSE_UNITS = 1 << 1,	///< a standing mixed force (tank, anti-tank infantry, rifle infantry) kept at the base
+	AM_EXPLORE       = 1 << 2,	///< capture neutral buildings for income
+	AM_SQUAD         = 1 << 3,	///< garrison squad in nearby buildings
+	AM_HACKERS       = 1 << 4,	///< China: Hackers in the Internet Center
+	AM_REPAIR        = 1 << 5,	///< an idle dozer repairs the most damaged building
+	AM_ALL           = (1 << 6) - 1
+};
+static const UnsignedInt AUTOPILOT_MODULES_DEFAULT = 0xFFFFFFFFu;	///< "no override": the level's own set
+
 struct AutopilotProfile
 {
 	Int m_level;				///< 1..maxLevel() (0 means autopilot off and has no profile)
@@ -32,6 +46,16 @@ struct AutopilotProfile
 	Int m_standingSquad;		///< garrison squad: tank person + gun person kept holed up in buildings near the base (0 = none)
 	Bool m_hackers;				///< train Hackers and hole them up in the Internet Center for income (China)
 	Bool m_repair;				///< send an idle dozer to repair the most damaged building
+	Bool m_defenseUnits;		///< keep a standing mixed force at the base (see AutopilotDefense::trainStandingArmy)
+
+	/// The AM_* bits this profile has on.
+	UnsignedInt modules() const;
+
+	/// This profile with exactly the modules in 'mask' on (AUTOPILOT_MODULES_DEFAULT returns it unchanged).
+	AutopilotProfile withModules(UnsignedInt mask) const;
+
+	/// "wallet, explore, repair" for the on-screen message ("none" when empty).
+	static void moduleList(UnsignedInt mask, wchar_t *out, Int outSize);
 
 	/// The profile of a level, or nullptr for 0 (off) and anything out of range.
 	static const AutopilotProfile *forLevel(Int level);

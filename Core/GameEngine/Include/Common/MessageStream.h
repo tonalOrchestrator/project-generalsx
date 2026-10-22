@@ -281,6 +281,7 @@ public:
 		MSG_META_CHEAT_MONEY,												///< GeneralsX @feature -cheats only: give the local player money
 		MSG_META_CHEAT_GENERALS_POINT,							///< GeneralsX @feature -cheats only: give the local player a general's point
 		MSG_META_CYCLE_AUTOPILOT_LEVEL,							///< GeneralsX @feature Cycle the autopilot level easy -> normal -> hard
+		MSG_META_TOGGLE_AUTOPILOT_DEFENSE_UNITS,			///< GeneralsX @feature Toggle the autopilot's standing defense force on or off for the local player
 		MSG_META_TOGGLE_AUTOPILOT,									///< GeneralsX @feature Toggle build-only autopilotance for the local player
 		MSG_META_DEMO_INSTANT_QUIT,									///< bail out of game immediately
 

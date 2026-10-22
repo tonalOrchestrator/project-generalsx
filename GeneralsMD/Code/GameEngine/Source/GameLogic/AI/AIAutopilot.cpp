@@ -40,6 +40,7 @@ void AIAutopilot::update()
 	{
 		m_host.queueProduction();	// queues a supply truck when short, and trains any queued truck/dozer orders
 		m_defense.trainDefenders();	// wallet mode only, and only under attack
+		m_defense.trainStandingArmy();	// Defense Units module: a standing mixed force
 		m_explorer.update();		// explore mode only
 		m_squad.update();			// wallet and explore modes: a standing tank person + gun person, garrisoned
 		m_hackers.update();			// wallet mode: hackers in the Internet Center

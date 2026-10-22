@@ -20,7 +20,7 @@ engine keeps doing the work the same way on every machine. Today Autopilot has f
 
 | Directive | Arguments | Carried out by (existing code) |
 |---|---|---|
-| `setModules` | bit set: economy, defenseStructures, defenseUnits, explore, squad, hackers, repair, superweapons | `AutopilotProfile` flags (replaces the single level) |
+| `setModules` (built) | `AM_*` bit set: wallet, defenseUnits, explore, squad, hackers, repair (superweapons not yet) | optional 2nd argument of `MSG_SET_AUTOPILOT`; `AutopilotProfile::withModules` |
 | `capture` | object id | `AutopilotExplorer` (target override) |
 | `garrison` | object id (+ unit role) | `AutopilotSquad` |
 | `defend` | x, y, radius | `AutopilotDefense` (defenders rally there) |
@@ -39,5 +39,5 @@ No Autopilot control exists besides the hotkeys. Options, smallest first: (a) th
 this" / "garrison here") that sends the same directives. A text box for plain-language orders belongs to the outside planner, not the engine.
 
 ## Order of work
-Snapshot (done) -> activity feed -> `setModules` toggles + defense-units module -> `capture` / `garrison` / `defend` directives ->
+Snapshot (done) -> activity feed (done) -> `setModules` toggles + defense-units module (done) -> `capture` / `garrison` / `defend` directives ->
 control-bar panel -> outside planner bridge.

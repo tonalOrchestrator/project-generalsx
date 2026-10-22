@@ -223,7 +223,8 @@ public:
 // GeneralsX @feature Claude 20/10/2026 Autopilot: toggle build-only skirmish AI for a human player.
 	Int getAutopilotLevel() const { return m_autopilotLevel; }	///< 0 off, 1 easy, 2 normal, 3 hard
 	void applyAutopilotProfile(Int level);						///< push a level's profile (skill, wallet, explore) into the attached autopilot AI
-	void setAutopilot(Int level);								///< attach/detach build-only skirmish AI to a human player
+	void setAutopilot(Int level, UnsignedInt modules = 0xFFFFFFFFu);	///< attach/detach build-only skirmish AI to a human player; 'modules' = AM_* bits, default = the level's own
+	UnsignedInt getAutopilotModules() const { return m_autopilotModules; }	///< the AM_* bits in force (0xFFFFFFFF = the level's own set)
 
 	UnicodeString getPlayerDisplayName() { return m_playerDisplayName; }
 	NameKeyType getPlayerNameKey() const { return m_playerNameKey; }
@@ -774,6 +775,7 @@ private:
 	ProductionChangeMap					m_productionTimeChanges;			///< Map to keep track of Faction specific discounts or penalties on build times of units
 	ProductionVeterancyMap			m_productionVeterancyLevels;	///< Map to keep track of starting level of produced units
 	AIPlayer*										m_ai;													///< if PLAYER_COMPUTER, the entity that does the thinking
+	UnsignedInt									m_autopilotModules;						///< GeneralsX: AM_* override of the level's module set (0xFFFFFFFF = none)
 	Int													m_autopilotLevel;							///< GeneralsX: autopilot level for a human player (0 = off)
 	Int													m_mpStartIndex;								///< The player's starting index for multiplayer.
 	ResourceGatheringManager*		m_resourceGatheringManager;		///< Keeps track of all Supply Centers and Warehouses

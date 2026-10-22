@@ -532,15 +532,25 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 			if (Player *autopilotPlayer = getMessagePlayer(msg))
 			{
 				const Int level = msg->getArgument(0)->integer;
-				autopilotPlayer->setAutopilot(level);
+				// Optional second argument: the AM_* module set to run (absent = the level's own set).
+				const UnsignedInt modules = msg->getArgumentCount() > 1 ? (UnsignedInt)msg->getArgument(1)->integer : 0xFFFFFFFFu;
+				autopilotPlayer->setAutopilot(level, modules);
 				if (lanNetplayOptions().m_active || lanNetplayOptions().m_soloSchedule.isNotEmpty())
 				{
-					printf("NETPLAY autopilot applied player=%d level=%d -> now %d (frame %u)\n", msg->getPlayerIndex(), level, autopilotPlayer->getAutopilotLevel(), getFrame());
+					printf("NETPLAY autopilot applied player=%d level=%d modules=%d -> now %d (frame %u)\n", msg->getPlayerIndex(), level, (Int)modules, autopilotPlayer->getAutopilotLevel(), getFrame());
 					fflush(stdout);
 				}
 				if (autopilotPlayer == ThePlayerList->getLocalPlayer() && TheInGameUI)
 				{
 					TheInGameUI->messageNoFormat(UnicodeString(AutopilotProfile::banner(level)));
+					if (level > 0 && modules != 0xFFFFFFFFu)
+					{
+						wchar_t list[160];
+						AutopilotProfile::moduleList(modules, list, 160);
+						UnicodeString line;
+						line.format(L"Autopilot modules: %ls", list);
+						TheInGameUI->messageNoFormat(line);
+					}
 				}
 			}
 			break;

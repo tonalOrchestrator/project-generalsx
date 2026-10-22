@@ -313,6 +313,7 @@ Player::Player( Int playerIndex )
 	m_pBuildList = nullptr;
 	m_ai = nullptr;
 	m_autopilotLevel = 0;
+	m_autopilotModules = 0xFFFFFFFFu;
 	m_resourceGatheringManager = nullptr;
 	m_defaultTeam = nullptr;
 	m_radarCount = 0;
@@ -387,6 +388,7 @@ void Player::init(const PlayerTemplate* pt)
 	deleteInstance(m_ai);
 	m_ai = nullptr;
 	m_autopilotLevel = 0;
+	m_autopilotModules = 0xFFFFFFFFu;
 
 	deleteInstance(m_resourceGatheringManager);
 	m_resourceGatheringManager = nullptr;
@@ -744,6 +746,7 @@ void Player::setPlayerType(PlayerType t, Bool skirmish)
 {
 	m_playerType = t;
 	m_autopilotLevel = 0;
+	m_autopilotModules = 0xFFFFFFFFu;
 
 	deleteInstance(m_ai);
 	m_ai = nullptr;
@@ -793,10 +796,10 @@ void Player::applyAutopilotProfile(Int level)
 	const AutopilotProfile *profile = AutopilotProfile::forLevel(level);
 	if (!profile || !m_ai)
 		return;
-	m_ai->attachAutopilot(*profile);
+	m_ai->attachAutopilot(profile->withModules(m_autopilotModules));
 }
 
-void Player::setAutopilot(Int level)
+void Player::setAutopilot(Int level, UnsignedInt modules)
 {
 	if (level > AutopilotProfile::maxLevel())
 		level = AutopilotProfile::maxLevel();	// an out-of-range request means the highest level
@@ -816,6 +819,7 @@ void Player::setAutopilot(Int level)
 		{
 			deletePlayerAI();
 			m_autopilotLevel = 0;
+	m_autopilotModules = 0xFFFFFFFFu;
 		}
 		return;
 	}
@@ -829,6 +833,7 @@ void Player::setAutopilot(Int level)
 		m_ai->adoptExistingBase();
 	}
 
+	m_autopilotModules = modules;	// default = the level's own set; otherwise exactly these AM_* bits
 	applyAutopilotProfile(level);
 	m_autopilotLevel = level;
 }
@@ -4315,15 +4320,18 @@ void Player::xfer( Xfer *xfer )
 	// list loaded above. Saves without autopilot never have this combination, so their format is unchanged.
 	if( aiPlayerPresent == TRUE && m_playerType == PLAYER_HUMAN )
 	{
-		Int savedAutopilotLevel = m_autopilotLevel;
+		// The level goes in the low 8 bits; a custom module set goes above it as (mask + 1), so saves from before the module toggles
+		// (level only) read back as "the level's own set".
+		Int savedAutopilotLevel = m_autopilotLevel + (m_autopilotModules == 0xFFFFFFFFu ? 0 : 256 * (Int)(m_autopilotModules + 1));
 		xfer->xferInt( &savedAutopilotLevel );
-		if( xfer->getXferMode() == XFER_LOAD && m_ai == nullptr && savedAutopilotLevel > 0 )
+		if( xfer->getXferMode() == XFER_LOAD && m_ai == nullptr && (savedAutopilotLevel & 255) > 0 )
 		{
 			const Bool canBuildUnits = m_canBuildUnits;	// the AI constructors flip this flag
 			m_ai = newInstance(AISkirmishPlayer)( this );
 			m_canBuildUnits = canBuildUnits;
-			applyAutopilotProfile(savedAutopilotLevel);
-			m_autopilotLevel = savedAutopilotLevel;
+			m_autopilotModules = (savedAutopilotLevel >> 8) == 0 ? 0xFFFFFFFFu : (UnsignedInt)((savedAutopilotLevel >> 8) - 1);
+			applyAutopilotProfile(savedAutopilotLevel & 255);
+			m_autopilotLevel = savedAutopilotLevel & 255;
 		}
 	}
 

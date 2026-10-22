@@ -334,7 +334,8 @@ void AutopilotPlanner::queueCheapestCandidate(const Pass &pass)
 			continue;	// short of power: only power plants; otherwise no extra ones
 		const Bool isEconomy = plan->isKindOf(KINDOF_FS_SUPPLY_CENTER) || plan->isKindOf(KINDOF_FS_SUPPLY_DROPZONE)
 			|| plan->isKindOf(KINDOF_CASH_GENERATOR) || (m_profile.m_hackers && plan->isKindOf(KINDOF_FS_INTERNET_CENTER))
-			|| ((m_profile.m_hackers || m_profile.m_standingSquad > 0) && plan->isKindOf(KINDOF_FS_BARRACKS));	// where hackers and the squad are trained
+			|| ((m_profile.m_hackers || m_profile.m_standingSquad > 0 || m_profile.m_defenseUnits) && plan->isKindOf(KINDOF_FS_BARRACKS))	// where hackers and the squad are trained
+			|| (m_profile.m_defenseUnits && plan->isKindOf(KINDOF_FS_WARFACTORY));	// and the standing army's tanks
 		if (wallet && !isPower && !isEconomy && !isDefense)
 			continue;	// wallet mode: no production, tech or superweapon buildings
 		if (wallet && isDefense && pass.m_defensesBuilt >= pass.m_defense.m_totalCap)

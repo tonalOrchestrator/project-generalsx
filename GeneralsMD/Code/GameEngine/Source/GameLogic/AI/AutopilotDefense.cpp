@@ -30,6 +30,7 @@
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
 #include "GameLogic/AutopilotProfile.h"
+#include "GameLogic/AutopilotUnits.h"
 
 // GeneralsX @feature Claude 20/10/2026 Autopilot wallet mode: enemy units near the base.
 Bool AutopilotDefense::isThreatened()
@@ -132,4 +133,75 @@ void AutopilotDefense::trainDefenders()
 	}
 	if (trace && queuedNow == 0)
 		AutopilotLog::line("NETPLAY autopilot defenders none queued: army %d/%d, %d factories (%d queue full, %d nothing affordable), bank %u (frame %u)\n", army, armyCap, factories, queueFull, nothingToBuild, money, TheGameLogic->getFrame());
+}
+
+// GeneralsX @feature Claude 21/10/2026 Defense Units module. Unlike trainDefenders (reactive, wallet only, "the strongest affordable unit"), this keeps
+// a standing mixed force so an attack meets tanks, tank hunters and riflemen already at home: the three roles rotate, one unit per call, at a
+// factory with an empty queue. Sized by the bank (6 units, +1 per $2,000, up to 20) and never below the defense fund, so structures still get
+// bought first. Units idle at their factory and defend themselves; nothing here attacks.
+void AutopilotDefense::trainStandingArmy()
+{
+	if (!m_profile.m_defenseUnits)
+		return;
+	Player *player = m_host.player();
+	const UnsignedInt money = player->getMoney()->countMoney();
+	const Int target = 6 + (Int)(money / 2000 < 14 ? money / 2000 : 14);
+	Int army = 0;
+	for (Object *obj = TheGameLogic->getFirstObject(); obj; obj = obj->getNextObject())
+		if (obj->getControllingPlayer() == player && !obj->isKindOf(KINDOF_STRUCTURE) && obj->isKindOf(KINDOF_CAN_ATTACK)
+			&& !obj->isKindOf(KINDOF_HARVESTER) && !obj->isKindOf(KINDOF_DOZER))
+			++army;
+	if (army >= target)
+	{
+		if (m_armyTrace.due(TheGameLogic->getFrame(), 600))
+			AutopilotLog::line("NETPLAY autopilot standing army: full, %d of %d (frame %u)\n", army, target, TheGameLogic->getFrame());
+		return;
+	}
+
+	Int factoriesSeen = 0, factoriesBusy = 0;	// for the trace at the end
+	for (Int attempt = 0; attempt < 3; ++attempt)	// the wanted role first, then the others
+	{
+		const Int role = (m_nextRole + attempt) % 3;
+		for (Object *factory = TheGameLogic->getFirstObject(); factory; factory = factory->getNextObject())
+		{
+			if (factory->getControllingPlayer() != player || factory->getStatusBits().test(OBJECT_STATUS_UNDER_CONSTRUCTION))
+				continue;
+			if (!(role == 0 ? factory->isKindOf(KINDOF_FS_WARFACTORY) : factory->isKindOf(KINDOF_FS_BARRACKS)))
+				continue;
+			ProductionUpdateInterface *pu = factory->getProductionUpdateInterface();
+			if (!pu)
+				continue;
+			++factoriesSeen;
+			if (pu->getProductionCount() != 0)
+			{
+				++factoriesBusy;
+				continue;
+			}
+			const ThingTemplate *pick = nullptr;
+			UnsignedInt pickCost = 0;
+			for (const ThingTemplate *t = TheThingFactory->firstTemplate(); t; t = t->friend_getNextTemplate())
+			{
+				if (t->isKindOf(KINDOF_STRUCTURE) || !t->isKindOf(KINDOF_CAN_ATTACK) || t->isKindOf(KINDOF_HARVESTER) || t->isKindOf(KINDOF_DOZER))
+					continue;
+				const Bool fits = role == 0 ? (t->isKindOf(KINDOF_VEHICLE) && !t->isKindOf(KINDOF_AIRCRAFT))
+					: (role == 1 ? AutopilotUnits::isAntiVehicleInfantry(t) : AutopilotUnits::isRifleInfantry(t));
+				if (!fits)
+					continue;
+				const UnsignedInt cost = t->calcCostToBuild(player);
+				if (cost == 0 || cost + DEFENSE_FUND > money || cost > money / 3 + 300 || cost <= pickCost || TheBuildAssistant->canMakeUnit(factory, t) != CANMAKE_OK)
+					continue;
+				pick = t;
+				pickCost = cost;
+			}
+			if (pick && pu->queueCreateUnit(pick, pu->requestUniqueUnitID()))
+			{
+				m_nextRole = (role + 1) % 3;
+				AutopilotLog::line("NETPLAY autopilot standing army: %s (cost %u), army %d/%d (frame %u)\n", pick->getName().str(), pickCost, army, target, TheGameLogic->getFrame());
+				AutopilotLog::feed(player, "Defense units: training a %s (%d of %d)", AutopilotLog::niceName(pick).str(), army + 1, target);
+				return;
+			}
+		}
+	}
+	if (m_armyTrace.due(TheGameLogic->getFrame(), 600))
+		AutopilotLog::line("NETPLAY autopilot standing army: none queued: army %d/%d, %d factories seen (%d busy), bank %u (frame %u)\n", army, target, factoriesSeen, factoriesBusy, money, TheGameLogic->getFrame());
 }

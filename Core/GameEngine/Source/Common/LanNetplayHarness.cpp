@@ -358,7 +358,7 @@ int LanNetplayHarness::run()
 
 	// -lanAutopilotSchedule "10:2,70:0,140:2": game-second:level pairs, sent as MSG_SET_AUTOPILOT through the
 	// message stream (same path as the hotkey), so they travel the network command stream and stay in sync.
-	struct AutopilotStep { UnsignedInt frame; Int level; };
+	struct AutopilotStep { UnsignedInt frame; Int level; Int mask; };
 	struct BuildStep { UnsignedInt frame; AsciiString kind; };
 	BuildStep buildSteps[16];
 	Int numBuildSteps = 0;
@@ -404,11 +404,13 @@ int LanNetplayHarness::run()
 		AsciiString token;
 		while (spec.nextToken(&token, ",") && numAutopilotSteps < 16)
 		{
-			int sec = 0, lvl = 0;
-			if (sscanf(token.str(), "%d:%d", &sec, &lvl) == 2)
+			int sec = 0, lvl = 0, mask = -1;
+			const int fields = sscanf(token.str(), "%d:%d:%d", &sec, &lvl, &mask);	// optional third field: AM_* module bits
+			if (fields >= 2)
 			{
 				autopilotSteps[numAutopilotSteps].frame = (UnsignedInt)sec * LOGICFRAMES_PER_SECOND;
 				autopilotSteps[numAutopilotSteps].level = lvl;
+				autopilotSteps[numAutopilotSteps].mask = fields == 3 ? mask : -1;
 				++numAutopilotSteps;
 			}
 		}
@@ -682,6 +684,8 @@ int LanNetplayHarness::run()
 						{
 							GameMessage* autopilotMsg = TheMessageStream->appendMessage(GameMessage::MSG_SET_AUTOPILOT);
 							autopilotMsg->appendIntegerArgument(autopilotSteps[nextAutopilotStep].level);
+							if (autopilotSteps[nextAutopilotStep].mask >= 0)
+								autopilotMsg->appendIntegerArgument(autopilotSteps[nextAutopilotStep].mask);
 							log("autopilot request level=%d at frame %u", autopilotSteps[nextAutopilotStep].level, frame);
 						}
 						++nextAutopilotStep;

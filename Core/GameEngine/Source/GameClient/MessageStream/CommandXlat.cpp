@@ -4326,6 +4326,24 @@ GameMessageDisposition CommandTranslator::translateGameMessage(const GameMessage
 		}
 
 		//-----------------------------------------------------------------------------------------
+		case GameMessage::MSG_META_TOGGLE_AUTOPILOT_DEFENSE_UNITS:
+		{
+			// GeneralsX @feature Claude 21/10/2026 Flip the standing defense force on the current level; every other module keeps its setting.
+			Player *localPlayer = ThePlayerList ? ThePlayerList->getLocalPlayer() : nullptr;
+			if (localPlayer && localPlayer->isPlayerActive() && !localPlayer->isPlayerObserver() && localPlayer->getAutopilotLevel() > 0)
+			{
+				const AutopilotProfile *base = AutopilotProfile::forLevel(localPlayer->getAutopilotLevel());
+				UnsignedInt mask = localPlayer->getAutopilotModules() == AUTOPILOT_MODULES_DEFAULT ? base->modules() : localPlayer->getAutopilotModules();
+				mask ^= AM_DEFENSE_UNITS;
+				GameMessage *autopilotMsg = TheMessageStream->appendMessage(GameMessage::MSG_SET_AUTOPILOT);
+				autopilotMsg->appendIntegerArgument(localPlayer->getAutopilotLevel());
+				autopilotMsg->appendIntegerArgument((Int)mask);
+				disp = DESTROY_MESSAGE;
+			}
+			break;
+		}
+
+		//-----------------------------------------------------------------------------------------
 		case GameMessage::MSG_META_TOGGLE_AUTOPILOT:
 		case GameMessage::MSG_META_CYCLE_AUTOPILOT_LEVEL:
 		{

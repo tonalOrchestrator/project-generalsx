@@ -108,6 +108,19 @@ Air 900 / 665, Chem 580 / 755, China Boss 630 / 645, Demolition 900 / 900, Laser
 Tank 605 / 685. Mean survival 683 s (Wallet) vs 730 s (Explore); Explore earns more on 7 of 9 maps. Neither holds a Challenge general's base for
 long: Super Weapons falls in under 7 minutes in both modes: at the end the player has $3,400, no dozer and no factory that could train one (`AIPlayer::findDozer` already queues a dozer when it has a factory), so it is a destroyed base, not a missing replacement rule. A Challenge-tuned defence (or Explore's income feeding Wallet's defenders) is the open item.
 
+### Module toggles and the Defense Units module - done (2026-10-21), module not yet a win
+A level is now just a starting set of modules (`AM_WALLET`, `AM_DEFENSE_UNITS`, `AM_EXPLORE`, `AM_SQUAD`, `AM_HACKERS`, `AM_REPAIR`; `AutopilotProfile::modules()` /
+`withModules()`). `MSG_SET_AUTOPILOT` takes an optional second argument, the exact module set to run, so every machine applies a change on the same frame; the
+player remembers it (`Player::getAutopilotModules()`, saved in the high bits of the saved level so older saves still load). Ctrl+Shift+D flips Defense Units on
+the current level; any other combination goes through the message (harness: `-lanAutopilotSchedule "sec:level:mask"`, `-soloAutopilot` likewise; mask 59 = Wallet +
+Defense Units + Squad + Hackers + Repair). The on-screen message lists the modules when a custom set is applied. Verified: default levels give identical numbers
+to before; a Linux + Windows match switching the set on, off and back stayed in sync on all 8 checksums.
+The Defense Units module (`AutopilotDefense::trainStandingArmy`) keeps a standing force, rotating tank (war factory), tank hunter, rifleman, sized by the bank
+(6 units, +1 per $2,000), never dipping into the $1,200 defense fund, and makes the planner build the barracks and war factory it needs. Measured against a Hard AI
+(16 game-minutes, 12 factions, Wallet vs Wallet + Defense Units): median 13.0 vs 13.0 minutes, survivors 2 vs 1, kills 17.8 vs 14.8 - **no gain**. Spending down to a
+$300 reserve with a bigger target was worse (median 11.0, no survivors): units and defenses draw on the same bank and the defenses are what hold. So the module is
+off by default; it needs a different idea (rally and grouping at the defenses, or income to spare) before it earns a place in a level.
+
 ### Defending against a Hard AI (Wallet mode) - improved, not solved
 Goal from Ben: a 1v1 setup that can actually defend against a Hard opponent. Measured solo, headless, 16 game-minute cap, all 12 factions vs one
 Hard AI (median survival; none survived 16 minutes until the extra defenses):

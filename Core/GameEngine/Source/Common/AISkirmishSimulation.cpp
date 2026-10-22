@@ -559,6 +559,7 @@ void AISkirmishSimulation::perFrame()
 		static Bool s_parsed = FALSE;
 		static UnsignedInt s_frames[16];
 		static Int s_levels[16];
+		static Int s_masks[16];	// -1 = the level's own module set
 		static Int s_count = 0;
 		static Int s_next = 0;
 		if (!s_parsed)
@@ -568,11 +569,13 @@ void AISkirmishSimulation::perFrame()
 			AsciiString token;
 			while (spec.nextToken(&token, ",") && s_count < 16)
 			{
-				int sec = 0, lvl = 0;
-				if (sscanf(token.str(), "%d:%d", &sec, &lvl) == 2)
+				int sec = 0, lvl = 0, mask = -1;
+				const int fields = sscanf(token.str(), "%d:%d:%d", &sec, &lvl, &mask);
+				if (fields >= 2)
 				{
 					s_frames[s_count] = (UnsignedInt)sec * LOGICFRAMES_PER_SECOND;
 					s_levels[s_count] = lvl;
+					s_masks[s_count] = fields == 3 ? mask : -1;
 					++s_count;
 				}
 			}
@@ -612,6 +615,8 @@ void AISkirmishSimulation::perFrame()
 			// replay simulation does. Windowed: the normal stream path (same as the hotkey).
 			GameMessage* msg = TheGlobalData->m_headless ? newInstance(GameMessage)(GameMessage::MSG_SET_AUTOPILOT) : TheMessageStream->appendMessage(GameMessage::MSG_SET_AUTOPILOT);
 			msg->appendIntegerArgument(s_levels[s_next]);
+			if (s_masks[s_next] >= 0)
+				msg->appendIntegerArgument(s_masks[s_next]);
 			if (TheGlobalData->m_headless)
 				TheCommandList->appendMessage(msg);
 			printf("NETPLAY autopilot request level=%d at frame %u (%s)\n", s_levels[s_next], frame, local->getPlayerTemplate() ? local->getPlayerTemplate()->getName().str() : "?");
