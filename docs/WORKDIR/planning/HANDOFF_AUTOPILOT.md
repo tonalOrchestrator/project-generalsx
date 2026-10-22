@@ -37,7 +37,6 @@ What a new session can automate safely, using only what is in the repo and the v
 - **Cross-machine guard:** build on the laptop and run `tools/netplay/run-netplay.sh --fast` (see Quick commands); the verdict line is `RESULT: IN SYNC`.
 - **Not for automation without Ben:** pushing (public fork), sharing the friend package, anything on the laptop's Windows settings, spending beyond the weekly cap.
 - Long runs: run in the background and wait on the process, one game process at a time; use `get_usage` between experiments.
-- Ben's other standing context lives in the vault (`~/GitHub/vault/Projects/Active Work.md` -> this file) and the Claude memory `project_netplay_rig.md`.
 
 ## Other open items
 Backlog "Autopilot", "Netplay / determinism", "Tooling" sections. Notable: a save made with Autopilot on has never been loaded by hand; a hand-played Challenge
