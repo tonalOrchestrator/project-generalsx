@@ -273,6 +273,7 @@ money and general's points (frame request + 4) and that without the flag the req
 - [x] Demo video: `tools/netplay/make_demo.sh` runs a visible solo game (Autopilot on, off, a hand-ordered Barracks via the real
       select + construct commands, on again) and stitches in-engine screenshots into a captioned mp4. [ ] A real screen recording with
       mouse clicks on the Windows laptop (ffmpeg gdigrab + SendInput) is still optional and would take over its desktop.
+- [x] `tools/netplay/compare_summaries.py <before> <after>`: diff two scenario runs (exit 0 = identical).
 - [ ] Remove the Linux software-Vulkan Xvfb path (`tools/netplay/linux-launch.sh`) or make it work.
 
 ### Housekeeping

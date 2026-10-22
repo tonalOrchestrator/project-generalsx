@@ -5,8 +5,9 @@ Start here when resuming. Written so the long Claude sessions behind this work c
 ## State
 - Branch `feat/netplay-autopilot` on Ben's PUBLIC fork `tonalOrchestrator/project-generalsx`. Everything is committed and pushed through `495819555`
   (level 6 Fortress), plus the docs commits of 2026-10-22 (local until Ben says push; see "Working rules").
-- The installed game binary `~/GeneralsX/GeneralsZH/GeneralsXZH` equals the build of `495819555`. The Windows laptop (`ssh vadapuppy`) had the exe of
-  `474f8fb01` last time it was deployed: rebuild + `tools/netplay/deploy-win.sh` before any Linux + Windows sync check.
+- The installed game binary `~/GeneralsX/GeneralsZH/GeneralsXZH` equals the build of `495819555`. The Windows laptop (`ssh vadapuppy`) last got the
+  build of the level-6 tree (artifact `20261021-201832-win32-4a258298fd`, in sync vs a Hard AI for 10 game-minutes); any newer code needs
+  `scripts/remote-build.sh ...` + `tools/netplay/deploy-win.sh` again before a Linux + Windows sync check.
 - Autopilot (levels 1-6: Easy, Normal, Hard, Wallet, Explore, Fortress; modules: planner, economy, defense, defense units, explorer, squad, hackers, repair,
   snapshot, activity feed) is documented in `AUTOPILOT_ARCHITECTURE.md`; results and open items in `FEATURES_BACKLOG.md`; the next-layer design (directives, UI,
   outside planner) in `AUTOPILOT_DIRECTIVES.md`; the day-by-day story in `docs/DEV_BLOG/2026-10-DIARY.md`.
@@ -24,8 +25,19 @@ Start here when resuming. Written so the long Claude sessions behind this work c
 ## Where the Challenge-map work stopped
 Recovered results (also in the backlog): Fortress + Defense Units vs Hard on Death Valley = 10/12 survive (no gain over Fortress alone); Wallet on Golden Oasis =
 1/11 survive, median 13.9 min (the run was cut off at 11 of 12). Next steps in order: (1) re-run the Golden Oasis comparison for Wallet and Fortress,
-(2) run the Super Weapons General Challenge map with `-soloSnapshot` and see what ends it (the doc commit `b101ef90e` already explains part of it), (3) then the
+(2) Super Weapons General is a scripted early rush, not a bug: snapshots show a base of only 3-5 structures with enemy Comanches, Rangers and Missile Defenders in sight from minute 1, falling at about 5:50 even for Fortress (China Boss falls at 8:25 and has not been examined the same way yet), (3) then the
 directive layer (`capture` / `garrison` / `defend`) from `AUTOPILOT_DIRECTIVES.md`, then a control-bar panel.
+
+## Starting an automation session
+What a new session can automate safely, using only what is in the repo and the vault:
+- **Regression guard:** run `tools/netplay/autopilot_scenarios.py --levels 1 2 3 4 5 6 --minutes 8` (about 3 minutes) after copying the build to
+  `~/GeneralsX/GeneralsZH/`, then `tools/netplay/compare_summaries.py <before-dir> <after-dir>`. A structure/refactor change must exit 0; a gameplay change is judged by
+  survival (`--enemy H --minutes 16`, 12 factions: Fortress on Death Valley = 10/12 is the number to beat) and Explore income (Death Valley sum about 1.17M).
+  Summary folders live in `logs/autopilot-scenarios/` (git-ignored).
+- **Cross-machine guard:** build on the laptop and run `tools/netplay/run-netplay.sh --fast` (see Quick commands); the verdict line is `RESULT: IN SYNC`.
+- **Not for automation without Ben:** pushing (public fork), sharing the friend package, anything on the laptop's Windows settings, spending beyond the weekly cap.
+- Long runs: run in the background and wait on the process, one game process at a time; use `get_usage` between experiments.
+- Ben's other standing context lives in the vault (`~/GitHub/vault/Projects/Active Work.md` -> this file) and the Claude memory `project_netplay_rig.md`.
 
 ## Other open items
 Backlog "Autopilot", "Netplay / determinism", "Tooling" sections. Notable: a save made with Autopilot on has never been loaded by hand; a hand-played Challenge
@@ -40,6 +52,7 @@ map; replacing lost supply trucks; `-cheats` missing on one machine should desyn
 - Gameplay changes are judged by survival against `--enemy M|H` and Explore income; structure changes must leave the scenario baselines identical.
 
 ## Quick commands
+(the experiment results above are also in `FEATURES_BACKLOG.md`; `AUTOPILOT_DIRECTIVES.md` has the design for steering the modules)
 ```bash
 cmake --build build/linux64-deploy --target z_generals -j 6 && cp build/linux64-deploy/GeneralsMD/GeneralsXZH ~/GeneralsX/GeneralsZH/   # the runner uses the INSTALLED binary
 tools/netplay/autopilot_scenarios.py --levels 1 2 3 4 5 6 --minutes 8                  # standard matrix (add --enemy M|H --map "Death Valley" --minutes 14 for survival)
