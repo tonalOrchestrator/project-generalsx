@@ -105,8 +105,8 @@ buildings belong to the opposing general (22 of 31 on Chem), which Explore never
 
 Wallet (level 4) vs Explore (level 5) on the same nine Challenge maps (China Infantry General, 15-minute cap, seconds survived; 900 = survived):
 Air 900 / 665, Chem 580 / 755, China Boss 630 / 645, Demolition 900 / 900, Laser 490 / 900, Nuke 795 / 775, Stealth 900 / 840, Super Weapons 350 / 410,
-Tank 605 / 685. Mean survival 683 s (Wallet) vs 730 s (Explore); Explore earns more on 7 of 9 maps. Neither holds a Challenge general's base for
-long: Super Weapons falls in under 7 minutes in both modes: at the end the player has $3,400, no dozer and no factory that could train one (`AIPlayer::findDozer` already queues a dozer when it has a factory), so it is a destroyed base, not a missing replacement rule. A Challenge-tuned defence (or Explore's income feeding Wallet's defenders) is the open item.
+Tank 605 / 685. Mean survival 683 s (Wallet) vs 730 s (Explore); Explore earns more on 7 of 9 maps. Neither alone holds a Challenge general's base for
+long (Fortress, below, does): Super Weapons falls in under 7 minutes in both modes: at the end the player has $3,400, no dozer and no factory that could train one (`AIPlayer::findDozer` already queues a dozer when it has a factory), so it is a destroyed base, not a missing replacement rule. A Challenge-tuned defence (or Explore's income feeding Wallet's defenders) is the open item.
 
 ### Module toggles and the Defense Units module - done (2026-10-21), module not yet a win
 A level is now just a starting set of modules (`AM_WALLET`, `AM_DEFENSE_UNITS`, `AM_EXPLORE`, `AM_SQUAD`, `AM_HACKERS`, `AM_REPAIR`; `AutopilotProfile::modules()` /
@@ -120,6 +120,14 @@ The Defense Units module (`AutopilotDefense::trainStandingArmy`) keeps a standin
 (16 game-minutes, 12 factions, Wallet vs Wallet + Defense Units): median 13.0 vs 13.0 minutes, survivors 2 vs 1, kills 17.8 vs 14.8 - **no gain**. Spending down to a
 $300 reserve with a bigger target was worse (median 11.0, no survivors): units and defenses draw on the same bank and the defenses are what hold. So the module is
 off by default; it needs a different idea (rally and grouping at the defenses, or income to spare) before it earns a place in a level.
+
+### Fortress (level 6 = Wallet + Explore) - done (2026-10-21), the first real answer to a Hard AI
+Found by layering with the new module mask (`-lanAutopilotSchedule 5:4:61`): captured income feeds the defense spending. Now a level of its own (hotkey cycle:
+easy / normal / hard / wallet / explore / fortress). Measured solo, 12 factions, 16 game-minutes vs one Hard AI on Death Valley: Wallet 5/12 survive (median 15.0 min,
+$29.8k earned), **Fortress 10/12 survive (median 16.0 min, $86.8k earned)**. Against Medium on Dark Night (nothing to capture there): 12/12 survive, same as Wallet.
+Challenge maps (China Infantry General, 15-minute cap): Fortress reaches the cap on 7 of 9 maps (Air, Chem, Demolition, Laser, Nuke, Stealth, Tank); China Boss
+falls at 8:25 and Super Weapons General at 5:50. Wallet alone averaged 11.4 minutes and Explore alone 12.2 on the same maps. Linux + Windows match vs Hard,
+10 minutes: in sync. Lesson: the earlier "more spending does not help" finding was about a bank with no income; the income, not the army, was missing.
 
 ### Defending against a Hard AI (Wallet mode) - improved, not solved
 Goal from Ben: a 1v1 setup that can actually defend against a Hard opponent. Measured solo, headless, 16 game-minute cap, all 12 factions vs one

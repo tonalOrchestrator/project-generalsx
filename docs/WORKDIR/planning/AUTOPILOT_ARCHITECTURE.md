@@ -1,6 +1,6 @@
 # Autopilot architecture
 
-The autopilot is an AI that runs beside a human player (levels 1-5, hotkeys Ctrl+Shift+A / Ctrl+Shift+L). It is built from small modules
+The autopilot is an AI that runs beside a human player (levels 1-6, hotkeys Ctrl+Shift+A / Ctrl+Shift+L). It is built from small modules
 with a narrow interface to the AI player, so each feature can be read, changed and tested on its own.
 
 ```

@@ -28,6 +28,7 @@ static const AutopilotProfile s_profiles[] =
 	{ 3, DIFFICULTY_HARD,   FALSE, FALSE, 0, FALSE, FALSE, FALSE },	// hard
 	{ 4, DIFFICULTY_NORMAL, TRUE,  FALSE, 2, TRUE,  TRUE, FALSE },	// wallet: defend, survive, hoard money (+ garrison squad, hackers, repair)
 	{ 5, DIFFICULTY_NORMAL, FALSE, TRUE,  2, FALSE, TRUE, FALSE },	// explore: capture neutral buildings for income (+ garrison squad, repair)
+	{ 6, DIFFICULTY_NORMAL, TRUE,  TRUE,  2, TRUE,  TRUE,  FALSE },	// fortress: wallet + explore (captured income feeds the defense spending)
 };
 
 static const wchar_t *const s_banners[] =
@@ -38,6 +39,7 @@ static const wchar_t *const s_banners[] =
 	L"Autopilot: ON (Hard)",
 	L"Autopilot: WALLET MODE (defend, survive, hoard)",
 	L"Autopilot: EXPLORE (capture neutral buildings for income)",
+	L"Autopilot: FORTRESS (wallet + explore: capture income, defend, survive)",
 };
 
 const AutopilotProfile *AutopilotProfile::forLevel(Int level)

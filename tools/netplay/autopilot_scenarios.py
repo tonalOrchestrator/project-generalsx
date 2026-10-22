@@ -23,7 +23,7 @@ FACTIONS = [
     "FactionChina", "FactionChinaInfantryGeneral", "FactionChinaNukeGeneral", "FactionChinaTankGeneral",
     "FactionGLA", "FactionGLADemolitionGeneral", "FactionGLAStealthGeneral", "FactionGLAToxinGeneral",
 ]
-LEVEL_NAMES = {1: "easy", 2: "normal", 3: "hard", 4: "wallet", 5: "explore", 0: "custom"}
+LEVEL_NAMES = {1: "easy", 2: "normal", 3: "hard", 4: "wallet", 5: "explore", 6: "fortress", 0: "custom"}
 
 
 def run_scenario(faction, level, args, outdir):
