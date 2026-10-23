@@ -49,6 +49,7 @@ struct LanNetplayOptions
 	AsciiString m_soloTemplate;				///< -file Challenge map: the human's faction template (empty = the general whose map it is)
 	Int m_soloSnapshotSeconds = 0;			///< -file map: print AUTOPILOT_SNAPSHOT (what the local player can see, JSON) every N game seconds (0 = off)
 	Int m_soloMaxMinutes = 10;				///< -file map with -soloAutopilot: stop after this many game minutes and print the stats
+	AsciiString m_panelClickSchedule;		///< "sec:x:y,...": a click on the autopilot panel at that screen position, delivered to its click handler (windowed runs)
 	AsciiString m_directiveSchedule;		///< "sec:kind:objectId[:seconds],...": the local player sends an autopilot directive (MSG_AUTOPILOT_DIRECTIVE)
 	AsciiString m_buildSchedule;			///< "sec:barracks,...": the local player orders a structure by hand (select dozer + construct)
 };

@@ -52,6 +52,9 @@ namespace AutopilotLog
 	void line(const char *format, ...);
 #endif
 
+	/// The i-th most recent activity-feed line for the local player (0 = newest); false if there is none. For the control panel.
+	Bool recentFeed(Int i, AsciiString *out);
+
 	/// True when enabled() and 'frame' is a multiple of 'interval' (a trace that fires once per interval of game time).
 	Bool onFrameMultiple(UnsignedInt frame, UnsignedInt interval);
 

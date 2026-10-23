@@ -71,6 +71,17 @@ AsciiString AutopilotLog::niceName(const ThingTemplate *tmpl)
 	return name.isEmpty() ? tmpl->getName() : name;
 }
 
+static AsciiString s_recentFeed[8];
+static Int s_recentFeedCount = 0;
+
+Bool AutopilotLog::recentFeed(Int i, AsciiString *out)
+{
+	if (i < 0 || i >= s_recentFeedCount || i >= 8)
+		return FALSE;
+	*out = s_recentFeed[i];
+	return TRUE;
+}
+
 void AutopilotLog::feed(const Player *player, const char *format, ...)
 {
 	if (!player || !ThePlayerList || player != ThePlayerList->getLocalPlayer())
@@ -80,6 +91,11 @@ void AutopilotLog::feed(const Player *player, const char *format, ...)
 	va_start(args, format);
 	vsnprintf(text, sizeof(text), format, args);
 	va_end(args);
+	for (Int i = 7; i > 0; --i)
+		s_recentFeed[i] = s_recentFeed[i - 1];
+	s_recentFeed[0] = text;
+	if (s_recentFeedCount < 8)
+		++s_recentFeedCount;
 	printf("AUTOPILOT: %s\n", text);
 	fflush(stdout);
 	if (TheInGameUI && TheGlobalData && !TheGlobalData->m_headless)

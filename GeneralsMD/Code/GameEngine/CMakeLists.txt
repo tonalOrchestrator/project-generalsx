@@ -182,6 +182,7 @@ set(GAMEENGINE_SRC
 #    Include/GameClient/GameWindowTransitions.h
 #    Include/GameClient/GlobalLanguage.h
 #    Include/GameClient/GraphDraw.h
+    Include/GameClient/AutopilotPanel.h
     Include/GameClient/GUICallbacks.h
 #    Include/GameClient/GUICommandTranslator.h
 #    Include/GameClient/HeaderTemplate.h
@@ -710,6 +711,7 @@ set(GAMEENGINE_SRC
 #    Source/GameClient/GlobalLanguage.cpp
 #    Source/GameClient/GraphDraw.cpp
     Source/GameClient/GUI/AnimateWindowManager.cpp
+    Source/GameClient/GUI/AutopilotPanel.cpp
 #    Source/GameClient/GUI/ChallengeGenerals.cpp
 #    Source/GameClient/GUI/ControlBar/ControlBar.cpp
 #    Source/GameClient/GUI/ControlBar/ControlBarBeacon.cpp

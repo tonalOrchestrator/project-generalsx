@@ -20,6 +20,7 @@
 
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 #include "Common/GameAudio.h"
+#include "GameClient/AutopilotPanel.h"
 
 #include "Common/LanNetplayHarness.h"
 
@@ -417,6 +418,25 @@ int LanNetplayHarness::run()
 			}
 		}
 	}
+	struct ClickStep { UnsignedInt frame; Int x; Int y; };
+	ClickStep clickSteps[16];
+	Int numClickSteps = 0;
+	Int nextClickStep = 0;
+	{
+		AsciiString spec = lanNetplayOptions().m_panelClickSchedule;
+		AsciiString token;
+		while (spec.nextToken(&token, ",") && numClickSteps < 16)
+		{
+			int sec = 0, cx = 0, cy = 0;
+			if (sscanf(token.str(), "%d:%d:%d", &sec, &cx, &cy) == 3)
+			{
+				clickSteps[numClickSteps].frame = (UnsignedInt)sec * LOGICFRAMES_PER_SECOND;
+				clickSteps[numClickSteps].x = cx;
+				clickSteps[numClickSteps].y = cy;
+				++numClickSteps;
+			}
+		}
+	}
 	AutopilotStep autopilotSteps[16];
 	Int numAutopilotSteps = 0;
 	Int nextAutopilotStep = 0;
@@ -702,6 +722,12 @@ int LanNetplayHarness::run()
 							log("cheat request money=%d points=%d at frame %u", cheatSteps[nextCheatStep].money, cheatSteps[nextCheatStep].points, frame);
 						}
 						++nextCheatStep;
+					}
+					while (nextClickStep < numClickSteps && frame >= clickSteps[nextClickStep].frame)
+					{
+						const Bool hit = AutopilotPanel::click(clickSteps[nextClickStep].x, clickSteps[nextClickStep].y);
+						log("panel click (%d,%d) %s at frame %u", clickSteps[nextClickStep].x, clickSteps[nextClickStep].y, hit ? "hit" : "missed", frame);
+						++nextClickStep;
 					}
 					while (nextDirectiveStep < numDirectiveSteps && frame >= directiveSteps[nextDirectiveStep].frame)
 					{

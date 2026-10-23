@@ -44,6 +44,15 @@ this" / "garrison here") that sends the same directives. A text box for plain-la
 and scout paths, so it is chosen first when eligible; nothing else about carrying it out changes) and `AD_CLEAR`. `garrison`, `defend`, `scout` etc. follow the same shape. Test: `-lanDirectiveSchedule "30:1:302:300"`
 (Death Valley, one human + one AI: object ids 295-304 are the oil derricks and refineries; the explorer trace prints `#id`).
 
+## In-game panel (built 2026-10-22)
+`AutopilotPanel` (client-only, `Source/GameClient/GUI/AutopilotPanel.cpp`): one custom-drawn window in the top-left corner of a match for a human player. Title row: the
+level (`AUTOPILOT: Fortress`), click to cycle the level (off -> Fortress, then up and round to off); one check box per module (Wallet, Explore, Superweapons, Squad, Hackers, Repair, Defense
+units), click to toggle: it sends `MSG_SET_AUTOPILOT` with the module set, the same command the hotkeys use, so every machine applies it on the same frame; below it the last four
+activity-feed lines (`AutopilotLog::recentFeed`, which also shows each directive). It shrinks to a one-line "AUTOPILOT: OFF (click: on)" when off. Text is Arial 11: at 10 and 10 bold some glyphs
+render with a stray line above them in this engine's font cache. Test without a mouse: `-lanPanelClickSchedule "sec:x:y,..."` delivers clicks to the panel's click handler;
+`tools/netplay/make_panel_demo.sh` records the whole flow (screenshots every 4 s, captioned mp4 plus panel close-ups, output in the git-ignored `demo-out/panel/`). Not built: click-to-direct
+(select a building, "capture this"), a text box for plain-language orders, other directive kinds.
+
 ## Order of work
 Snapshot (done) -> activity feed (done) -> `setModules` toggles + defense-units module (done) -> `capture` / `garrison` / `defend` directives ->
 control-bar panel -> outside planner bridge.

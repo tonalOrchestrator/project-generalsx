@@ -32,6 +32,7 @@
 #include <cstdio>
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 #include "GameClient/GameClient.h"
+#include "GameClient/AutopilotPanel.h"
 
 // USER INCLUDES //////////////////////////////////////////////////////////////
 #include "Common/ActionManager.h"
@@ -602,6 +603,7 @@ void GameClient::update()
 
 	// update the window system itself
 	{
+		AutopilotPanel::update();	// GeneralsX @feature Claude 22/10/2026 the autopilot control panel
 		TheWindowManager->UPDATE();
 	}
 
