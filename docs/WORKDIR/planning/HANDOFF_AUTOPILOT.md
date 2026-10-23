@@ -3,10 +3,11 @@
 Start here when resuming. Written so the long Claude sessions behind this work can be archived without losing anything.
 
 ## State
-- Branch `feat/netplay-autopilot` on the PUBLIC fork `tonalOrchestrator/project-generalsx`. Everything is committed and pushed through `51d33dfc9`
-  (superweapons module, refactor steps 0-6, three design reviews). The installed Linux game binary and the Windows laptop's exe
-  (artifact `20261022-162952-win32-e349c50e91`) are both builds of that code; a 30-game-minute Linux + Windows match (GLA Fortress vs Medium, 8 Scud
-  launches) was `RESULT: IN SYNC`.
+- Branch `feat/netplay-autopilot` on the PUBLIC fork `tonalOrchestrator/project-generalsx`. Everything is committed and pushed through `43edf863c`:
+  superweapons module, refactor steps 0-6, three design reviews, player-supplied music playlists (`FACTION_MUSIC_DESIGN.md`, "How to use it"), and the first
+  autopilot directive (capture; `AUTOPILOT_DIRECTIVES.md`, "Built so far"). The installed Linux game binary and the Windows laptop's exe (artifact
+  `20261022-191731-win32-2dfedd3b9d`) are builds of that code. Linux + Windows matches in sync: a 30-game-minute GLA Fortress match (8 Scud launches), and an
+  Explore match with and without a capture directive (applied at the same frame on both machines).
 - Autopilot (levels 1-6: Easy, Normal, Hard, Wallet, Explore, Fortress; modules: planner, economy, defense, defense units, explorer, squad, hackers, repair,
   superweapons, snapshot, activity feed) is documented in `AUTOPILOT_ARCHITECTURE.md`; results and open items in `FEATURES_BACKLOG.md`; the next-layer design
   (directives, UI, outside planner) in `AUTOPILOT_DIRECTIVES.md`; the day-by-day story in `docs/DEV_BLOG/2026-10-DIARY.md`.
