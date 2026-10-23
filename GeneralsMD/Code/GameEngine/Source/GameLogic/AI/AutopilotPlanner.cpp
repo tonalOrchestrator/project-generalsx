@@ -125,6 +125,20 @@ void AutopilotPlanner::update()
 // GeneralsX @feature Claude 22/10/2026 Most factions' build lists hold no superweapon structure (or only one the planner never reaches while it is spending on
 // defenses), so a hoarder adds its own: the cheapest superweapon structure the dozer can build, once the bank covers its cost plus the defense fund and a
 // cushion, or the prerequisite building it is waiting for. One at a time, up to the per-kind cap; the game's own limit still applies.
+// True if 't' also needs a science the player has not bought (a general's promotion point purchase): Autopilot does not buy sciences, so such a
+// structure can never become buildable and saving for it would only starve the base.
+static Bool needsUnboughtScience(const ThingTemplate *t, const Player *player)
+{
+	for (Int i = 0; i < t->getPrereqCount(); ++i)
+	{
+		const ProductionPrerequisite *prereq = t->getNthPrereq(i);
+		for (Int s = 0; s < prereq->getSciencePrereqCount(); ++s)
+			if (!player->hasScience(prereq->getNthSciencePrereq(s)))
+				return TRUE;
+	}
+	return FALSE;
+}
+
 Bool AutopilotPlanner::queueSuperweaponStructure(const Pass &pass)
 {
 	Player *player = m_host.player();
@@ -155,7 +169,7 @@ Bool AutopilotPlanner::queueSuperweaponStructure(const Pass &pass)
 				pickCost = cost;
 			}
 		}
-		else if (canMake == CANMAKE_NO_PREREQ && t->getDefaultOwningSide() == player->getSide() && (!blocked || cost < blockedCost))
+		else if (canMake == CANMAKE_NO_PREREQ && t->getDefaultOwningSide() == player->getSide() && (!blocked || cost < blockedCost) && !needsUnboughtScience(t, player))
 		{
 			blocked = t;
 			blockedCost = cost;

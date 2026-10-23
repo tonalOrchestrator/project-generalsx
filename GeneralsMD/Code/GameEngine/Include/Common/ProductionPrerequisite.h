@@ -66,6 +66,9 @@ public:
 	void init();
 
 	void resetSciences() { m_prereqSciences.clear(); }
+	// GeneralsX @feature Claude 22/10/2026 Read-only access to the required sciences (the autopilot skips what only a purchased science unlocks).
+	Int getSciencePrereqCount() const { return (Int)m_prereqSciences.size(); }
+	ScienceType getNthSciencePrereq(Int i) const { return m_prereqSciences[i]; }
 	void addSciencePrereq( ScienceType science ) { m_prereqSciences.push_back(science); }
 
 	void resetUnits() { m_prereqUnits.clear(); }
