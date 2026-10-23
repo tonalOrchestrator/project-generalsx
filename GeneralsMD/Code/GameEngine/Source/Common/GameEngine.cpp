@@ -631,6 +631,12 @@ void GameEngine::init()
 	DEBUG_LOG(("%s", Buf));////////////////////////////////////////////////////////////////////////////
 	#endif/////////////////////////////////////////////////////////////////////////////////////////////
 		initSubsystem(TheAudio,"TheAudio", createAudioManager(TheGlobalData->m_headless), nullptr);
+		// GeneralsX @feature Claude 22/10/2026 Player-supplied music lives in <user data>/Music/<playlist>/ (see MusicPlaylist.h).
+		{
+			AsciiString musicRoot = TheGlobalData->getPath_UserData();
+			musicRoot.concat("Music/");
+			TheAudio->setMusicPlaylistRoot(musicRoot);
+		}
 		if (!TheAudio->isMusicAlreadyLoaded())
 			setQuitting(TRUE);
 

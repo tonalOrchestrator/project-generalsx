@@ -131,6 +131,8 @@ public:
 	Int getSpecialPowerShortcutButtonCount() const {return m_specialPowerShortcutButtonCount;	}
 
 	AsciiString getLoadScreenMusic() const {return m_loadScreenMusic;	}
+	// GeneralsX @feature Claude 22/10/2026 The name of the player-supplied playlist folder this template plays (see MusicPlaylist.h); empty = by name and side.
+	const AsciiString &getMusicPlaylist() const { return m_musicPlaylist; }
 	AsciiString getScoreScreenMusic() const { return m_scoreScreenMusic; }
 
   Bool isOldFaction() const { return m_oldFaction; }
@@ -167,6 +169,7 @@ private:
 	AsciiString				m_specialPowerShortcutCommandSet;		///< the command set we'll use when we want to show the shortcut to the special powers
 	AsciiString				m_specialPowerShortcutWinName;			///< The name of the window we'll be using for the shortcut bar
 	Int								m_specialPowerShortcutButtonCount;	///< The number of buttons located on the shortcut bar
+	AsciiString				m_musicPlaylist;									///< playlist folder id for player-supplied music
 	AsciiString				m_loadScreenMusic;									///< the load screen music we want to play
 	AsciiString				m_scoreScreenMusic;									///< the score screen music we want to play
 	AsciiString				m_tooltip;								///< The tooltip describing this player template

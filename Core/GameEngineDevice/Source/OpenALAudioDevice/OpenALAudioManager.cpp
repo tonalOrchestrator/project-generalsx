@@ -603,6 +603,8 @@ void OpenALAudioManager::pauseAudio(AudioAffect which)
 {
 	// GeneralsX @bugfix meerzulee 19/07/2026 FP env guard for audio entry point (see #215)
 	ScopedFPUGuard fpuGuard;
+	if (BitIsSet(which, AudioAffect_Music))
+		notifyMusicPaused(TRUE);
 	std::list<PlayingAudio*>::iterator it;
 
 	PlayingAudio* playing = NULL;
@@ -671,6 +673,8 @@ void OpenALAudioManager::resumeAudio(AudioAffect which)
 {
 	// GeneralsX @bugfix meerzulee 19/07/2026 FP env guard for audio entry point (see #215)
 	ScopedFPUGuard fpuGuard;
+	if (BitIsSet(which, AudioAffect_Music))
+		notifyMusicPaused(FALSE);
 	std::list<PlayingAudio*>::iterator it;
 
 	PlayingAudio* playing = NULL;
@@ -2272,6 +2276,10 @@ void OpenALAudioManager::adjustVolumeOfPlayingAudio(AsciiString eventName, Real 
 			// Adjust it
 			playing->m_audioEventRTS->setVolume(newVolume);
 			Real desiredVolume = playing->m_audioEventRTS->getVolume() * playing->m_audioEventRTS->getVolumeShift();
+			// GeneralsX @bugfix Claude 22/10/2026 A music stream keeps the player's music volume (the playlist crossfades through this call).
+			const AudioEventInfo *streamInfo = playing->m_audioEventRTS->getAudioEventInfo();
+			if (streamInfo && streamInfo->m_soundType == AT_Music)
+				desiredVolume *= m_musicVolume;
 			alSourcef(playing->m_source, AL_GAIN, desiredVolume);
 		}
 	}
@@ -2796,6 +2804,20 @@ Real OpenALAudioManager::getFileLengthMS(AsciiString strToLoad) const
 #endif
 
 	return length;
+}
+
+//-------------------------------------------------------------------------------------------------
+// GeneralsX @feature Claude 22/10/2026 Container duration of a music file (the player-supplied playlist schedules its crossfades with it); no decoding.
+Int OpenALAudioManager::getMusicDurationMs(const AsciiString &path)
+{
+	ScopedFPUGuard fpuGuard;
+	File *file = TheFileSystem->openFile(path.str());
+	if (!file)
+		return -1;
+	FFmpegFile ffmpegFile;
+	if (!ffmpegFile.open(file))
+		return -1;	// FFmpegFile owns the file from here on
+	return ffmpegFile.getDurationMs();
 }
 
 //-------------------------------------------------------------------------------------------------

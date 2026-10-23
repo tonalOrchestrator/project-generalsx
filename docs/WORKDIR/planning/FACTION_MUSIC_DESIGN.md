@@ -1,6 +1,16 @@
 # Player-Supplied Faction Music (MP3 playlists with crossfade)
 
-Status: design only, nothing implemented. Written 2026-10-22.
+Status: **stages 1-4 implemented 2026-10-22** (folder per faction, shuffle, gapless-by-crossfade, `PlayerTemplate.MusicPlaylist`); stage 5's `playlists.ini` / `.m3u` and stage 6 are not built. Written 2026-10-22.
+
+## How to use it (what is built)
+1. Put audio files in `<user data>/Music/<playlist>/` (Linux: `~/.local/share/GeneralsX/GeneralsZH/Music/gla/`; the user data folder is the one that holds `Save/` and `Replays/`). `.mp3` is first-class; `.ogg .flac .wav .m4a .opus` also work (lowercase extensions).
+2. The playlist is chosen per match from the local player: the template's `MusicPlaylist` INI value, else its name without `Faction` (`americaairforcegeneral`), else its side and base side (`america` also answers to `usa`, `china`, `gla`), else `default`; `observer` first for observers. Folder names are matched case-insensitively. No matching folder = retail music, unchanged.
+3. In a match the retail `Game_*` tracks the map scripts ask for are replaced by the playlist (shuffled, no repeats until every song played once, 4 s equal-power crossfade, 2 s fade-in). Menus, load screens and the victory/defeat stingers stay retail; the stinger stops the playlist with a 1.5 s fade.
+4. Use constant-bitrate MP3s (the length is read from the container, or from file size / bitrate when the container does not say); songs shorter than 10 s are played without overlap. The options-menu music volume and mute apply.
+5. Log lines (stderr) start with `MUSIC playlist:` and show the chosen folder, every song start with the playlist clock, and each crossfade.
+Testing without a sound card: `GENERALSX_HARNESS_AUDIO=1 ALSOFT_DRIVERS=null ./GeneralsXZH -headless -lanhost ... -lanHostTemplate FactionGLA` (the headless harness only pumps the audio manager when that variable is set).
+Verified 2026-10-22 with 20 s test tones: songs start every 16.07 s (duration minus the overlap), no repeats, a faction with no folder logs `-> retail music`. Not verified by ear or on Windows/macOS/MiniAudio; the pause-menu clock stop is untested.
+
 Scope: Zero Hour target (`GeneralsMD/`), shared audio code in `Core/`.
 
 All file:line citations are against this repo at the time of writing.

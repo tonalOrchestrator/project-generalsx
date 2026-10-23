@@ -251,6 +251,8 @@ void MiniAudioManager::pauseAudio(AudioAffect which)
 {
 	// GeneralsX @bugfix meerzulee 19/07/2026 FP env guard for audio entry point (see #215)
 	ScopedFPUGuard fpuGuard;
+	if (BitIsSet(which, AudioAffect_Music))
+		notifyMusicPaused(TRUE);
 	if (BitIsSet(which, AudioAffect_Sound))
 		ma_sound_group_stop(&m_soundGroup);
 	if (BitIsSet(which, AudioAffect_Sound3D))
@@ -266,6 +268,8 @@ void MiniAudioManager::resumeAudio(AudioAffect which)
 {
 	// GeneralsX @bugfix meerzulee 19/07/2026 FP env guard for audio entry point (see #215)
 	ScopedFPUGuard fpuGuard;
+	if (BitIsSet(which, AudioAffect_Music))
+		notifyMusicPaused(FALSE);
 	if (BitIsSet(which, AudioAffect_Sound))
 		ma_sound_group_start(&m_soundGroup);
 	if (BitIsSet(which, AudioAffect_Sound3D))
@@ -575,6 +579,20 @@ void MiniAudioManager::killAudioEventImmediately(AudioHandle audioEvent)
 			return;
 		}
 	}
+}
+
+//-------------------------------------------------------------------------------------------------
+// GeneralsX @feature Claude 22/10/2026 Container duration of a music file (the player-supplied playlist schedules its crossfades with it); no decoding.
+Int MiniAudioManager::getMusicDurationMs(const AsciiString &path)
+{
+	ScopedFPUGuard fpuGuard;
+	File *file = TheFileSystem->openFile(path.str());
+	if (!file)
+		return -1;
+	FFmpegFile ffmpegFile;
+	if (!ffmpegFile.open(file))
+		return -1;	// FFmpegFile owns the file from here on
+	return ffmpegFile.getDurationMs();
 }
 
 //-------------------------------------------------------------------------------------------------

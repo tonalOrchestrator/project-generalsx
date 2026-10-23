@@ -150,6 +150,7 @@ public:
 	virtual void setPreferredSpeaker(AsciiString speakerType) { m_prefSpeaker = speakerType; }
 
 	virtual Real getFileLengthMS(AsciiString strToLoad) const;
+	virtual Int getMusicDurationMs(const AsciiString &path) override;
 
 	virtual void closeAnySamplesUsingFile(const void *fileToClose);
 

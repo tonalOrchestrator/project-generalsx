@@ -338,6 +338,27 @@ Int FFmpegFile::getWidth() const
 	return stream->codec_ctx->width;
 }
 
+Int FFmpegFile::getDurationMs() const
+{
+	if (m_fmtCtx == nullptr)
+		return -1;
+	if (m_fmtCtx->duration != AV_NOPTS_VALUE && m_fmtCtx->duration > 0)
+		return (Int)(m_fmtCtx->duration / (AV_TIME_BASE / 1000));
+
+	// The custom I/O cannot seek, so a container often cannot tell. Try the audio stream's own length, then file size over bitrate
+	// (exact for the constant-bitrate files a playlist should use).
+	const FFmpegStream *audio = findMatch(AVMEDIA_TYPE_AUDIO);
+	if (audio == nullptr || m_fmtCtx->streams[audio->stream_idx] == nullptr)
+		return -1;
+	const AVStream *stream = m_fmtCtx->streams[audio->stream_idx];
+	if (stream->duration != AV_NOPTS_VALUE && stream->duration > 0)
+		return (Int)(stream->duration * av_q2d(stream->time_base) * 1000.0);
+	const int64_t bitRate = stream->codecpar ? stream->codecpar->bit_rate : 0;
+	if (m_file != nullptr && bitRate > 0)
+		return (Int)((int64_t)m_file->size() * 8 * 1000 / bitRate);
+	return -1;
+}
+
 Int FFmpegFile::getNumFrames() const
 {
 	const FFmpegStream *stream = findMatch(AVMEDIA_TYPE_VIDEO);

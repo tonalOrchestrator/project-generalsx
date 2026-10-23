@@ -54,6 +54,7 @@ class AudioEventRTS;
 class DebugDisplayInterface;
 class Drawable;
 class MusicManager;
+class MusicPlaylistPlayer;
 class Object;
 class SoundManager;
 
@@ -291,6 +292,15 @@ class AudioManager : public SubsystemInterface
 		virtual Real getAudioLengthMS( const AudioEventRTS *event );
 		virtual Real getFileLengthMS( AsciiString strToLoad ) const = 0;
 
+		/// GeneralsX @feature Claude 22/10/2026 Length of a music file in ms without decoding it, or -1 if the backend cannot tell.
+		virtual Int getMusicDurationMs( const AsciiString &path ) { (void)path; return -1; }
+
+		/// Where player-supplied playlists live ("<user data>/Music/"); empty turns the feature off.
+		void setMusicPlaylistRoot( const AsciiString &root );
+
+		/// The backends tell the playlist when the game pauses or resumes its music.
+		void notifyMusicPaused( Bool paused );
+
 		// For the file cache to know when to remove files.
 		virtual void closeAnySamplesUsingFile( const void *fileToClose ) = 0;
 
@@ -330,6 +340,7 @@ class AudioManager : public SubsystemInterface
 		AudioSettings *m_audioSettings;
 		MiscAudio *m_miscAudio;
 		MusicManager *m_music;
+		MusicPlaylistPlayer *m_playlist;	///< player-supplied music (see MusicPlaylist.h); null until init()
 		SoundManager *m_sound;
 		Coord3D m_listenerPosition;
 		Coord3D m_listenerOrientation;

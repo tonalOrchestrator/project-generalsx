@@ -120,6 +120,9 @@ public:
 
 	AudioType m_soundType;	// This should be either Music, Streaming or SoundEffect
 
+	// GeneralsX @feature Claude 22/10/2026 m_filename is a complete path to play as it is (player-supplied music), not a name under the music folder.
+	Bool m_filenameIsFullPath = FALSE;
+
 
   // DynamicAudioEventInfo interfacing functions
   virtual Bool isLevelSpecific() const { return false; } ///< If true, this sound is only defined on the current level and can be deleted when that level ends

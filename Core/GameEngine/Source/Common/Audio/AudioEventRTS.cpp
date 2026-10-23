@@ -320,6 +320,11 @@ void AudioEventRTS::generateFilename()
 		return;
 	}
 
+	if (m_eventInfo->m_filenameIsFullPath) {
+		m_filenameToLoad = m_eventInfo->m_filename;
+		return;
+	}
+
 	m_filenameToLoad = generateFilenamePrefix(m_eventInfo->m_soundType, false);
 
 	Int which = 0;

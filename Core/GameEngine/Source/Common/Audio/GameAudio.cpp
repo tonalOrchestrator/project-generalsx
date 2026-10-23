@@ -46,6 +46,7 @@
 #include "Common/GameAudio.h"
 
 #include "Common/AudioAffect.h"
+#include "Common/MusicPlaylist.h"
 #include "Common/AudioEventInfo.h"
 #include "Common/AudioEventRTS.h"
 #include "Common/AudioHandleSpecialValues.h"
@@ -153,6 +154,7 @@ AudioManager::AudioManager() :
 	m_musicOn(TRUE),
 	m_speechOn(TRUE),
 	m_music(nullptr),
+	m_playlist(nullptr),
 	m_sound(nullptr),
 	m_surroundSpeakers(FALSE),
 	m_hardwareAccel(FALSE)
@@ -198,6 +200,8 @@ AudioManager::~AudioManager()
 
 	delete m_music;
 	m_music = nullptr;
+	delete m_playlist;
+	m_playlist = nullptr;
 
 	delete m_sound;
 	m_sound = nullptr;
@@ -233,6 +237,7 @@ void AudioManager::init()
 	ini.loadFileDirectory( "Data\\INI\\MiscAudio", INI_LOAD_OVERWRITE, nullptr);
 
 	m_music = NEW MusicManager;
+	m_playlist = NEW MusicPlaylistPlayer;
 	m_sound = NEW SoundManager;
 
 	// Set our system volumes from the user's preferred settings, not the defaults.
@@ -277,6 +282,9 @@ void AudioManager::reset()
 	m_speechVolume = m_systemSpeechVolume;
 
 	m_disallowSpeech = FALSE;
+
+	if (m_playlist)
+		m_playlist->reset();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -363,6 +371,8 @@ void AudioManager::update()
 
 	set3DVolumeAdjustment( m_zoomVolume );
 
+	if (m_playlist)
+		m_playlist->update();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -399,6 +409,10 @@ AudioHandle AudioManager::addAudioEvent(const AudioEventRTS *eventToAdd)
 	}
 
 	const AudioType soundType = eventToAdd->getAudioEventInfo()->m_soundType;
+
+	// GeneralsX @feature Claude 22/10/2026 A player-supplied playlist stands in for the retail in-game tracks the scripts ask for.
+	if (soundType == AT_Music && m_playlist && m_playlist->shouldSuppress(eventToAdd->getEventName()))
+		return AHSV_NoSound;
 
 	// Check if audio type is on
 	// TheSuperHackers @info Zero audio volume is not a fail condition, because music, speech and sounds
@@ -566,9 +580,25 @@ AsciiString AudioManager::prevTrackName(const AsciiString& currentTrack )
 }
 
 //-------------------------------------------------------------------------------------------------
+void AudioManager::setMusicPlaylistRoot( const AsciiString &root )
+{
+	if (m_playlist)
+		m_playlist->setRoot(root);
+}
+
+//-------------------------------------------------------------------------------------------------
+void AudioManager::notifyMusicPaused( Bool paused )
+{
+	if (m_playlist)
+		m_playlist->setMusicPaused(paused);
+}
+
+//-------------------------------------------------------------------------------------------------
 void AudioManager::removeAudioEvent(AudioHandle audioEvent)
 {
 	if (audioEvent == AHSV_StopTheMusic || audioEvent == AHSV_StopTheMusicFade) {
+		if (m_playlist)
+			m_playlist->onStopMusic();
 		m_music->removeAudioEvent(audioEvent);
 		return;
 	}

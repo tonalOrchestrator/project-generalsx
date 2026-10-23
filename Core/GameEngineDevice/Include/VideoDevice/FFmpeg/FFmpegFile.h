@@ -60,6 +60,9 @@ public:
 	void seekFrame(int frame_idx);
 	Bool hasAudio() const;
 
+	// Container duration in milliseconds, or -1 if the container does not say.
+	Int getDurationMs() const;
+
 	// Audio specific
 	Int getSizeForSamples(Int numSamples) const;
 	Int getNumChannels() const;

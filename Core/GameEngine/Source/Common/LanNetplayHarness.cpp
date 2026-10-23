@@ -19,6 +19,7 @@
 // GeneralsX @feature Claude 20/10/2026 Headless LAN netplay harness (see header).
 
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
+#include "Common/GameAudio.h"
 
 #include "Common/LanNetplayHarness.h"
 
@@ -657,6 +658,11 @@ int LanNetplayHarness::run()
 					{
 						TheGameClient->updateHeadless();
 						TheGameLogic->UPDATE();
+						// GeneralsX @feature Claude 22/10/2026 Headless runs never reach GameEngine::update(), so the audio manager is not pumped; set
+						// GENERALSX_HARNESS_AUDIO=1 (with ALSOFT_DRIVERS=null for silence) to test music code in a harness run.
+						static const Bool pumpAudio = getenv("GENERALSX_HARNESS_AUDIO") != nullptr;
+						if (pumpAudio && TheAudio)
+							TheAudio->UPDATE();
 					}
 
 					const UnsignedInt frame = TheGameLogic->getFrame();

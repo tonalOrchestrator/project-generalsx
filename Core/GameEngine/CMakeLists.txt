@@ -7,6 +7,7 @@ set(GAMEENGINE_SRC
     Include/Common/AsciiString.h
     Include/Common/AudioAffect.h
     Include/Common/AudioEventInfo.h
+    Include/Common/MusicPlaylist.h
     Include/Common/AudioEventRTS.h
     Include/Common/AudioHandleSpecialValues.h
     Include/Common/AudioRandomValue.h
@@ -567,6 +568,7 @@ set(GAMEENGINE_SRC
     Source/Common/Audio/DynamicAudioEventInfo.cpp
     Source/Common/Audio/GameAudio.cpp
     Source/Common/Audio/GameMusic.cpp
+    Source/Common/Audio/MusicPlaylist.cpp
     Source/Common/Audio/GameSounds.cpp
     #Source/Common/Audio/simpleplayer.cpp # unused
     #Source/Common/Audio/urllaunch.cpp # unused

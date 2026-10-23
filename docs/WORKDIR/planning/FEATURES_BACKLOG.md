@@ -174,6 +174,12 @@ Open: USA Laser General finds no buildable superweapon structure (no 'saving' li
 so it rarely reaches a firing; firing at the same spot twice in a row on China (re-targets before the first blast registers); a general's power bought via
 sciences (A-10, artillery) is supported but nothing buys the science yet (a separate decision); Windows build not yet rebuilt/synced with this.
 
+### Player-supplied music (Music/<playlist>/, shuffle + crossfade) - done (2026-10-22), stages 1-4 of `FACTION_MUSIC_DESIGN.md`
+`MusicPlaylistPlayer` (Core, client-only) replaces the retail `Game_*` tracks with the local player's playlist folder; see the design doc's "How to use it". Open: `playlists.ini` /
+`.m3u` options, the debug now-playing line, options-menu toggle, ducking over `Game_Silent`; checking it by ear and on Windows / MiniAudio; the pause-menu clock stop; a Suno
+export step. Side fixes: OpenAL kept no music volume when a music stream's volume was adjusted (now does); `FFmpegFile::getDurationMs` falls back to file size / bitrate because
+the custom I/O cannot seek.
+
 ### Defending against a Hard AI (Wallet mode) - improved, not solved
 Goal from Ben: a 1v1 setup that can actually defend against a Hard opponent. Measured solo, headless, 16 game-minute cap, all 12 factions vs one
 Hard AI (median survival; none survived 16 minutes until the extra defenses):
