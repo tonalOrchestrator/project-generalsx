@@ -3,14 +3,18 @@
 Start here when resuming. Written so the long Claude sessions behind this work can be archived without losing anything.
 
 ## State
-- Branch `feat/netplay-autopilot` on Ben's PUBLIC fork `tonalOrchestrator/project-generalsx`. Everything is committed and pushed through `495819555`
-  (level 6 Fortress), plus the docs commits of 2026-10-22 (local until Ben says push; see "Working rules").
-- The installed game binary `~/GeneralsX/GeneralsZH/GeneralsXZH` equals the build of `495819555`. The Windows laptop (`ssh vadapuppy`) last got the
-  build of the level-6 tree (artifact `20261021-201832-win32-4a258298fd`, in sync vs a Hard AI for 10 game-minutes); any newer code needs
-  `scripts/remote-build.sh ...` + `tools/netplay/deploy-win.sh` again before a Linux + Windows sync check.
+- Branch `feat/netplay-autopilot` on the PUBLIC fork `tonalOrchestrator/project-generalsx`. Everything is committed and pushed through `51d33dfc9`
+  (superweapons module, refactor steps 0-6, three design reviews). The installed Linux game binary and the Windows laptop's exe
+  (artifact `20261022-162952-win32-e349c50e91`) are both builds of that code; a 30-game-minute Linux + Windows match (GLA Fortress vs Medium, 8 Scud
+  launches) was `RESULT: IN SYNC`.
 - Autopilot (levels 1-6: Easy, Normal, Hard, Wallet, Explore, Fortress; modules: planner, economy, defense, defense units, explorer, squad, hackers, repair,
-  snapshot, activity feed) is documented in `AUTOPILOT_ARCHITECTURE.md`; results and open items in `FEATURES_BACKLOG.md`; the next-layer design (directives, UI,
-  outside planner) in `AUTOPILOT_DIRECTIVES.md`; the day-by-day story in `docs/DEV_BLOG/2026-10-DIARY.md`.
+  superweapons, snapshot, activity feed) is documented in `AUTOPILOT_ARCHITECTURE.md`; results and open items in `FEATURES_BACKLOG.md`; the next-layer design
+  (directives, UI, outside planner) in `AUTOPILOT_DIRECTIVES.md`; the day-by-day story in `docs/DEV_BLOG/2026-10-DIARY.md`.
+- Philosophy (Ben): defend, hoard cash by generating revenue, hoard superweapons; the only offense is firing them (no ground assault). Superweapons need 25-30
+  game-minute matches to fire (about 10 minutes of charge); Fortress survives those, Wallet alone does not.
+- Next-step designs: `REVIEW_AUTOPILOT_ARCH.md` (ranked refactor steps 0-14; 0-6 done, 7 persistence, 12 personality table, 13 directives next),
+  `CUSTOM_GENERALS_DESIGN.md` (named generals "General Wallet" / "General Ben", portraits, loose-file install) and `FACTION_MUSIC_DESIGN.md` (per-faction MP3 playlists with
+  crossfade). Baseline for refactors: `logs/autopilot-scenarios/` summaries compared with `compare_summaries.py` (now includes a trace digest).
 
 ## The sessions (all Ben's, titles as shown in the Claude app)
 1. **Netplay + Autopilot session (2026-10-20 to 21):** two-machine netplay rig, Windows build, Autopilot levels 1-5, Wallet/Explore, garrison squad, hackers, repair, the
