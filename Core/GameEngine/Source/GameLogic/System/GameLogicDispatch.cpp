@@ -527,6 +527,17 @@ void GameLogic::logicMessageDispatcher( GameMessage *msg, void *userData )
 			}
 			break;
 		}
+		case GameMessage::MSG_AUTOPILOT_DIRECTIVE:
+		{
+			if (Player *directedPlayer = getMessagePlayer(msg))
+			{
+				const Int kind = msg->getArgument(0)->integer;
+				const ObjectID id = (ObjectID)msg->getArgument(1)->integer;
+				const Int seconds = msg->getArgumentCount() > 2 ? msg->getArgument(2)->integer : 120;
+				directedPlayer->applyAutopilotDirective(kind, id, (UnsignedInt)seconds * LOGICFRAMES_PER_SECOND);
+			}
+			break;
+		}
 		case GameMessage::MSG_SET_AUTOPILOT:
 		{
 			if (Player *autopilotPlayer = getMessagePlayer(msg))

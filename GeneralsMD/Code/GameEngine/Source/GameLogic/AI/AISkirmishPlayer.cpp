@@ -1038,6 +1038,12 @@ void AISkirmishPlayer::adoptExistingBase()
 
 // GeneralsX @refactor Claude 21/10/2026 Starts the autopilot on this AI player, or switches its level in place (the modules keep their
 // state). The level's AI skill state (build caps, gatherers, timers) is the one the profile names.
+void AISkirmishPlayer::applyAutopilotDirective(Int kind, ObjectID id, UnsignedInt durationFrames)
+{
+	if (m_autopilot)
+		m_autopilot->applyDirective(kind, id, durationFrames);
+}
+
 void AISkirmishPlayer::attachAutopilot(const AutopilotProfile &profile)
 {
 	setAIDifficulty(profile.m_difficulty);

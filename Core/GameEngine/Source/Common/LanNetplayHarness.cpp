@@ -397,6 +397,26 @@ int LanNetplayHarness::run()
 			}
 		}
 	}
+	struct DirectiveStep { UnsignedInt frame; Int kind; Int objectId; Int seconds; };
+	DirectiveStep directiveSteps[16];
+	Int numDirectiveSteps = 0;
+	Int nextDirectiveStep = 0;
+	{
+		AsciiString spec = lanNetplayOptions().m_directiveSchedule;
+		AsciiString token;
+		while (spec.nextToken(&token, ",") && numDirectiveSteps < 16)
+		{
+			int sec = 0, kind = 0, id = 0, seconds = 120;
+			if (sscanf(token.str(), "%d:%d:%d:%d", &sec, &kind, &id, &seconds) >= 3)
+			{
+				directiveSteps[numDirectiveSteps].frame = (UnsignedInt)sec * LOGICFRAMES_PER_SECOND;
+				directiveSteps[numDirectiveSteps].kind = kind;
+				directiveSteps[numDirectiveSteps].objectId = id;
+				directiveSteps[numDirectiveSteps].seconds = seconds;
+				++numDirectiveSteps;
+			}
+		}
+	}
 	AutopilotStep autopilotSteps[16];
 	Int numAutopilotSteps = 0;
 	Int nextAutopilotStep = 0;
@@ -682,6 +702,19 @@ int LanNetplayHarness::run()
 							log("cheat request money=%d points=%d at frame %u", cheatSteps[nextCheatStep].money, cheatSteps[nextCheatStep].points, frame);
 						}
 						++nextCheatStep;
+					}
+					while (nextDirectiveStep < numDirectiveSteps && frame >= directiveSteps[nextDirectiveStep].frame)
+					{
+						Player* local = ThePlayerList ? ThePlayerList->getLocalPlayer() : nullptr;
+						if (local && !local->isPlayerObserver())
+						{
+							GameMessage* directiveMsg = TheMessageStream->appendMessage(GameMessage::MSG_AUTOPILOT_DIRECTIVE);
+							directiveMsg->appendIntegerArgument(directiveSteps[nextDirectiveStep].kind);
+							directiveMsg->appendIntegerArgument(directiveSteps[nextDirectiveStep].objectId);
+							directiveMsg->appendIntegerArgument(directiveSteps[nextDirectiveStep].seconds);
+							log("directive request kind=%d object=%d at frame %u", directiveSteps[nextDirectiveStep].kind, directiveSteps[nextDirectiveStep].objectId, frame);
+						}
+						++nextDirectiveStep;
 					}
 					while (nextAutopilotStep < numAutopilotSteps && frame >= autopilotSteps[nextAutopilotStep].frame)
 					{

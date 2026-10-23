@@ -236,6 +236,7 @@ set(GAMEENGINE_SRC
     Include/GameLogic/AISkirmishPlayer.h
     Include/GameLogic/AIAutopilot.h
     Include/GameLogic/AutopilotDefense.h
+    Include/GameLogic/AutopilotDirectives.h
     Include/GameLogic/AutopilotEconomy.h
     Include/GameLogic/AutopilotExplorer.h
     Include/GameLogic/AutopilotHost.h

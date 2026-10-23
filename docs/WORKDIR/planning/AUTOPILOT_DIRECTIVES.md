@@ -38,6 +38,12 @@ No Autopilot control exists besides the hotkeys. Options, smallest first: (a) th
 (b) a control-bar panel (a `.wnd` layout) with the module check boxes and a feed list; (c) click-to-direct (select a building, choose "capture
 this" / "garrison here") that sends the same directives. A text box for plain-language orders belongs to the outside planner, not the engine.
 
+## Built so far (2026-10-22)
+`MSG_AUTOPILOT_DIRECTIVE` (arg0 kind `AD_*`, arg1 object id, arg2 seconds it holds; one network command applied on the same logic frame everywhere) -> `Player::applyAutopilotDirective`
+-> `AIAutopilot::applyDirective` -> `AutopilotDirectives` (8 slots, expiring). Kinds: `AD_CAPTURE` (the explorer weights the named building almost to zero distance, in both its capture
+and scout paths, so it is chosen first when eligible; nothing else about carrying it out changes) and `AD_CLEAR`. `garrison`, `defend`, `scout` etc. follow the same shape. Test: `-lanDirectiveSchedule "30:1:302:300"`
+(Death Valley, one human + one AI: object ids 295-304 are the oil derricks and refineries; the explorer trace prints `#id`).
+
 ## Order of work
 Snapshot (done) -> activity feed (done) -> `setModules` toggles + defense-units module (done) -> `capture` / `garrison` / `defend` directives ->
 control-bar panel -> outside planner bridge.

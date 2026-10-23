@@ -31,6 +31,7 @@
 #pragma once
 
 #include "GameLogic/AutopilotDefense.h"
+#include "GameLogic/AutopilotDirectives.h"
 #include "GameLogic/AutopilotEconomy.h"
 #include "GameLogic/AutopilotExplorer.h"
 #include "GameLogic/AutopilotHost.h"
@@ -53,6 +54,9 @@ public:
 	/// and every two seconds queue trucks, train defenders and send explorers.
 	void update();
 
+	/// A directive from MSG_AUTOPILOT_DIRECTIVE (kind AD_*, an object id, how long it holds), applied on the same logic frame on every machine.
+	void applyDirective(Int kind, ObjectID id, UnsignedInt durationFrames);
+
 	/// The AI player's base-building pass tried to place 'plan' for 'info' ('built' is null if it failed).
 	void onStructureAttempt(const ThingTemplate *plan, BuildListInfo *info, const Object *built);
 
@@ -71,6 +75,7 @@ private:
 	AutopilotHost &m_host;
 	AutopilotDriver &m_driver;
 	AutopilotProfile m_profile;	// declared before the modules: they hold a reference to it
+	AutopilotDirectives m_directives;	// likewise
 	AutopilotEconomy m_economy;
 	AutopilotDefense m_defense;
 	AutopilotExplorer m_explorer;

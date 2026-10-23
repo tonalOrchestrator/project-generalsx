@@ -18,12 +18,17 @@
 
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
+#include "Common/ThingTemplate.h"
+#include "GameLogic/GameLogic.h"
+#include "GameLogic/Object.h"
+
 #include "GameLogic/AIAutopilot.h"
+#include "GameLogic/AutopilotLog.h"
 #include "GameLogic/AutopilotHost.h"
 
 AIAutopilot::AIAutopilot(AutopilotHost &host, AutopilotDriver &driver, const AutopilotProfile &profile)
 	: m_host(host), m_driver(driver), m_profile(profile),
-	  m_economy(host, m_profile), m_defense(host, m_profile), m_explorer(host, m_profile),
+	  m_economy(host, m_profile), m_defense(host, m_profile), m_explorer(host, m_profile, m_directives),
 	  m_squad(host, m_profile, *this), m_hackers(host, m_profile), m_repair(host, m_profile), m_superweapons(host, m_profile),
 	  m_planner(host, m_profile, *this)
 {
@@ -53,4 +58,16 @@ void AIAutopilot::update()
 void AIAutopilot::onStructureAttempt(const ThingTemplate *plan, BuildListInfo *info, const Object *built)
 {
 	m_planner.reportPlacement(plan, info, built);
+}
+
+// GeneralsX @feature Claude 22/10/2026 Store a directive; the modules read it on their next pass.
+void AIAutopilot::applyDirective(Int kind, ObjectID id, UnsignedInt durationFrames)
+{
+	m_directives.apply(kind, id, TheGameLogic->getFrame() + durationFrames);
+	const Object *target = kind == AD_CAPTURE ? TheGameLogic->findObjectByID(id) : nullptr;
+	AutopilotLog::line("NETPLAY autopilot directive: kind %d object %d (%s) for %u frames (frame %u)\n", kind, (Int)id, target ? target->getTemplate()->getName().str() : "-", durationFrames, TheGameLogic->getFrame());
+	if (kind == AD_CAPTURE && target)
+		AutopilotLog::feed(m_host.player(), "Directive: capture the %s", AutopilotLog::niceName(target->getTemplate()).str());
+	else if (kind == AD_CLEAR)
+		AutopilotLog::feed(m_host.player(), "Directives cleared");
 }

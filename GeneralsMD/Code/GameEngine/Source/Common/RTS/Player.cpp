@@ -799,6 +799,13 @@ void Player::applyAutopilotProfile(Int level)
 	m_ai->attachAutopilot(profile->withModules(m_autopilotModules));
 }
 
+// GeneralsX @feature Claude 22/10/2026 A directive for the autopilot (MSG_AUTOPILOT_DIRECTIVE, applied on the same logic frame on every machine).
+void Player::applyAutopilotDirective(Int kind, ObjectID id, UnsignedInt durationFrames)
+{
+	if (m_ai)
+		m_ai->applyAutopilotDirective(kind, id, durationFrames);
+}
+
 void Player::setAutopilot(Int level, UnsignedInt modules)
 {
 	if (level > AutopilotProfile::maxLevel())

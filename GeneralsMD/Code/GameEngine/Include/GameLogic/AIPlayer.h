@@ -190,6 +190,7 @@ public: // AIPlayer interface, may be overridden by AISkirmishPlayer.  jba.
 	/// Autopilot (see AIAutopilot) builds a human's base (structures, dozers, supply trucks) but never army teams or attacks.
 	/// Only the skirmish AI can host one; the level is applied by Player::applyAutopilotProfile.
 	virtual void attachAutopilot(const AutopilotProfile &profile) {}
+	virtual void applyAutopilotDirective(Int kind, ObjectID id, UnsignedInt durationFrames) {}	///< GeneralsX: MSG_AUTOPILOT_DIRECTIVE
 	/// Link the structures the player already owns to this AI's build list so they are not rebuilt.
 	virtual void adoptExistingBase() {}
 

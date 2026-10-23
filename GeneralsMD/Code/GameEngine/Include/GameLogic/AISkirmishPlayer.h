@@ -57,6 +57,7 @@ public:	// AIPlayer interface methods.
 	virtual void newMap() override;											///< New map loaded call.
 
 	virtual void adoptExistingBase() override;
+	virtual void applyAutopilotDirective(Int kind, ObjectID id, UnsignedInt durationFrames) override;
 	virtual void attachAutopilot(const AutopilotProfile &profile) override;	///< GeneralsX: start (or re-level) the autopilot on this AI player
 
 	/// Invoked when a unit I am training comes into existence

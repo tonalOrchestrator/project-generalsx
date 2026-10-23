@@ -991,6 +991,7 @@ Int parseLanCameraSeconds(char *args[], int num)
 }
 
 Int parseLanCameraLocal(char *[], int) { lanNetplayOptions().m_cameraLocal = TRUE; return 1; }
+Int parseLanDirectiveSchedule(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_directiveSchedule); }
 Int parseLanBuildSchedule(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_buildSchedule); }
 Int parseLanCheatSchedule(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_cheatSchedule); }
 Int parseLanAutopilotSchedule(char *args[], int num) { return parseLanStringArg(args, num, lanNetplayOptions().m_autopilotSchedule); }
@@ -1401,6 +1402,7 @@ static CommandLineParam paramsForStartup[] =
 	{ "-lanObserver", parseLanObserver },
 	{ "-cheats", parseCheats },
 	{ "-lanAutopilotSchedule", parseLanAutopilotSchedule },
+	{ "-lanDirectiveSchedule", parseLanDirectiveSchedule },
 	{ "-lanScreenshotSeconds", parseLanScreenshotSeconds },
 	{ "-lanCameraSeconds", parseLanCameraSeconds },
 	{ "-aiskirmish", parseAISkirmish },

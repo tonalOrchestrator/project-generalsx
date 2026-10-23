@@ -38,6 +38,7 @@
 
 #include "GameLogic/AutopilotTuning.h"
 #include "GameLogic/AutopilotExplorer.h"
+#include "GameLogic/AutopilotDirectives.h"
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
 #include "GameLogic/AutopilotProfile.h"
@@ -74,8 +75,8 @@ static Real targetWeight(const Object *obj)
 	return (strstr(name, "OilDerrick") || strstr(name, "OilRefinery")) ? 1.0f : 16.0f;
 }
 
-AutopilotExplorer::AutopilotExplorer(AutopilotHost &host, const AutopilotProfile &profile)
-	: m_host(host), m_profile(profile)
+AutopilotExplorer::AutopilotExplorer(AutopilotHost &host, const AutopilotProfile &profile, const AutopilotDirectives &directives)
+	: m_host(host), m_profile(profile), m_directives(directives)
 {
 	for (Int e = 0; e < MAX_EXPLORERS; ++e)
 	{
@@ -246,6 +247,7 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 		if (slot < 0)
 			break;
 
+		const ObjectID directed = m_directives.captureTarget(frame);	// a capture directive makes its building the favourite
 		Object *best = nullptr;
 		Real bestDistSqr = 0;
 		Object *hidden = nullptr;	// nearest neutral building still in the shroud: somewhere to scout when nothing can be captured yet
@@ -300,7 +302,7 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 					{
 						const Real hx = obj->getPosition()->x - explorer->getPosition()->x;
 						const Real hy = obj->getPosition()->y - explorer->getPosition()->y;
-						const Real hd = (hx * hx + hy * hy) * targetWeight(obj);
+						const Real hd = (hx * hx + hy * hy) * (obj->getID() == directed ? 0.0001f : targetWeight(obj));
 						if (!hidden || hd < hiddenDistSqr)
 						{
 							hidden = obj;
@@ -317,7 +319,7 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 			}
 			const Real dx = obj->getPosition()->x - explorer->getPosition()->x;
 			const Real dy = obj->getPosition()->y - explorer->getPosition()->y;
-			const Real distSqr = (dx * dx + dy * dy) * targetWeight(obj);
+			const Real distSqr = (dx * dx + dy * dy) * (obj->getID() == directed ? 0.0001f : targetWeight(obj));
 			if (!best || distSqr < bestDistSqr)
 			{
 				best = obj;
@@ -332,8 +334,8 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 			m_target[slot] = hidden->getID();
 			m_scouting[slot] = TRUE;
 			noteScout(hidden->getID());
-			AutopilotLog::line("NETPLAY autopilot explore: %s -> scout %s [owner %s] at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
-				hidden->getTemplate()->getName().str(), hidden->getControllingPlayer() ? hidden->getControllingPlayer()->getSide().str() : "none", hidden->getPosition()->x, hidden->getPosition()->y, frame);
+			AutopilotLog::line("NETPLAY autopilot explore: %s -> scout %s #%d [owner %s] at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
+				hidden->getTemplate()->getName().str(), (Int)hidden->getID(), hidden->getControllingPlayer() ? hidden->getControllingPlayer()->getSide().str() : "none", hidden->getPosition()->x, hidden->getPosition()->y, frame);
 			AutopilotLog::feed(m_host.player(), "Scouting the %s to reveal it for capture", AutopilotLog::niceName(hidden->getTemplate()).str());
 			continue;
 		}
@@ -371,8 +373,8 @@ void AutopilotExplorer::sendIdleExplorers(Object *const *explorers, Int numExplo
 		m_explorer[slot] = explorer->getID();
 		m_scouting[slot] = FALSE;
 		m_target[slot] = best->getID();
-		AutopilotLog::line("NETPLAY autopilot explore: %s -> capture %s at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
-			best->getTemplate()->getName().str(), best->getPosition()->x, best->getPosition()->y, frame);
+		AutopilotLog::line("NETPLAY autopilot explore: %s -> capture %s #%d at (%.0f,%.0f) (frame %u)\n", explorer->getTemplate()->getName().str(),
+			best->getTemplate()->getName().str(), (Int)best->getID(), best->getPosition()->x, best->getPosition()->y, frame);
 		AutopilotLog::feed(m_host.player(), "Sending a %s to capture the %s", AutopilotLog::niceName(explorer->getTemplate()).str(), AutopilotLog::niceName(best->getTemplate()).str());
 	}
 }

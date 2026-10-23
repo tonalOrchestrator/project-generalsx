@@ -26,6 +26,7 @@
 #include "Common/GameType.h"
 #include "GameLogic/AutopilotLog.h"
 
+class AutopilotDirectives;
 class AutopilotHost;
 class Object;
 struct AutopilotProfile;
@@ -33,7 +34,7 @@ struct AutopilotProfile;
 class AutopilotExplorer
 {
 public:
-	AutopilotExplorer(AutopilotHost &host, const AutopilotProfile &profile);
+	AutopilotExplorer(AutopilotHost &host, const AutopilotProfile &profile, const AutopilotDirectives &directives);
 
 	/// Called every two seconds. Buys the capture upgrade, trains an explorer when short, and sends every idle explorer to capture
 	/// (or scout) the nearest safe neutral building. A building it fails to take is skipped for a while. Nothing here attacks an enemy.
@@ -53,6 +54,7 @@ private:
 
 	AutopilotHost &m_host;
 	const AutopilotProfile &m_profile;
+	const AutopilotDirectives &m_directives;
 
 	ObjectID m_explorer[MAX_EXPLORERS];				///< explorer on each errand ...
 	ObjectID m_target[MAX_EXPLORERS];				///< ... and the building it was sent to capture
