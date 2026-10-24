@@ -19,7 +19,7 @@
 // GeneralsX @feature Claude 22/10/2026 Directives: small standing orders for the autopilot, each sent as one network command (MSG_AUTOPILOT_DIRECTIVE) so every
 // machine stores it on the same logic frame. A directive is an INPUT to a module's choice, never an order of its own: the explorer prefers the building
 // it names, and everything else about carrying it out (safety, the capture upgrade, scouting a shrouded target) is the module's normal path. It expires.
-// First cut: capture (a building by object id) and clear. See docs/WORKDIR/planning/AUTOPILOT_DIRECTIVES.md.
+// Kinds: capture (explorer), garrison and defend (squad), clear. See docs/WORKDIR/planning/AUTOPILOT_DIRECTIVES.md.
 
 #pragma once
 
@@ -29,6 +29,8 @@ enum AutopilotDirectiveKind
 {
 	AD_NONE = 0,
 	AD_CAPTURE = 1,		///< prefer capturing the building with this object id
+	AD_GARRISON = 2,	///< the squad prefers garrisoning the building with this object id
+	AD_DEFEND = 3,		///< the squad garrisons the buildings nearest the object with this id (defend that spot)
 	AD_CLEAR = 9		///< drop every standing directive
 };
 
@@ -58,15 +60,23 @@ public:
 	}
 
 	/// The building a capture directive names, or INVALID_ID.
-	ObjectID captureTarget(UnsignedInt frame) const
+	ObjectID captureTarget(UnsignedInt frame) const { return target(AD_CAPTURE, frame); }
+
+	/// The building a garrison directive names, or INVALID_ID.
+	ObjectID garrisonTarget(UnsignedInt frame) const { return target(AD_GARRISON, frame); }
+
+	/// The object a defend directive names, or INVALID_ID.
+	ObjectID defendTarget(UnsignedInt frame) const { return target(AD_DEFEND, frame); }
+
+private:
+	ObjectID target(Int kind, UnsignedInt frame) const
 	{
 		for (Int i = 0; i < SLOTS; ++i)
-			if (m_slots[i].kind == AD_CAPTURE && frame < m_slots[i].expires)
+			if (m_slots[i].kind == kind && frame < m_slots[i].expires)
 				return m_slots[i].id;
 		return INVALID_ID;
 	}
 
-private:
 	enum { SLOTS = 8 };
 	struct Slot { Int kind; ObjectID id; UnsignedInt expires; };
 	Slot m_slots[SLOTS];

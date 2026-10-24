@@ -29,7 +29,7 @@
 AIAutopilot::AIAutopilot(AutopilotHost &host, AutopilotDriver &driver, const AutopilotProfile &profile)
 	: m_host(host), m_driver(driver), m_profile(profile),
 	  m_economy(host, m_profile), m_defense(host, m_profile), m_explorer(host, m_profile, m_directives),
-	  m_squad(host, m_profile, *this), m_hackers(host, m_profile), m_repair(host, m_profile), m_superweapons(host, m_profile),
+	  m_squad(host, m_profile, m_directives, *this), m_hackers(host, m_profile), m_repair(host, m_profile), m_superweapons(host, m_profile),
 	  m_planner(host, m_profile, *this)
 {
 }
@@ -64,10 +64,14 @@ void AIAutopilot::onStructureAttempt(const ThingTemplate *plan, BuildListInfo *i
 void AIAutopilot::applyDirective(Int kind, ObjectID id, UnsignedInt durationFrames)
 {
 	m_directives.apply(kind, id, TheGameLogic->getFrame() + durationFrames);
-	const Object *target = kind == AD_CAPTURE ? TheGameLogic->findObjectByID(id) : nullptr;
+	const Object *target = (kind == AD_CAPTURE || kind == AD_GARRISON || kind == AD_DEFEND) ? TheGameLogic->findObjectByID(id) : nullptr;
 	AutopilotLog::line("NETPLAY autopilot directive: kind %d object %d (%s) for %u frames (frame %u)\n", kind, (Int)id, target ? target->getTemplate()->getName().str() : "-", durationFrames, TheGameLogic->getFrame());
 	if (kind == AD_CAPTURE && target)
 		AutopilotLog::feed(m_host.player(), "Directive: capture the %s", AutopilotLog::niceName(target->getTemplate()).str());
+	else if (kind == AD_GARRISON && target)
+		AutopilotLog::feed(m_host.player(), "Directive: garrison the %s", AutopilotLog::niceName(target->getTemplate()).str());
+	else if (kind == AD_DEFEND && target)
+		AutopilotLog::feed(m_host.player(), "Directive: defend around the %s", AutopilotLog::niceName(target->getTemplate()).str());
 	else if (kind == AD_CLEAR)
 		AutopilotLog::feed(m_host.player(), "Directives cleared");
 }

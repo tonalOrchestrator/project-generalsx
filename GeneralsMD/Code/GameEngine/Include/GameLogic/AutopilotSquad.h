@@ -28,6 +28,7 @@
 #include "GameLogic/AutopilotLog.h"
 
 class AutopilotHost;
+class AutopilotDirectives;
 class Object;
 struct AutopilotProfile;
 
@@ -43,7 +44,7 @@ public:
 		~Links() = default;
 	};
 
-	AutopilotSquad(AutopilotHost &host, const AutopilotProfile &profile, Links &links) : m_host(host), m_profile(profile), m_links(links) {}
+	AutopilotSquad(AutopilotHost &host, const AutopilotProfile &profile, const AutopilotDirectives &directives, Links &links) : m_host(host), m_profile(profile), m_directives(directives), m_links(links) {}
 
 	/// Called every two seconds: top the squad up to the profile's standing size, then garrison the idle ones.
 	void update();
@@ -55,6 +56,7 @@ private:
 
 	AutopilotHost &m_host;
 	const AutopilotProfile &m_profile;
+	const AutopilotDirectives &m_directives;
 	Links &m_links;
 	Bool m_nextAntiVehicle = TRUE;	///< the next trained member is the tank person (else the gun person)
 	AutopilotLog::Throttle m_traceThrottle;

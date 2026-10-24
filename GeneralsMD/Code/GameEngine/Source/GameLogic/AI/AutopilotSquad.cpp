@@ -30,6 +30,7 @@
 #include "GameLogic/Object.h"
 
 #include "GameLogic/AutopilotTuning.h"
+#include "GameLogic/AutopilotDirectives.h"
 #include "GameLogic/AutopilotHost.h"
 #include "GameLogic/AutopilotLog.h"
 #include "GameLogic/AutopilotProfile.h"
@@ -102,8 +103,12 @@ void AutopilotSquad::train()
 // who may enter and whether there is room). A few orders per call.
 void AutopilotSquad::garrison()
 {
-	const Coord3D &center = m_host.baseCenter();
-	const Real reach = m_host.baseRadius() + AutopilotTuning::SQUAD_REACH_BEYOND_BASE;	// neutral buildings are rarely right at the base: about a quarter of a typical map
+	// GeneralsX @feature Claude 23/10/2026 A defend directive moves the centre the buildings are measured from; a garrison directive names one building to prefer.
+	const UnsignedInt frame = TheGameLogic->getFrame();
+	const Object *defendObj = TheGameLogic->findObjectByID(m_directives.defendTarget(frame));
+	const Object *garrisonObj = TheGameLogic->findObjectByID(m_directives.garrisonTarget(frame));
+	const Coord3D &center = defendObj ? *defendObj->getPosition() : m_host.baseCenter();
+	const Real reach = defendObj ? AutopilotTuning::SQUAD_REACH_BEYOND_BASE : m_host.baseRadius() + AutopilotTuning::SQUAD_REACH_BEYOND_BASE;	// neutral buildings are rarely right at the base: about a quarter of a typical map
 	Int orders = 0;
 	for (Object *unit = TheGameLogic->getFirstObject(); unit && orders < 3; unit = unit->getNextObject())
 	{
@@ -112,6 +117,15 @@ void AutopilotSquad::garrison()
 		AIUpdateInterface *ai = unit->getAIUpdateInterface();
 		if (!ai || !ai->isIdle())
 			continue;
+
+		if (garrisonObj && garrisonObj->getShroudedStatus(m_host.player()->getPlayerIndex()) != OBJECTSHROUD_CLEAR)
+		{
+			// The directed building is still in the shroud: walk toward it first (seeing it lifts the shroud, then the entry order below applies).
+			ai->aiMoveToPosition(garrisonObj->getPosition(), CMD_FROM_AI);
+			++orders;
+			AutopilotLog::line("NETPLAY autopilot squad: %s -> scout directed %s #%d (frame %u)\n", unit->getTemplate()->getName().str(), garrisonObj->getTemplate()->getName().str(), (Int)garrisonObj->getID(), frame);
+			continue;
+		}
 
 		Object *best = nullptr;
 		Real bestDistSqr = 0;
@@ -123,8 +137,10 @@ void AutopilotSquad::garrison()
 			if (!b->isKindOf(KINDOF_STRUCTURE) || !b->getContain())
 				continue;
 			++withContain;
+			if (garrisonObj && b != garrisonObj && TheActionManager->canEnterObject(unit, garrisonObj, CMD_FROM_AI, CHECK_CAPACITY))
+				continue;	// the directed building has room: it is the only candidate
 			const Real cx = b->getPosition()->x - center.x, cy = b->getPosition()->y - center.y;
-			if (cx * cx + cy * cy > reach * reach)
+			if (b != garrisonObj && cx * cx + cy * cy > reach * reach)
 				continue;
 			++inReach;
 			if (!TheActionManager->canEnterObject(unit, b, CMD_FROM_AI, CHECK_CAPACITY))
@@ -160,7 +176,7 @@ void AutopilotSquad::garrison()
 			// GeneralsX @feature Claude 21/10/2026 Walk to it: seeing the building lifts the shroud, and the next cycle can order the entry.
 			ai->aiMoveToPosition(hidden->getPosition(), CMD_FROM_AI);
 			++orders;
-			AutopilotLog::line("NETPLAY autopilot squad: %s -> scout %s (frame %u)\n", unit->getTemplate()->getName().str(), hidden->getTemplate()->getName().str(), TheGameLogic->getFrame());
+			AutopilotLog::line("NETPLAY autopilot squad: %s -> scout %s #%d (frame %u)\n", unit->getTemplate()->getName().str(), hidden->getTemplate()->getName().str(), (Int)hidden->getID(), TheGameLogic->getFrame());
 			AutopilotLog::feed(m_host.player(), "Squad: sending a %s to scout the %s", AutopilotLog::niceName(unit->getTemplate()).str(), AutopilotLog::niceName(hidden->getTemplate()).str());
 			continue;
 		}
@@ -171,7 +187,7 @@ void AutopilotSquad::garrison()
 		{
 			ai->aiEnter(best, CMD_FROM_AI);
 			++orders;
-			AutopilotLog::line("NETPLAY autopilot squad: %s -> garrison %s (frame %u)\n", unit->getTemplate()->getName().str(), best->getTemplate()->getName().str(), TheGameLogic->getFrame());
+			AutopilotLog::line("NETPLAY autopilot squad: %s -> garrison %s #%d (frame %u)\n", unit->getTemplate()->getName().str(), best->getTemplate()->getName().str(), (Int)best->getID(), TheGameLogic->getFrame());
 			AutopilotLog::feed(m_host.player(), "Squad: a %s is garrisoning the %s", AutopilotLog::niceName(unit->getTemplate()).str(), AutopilotLog::niceName(best->getTemplate()).str());
 		}
 	}

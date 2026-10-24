@@ -41,7 +41,7 @@ this" / "garrison here") that sends the same directives. A text box for plain-la
 ## Built so far (2026-10-22)
 `MSG_AUTOPILOT_DIRECTIVE` (arg0 kind `AD_*`, arg1 object id, arg2 seconds it holds; one network command applied on the same logic frame everywhere) -> `Player::applyAutopilotDirective`
 -> `AIAutopilot::applyDirective` -> `AutopilotDirectives` (8 slots, expiring). Kinds: `AD_CAPTURE` (the explorer weights the named building almost to zero distance, in both its capture
-and scout paths, so it is chosen first when eligible; nothing else about carrying it out changes) and `AD_CLEAR`. `garrison`, `defend`, `scout` etc. follow the same shape. Test: `-lanDirectiveSchedule "30:1:302:300"`
+and scout paths, so it is chosen first when eligible; nothing else about carrying it out changes) `AD_GARRISON` (2; the squad scouts the named building if it is in the shroud, then garrisons it, ahead of its usual nearest-building choice), `AD_DEFEND` (3; the squad picks garrison buildings nearest the named object instead of nearest the base centre) and `AD_CLEAR`. `scout` etc. follow the same shape. Squad traces now print `#id`, so a building's id can be read from a run (Death Valley, Explore, China: `-lanDirectiveSchedule "20:2:256:400"` sends the squad to bunker #256 instead of watchtower #228). Test: `-lanDirectiveSchedule "30:1:302:300"`
 (Death Valley, one human + one AI: object ids 295-304 are the oil derricks and refineries; the explorer trace prints `#id`).
 
 ## In-game panel (built 2026-10-22)
